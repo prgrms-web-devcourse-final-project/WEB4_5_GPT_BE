@@ -76,6 +76,7 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           files: "backend/**/build/test-results/test/TEST-*.xml"
+          comment_mode: off
 
       - name: Skip backend tests (no changes)
         if: steps.check_changes.outputs.backend-changed == 'false'
