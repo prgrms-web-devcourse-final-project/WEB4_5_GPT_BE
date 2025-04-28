@@ -6,12 +6,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record ProfessorSignupRequest(
-        @Email @NotBlank String email,
-        @NotBlank String password,
-        @NotBlank String name,
-        @NotBlank String employeeId,
-        @NotNull Long universityId,
-        @NotNull Long majorId,
-        @NotNull Role role
-) {
-}
+    @Email @NotBlank String email,
+    @NotBlank String password,
+    @NotBlank String name,
+    @NotBlank String employeeId,
+    @NotNull Long universityId,
+    @NotNull Long majorId,
+    @NotNull Role role) {}
