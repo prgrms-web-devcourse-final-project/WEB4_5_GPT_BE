@@ -1,7 +1,7 @@
 package com.WEB4_5_GPT_BE.unihub.domain.course.entity;
 
 import com.WEB4_5_GPT_BE.unihub.domain.common.entity.BaseTimeEntity;
-import com.WEB4_5_GPT_BE.unihub.domain.common.entity.DayOfWeek;
+import com.WEB4_5_GPT_BE.unihub.domain.common.enums.DayOfWeek;
 import jakarta.persistence.*;
 import java.time.LocalTime;
 import lombok.*;
@@ -15,7 +15,7 @@ import lombok.*;
 @Table(name = "course_schedule")
 public class CourseSchedule extends BaseTimeEntity {
 
-  @Id @GeneratedValue private Integer id;
+  @Id @GeneratedValue private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "course_id", nullable = false)
@@ -26,8 +26,8 @@ public class CourseSchedule extends BaseTimeEntity {
   private DayOfWeek day;
 
   @Column(name = "start_time", nullable = false)
-  private LocalTime start;
+  private LocalTime startTime;
 
   @Column(name = "end_time", nullable = false)
-  private LocalTime end;
+  private LocalTime endTime;
 }

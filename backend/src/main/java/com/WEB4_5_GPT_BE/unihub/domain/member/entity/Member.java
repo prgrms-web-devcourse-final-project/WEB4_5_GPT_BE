@@ -1,7 +1,7 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.entity;
 
 import com.WEB4_5_GPT_BE.unihub.domain.common.entity.BaseTimeEntity;
-import com.WEB4_5_GPT_BE.unihub.domain.common.entity.Role;
+import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -14,7 +14,7 @@ import lombok.*;
 @Table(name = "member", uniqueConstraints = @UniqueConstraint(columnNames = "email"))
 public class Member extends BaseTimeEntity {
 
-  @Id @GeneratedValue private Integer id;
+  @Id @GeneratedValue private Long id;
 
   @Column(nullable = false, unique = true, length = 120)
   private String email;

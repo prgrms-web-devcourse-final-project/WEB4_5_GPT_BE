@@ -15,7 +15,7 @@ import lombok.*;
 @Table(name = "university")
 public class University extends BaseTimeEntity {
 
-  @Id @GeneratedValue private Integer id;
+  @Id @GeneratedValue private Long id;
 
   @Column(nullable = false, length = 100)
   private String name;
