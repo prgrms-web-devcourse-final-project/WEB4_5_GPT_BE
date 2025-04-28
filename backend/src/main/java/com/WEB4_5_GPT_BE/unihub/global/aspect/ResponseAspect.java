@@ -1,6 +1,5 @@
 package com.WEB4_5_GPT_BE.unihub.global.aspect;
 
-
 import com.WEB4_5_GPT_BE.unihub.global.response.RsData;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -14,9 +13,10 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ResponseAspect {
 
-    private final HttpServletResponse response;
+  private final HttpServletResponse response;
 
-    @Around("""
+  @Around(
+      """
             (
                 within
                 (
@@ -36,15 +36,14 @@ public class ResponseAspect {
             ||
             @annotation(org.springframework.web.bind.annotation.ResponseBody)
             """)
-    public Object responseAspect(ProceedingJoinPoint joinPoint) throws Throwable {
-        Object result = joinPoint.proceed();
+  public Object responseAspect(ProceedingJoinPoint joinPoint) throws Throwable {
+    Object result = joinPoint.proceed();
 
-        if(result instanceof RsData rsData) {
-            int statusCode = rsData.getStatusCode();
-            response.setStatus(statusCode);
-        }
-
-        return result;
+    if (result instanceof RsData rsData) {
+      int statusCode = rsData.getStatusCode();
+      response.setStatus(statusCode);
     }
 
+    return result;
+  }
 }

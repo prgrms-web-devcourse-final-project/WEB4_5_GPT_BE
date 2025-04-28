@@ -8,16 +8,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(UnihubException.class)
-    public ResponseEntity<RsData<Void>> ServiceExceptionHandle(UnihubException ex) {
-        return ResponseEntity
-            .status(ex.getStatusCode())
-            .body(
-                new RsData<>(
-                    ex.getCode(),
-                    ex.getMessage()
-                )
-            );
-    }
-
+  @ExceptionHandler(UnihubException.class)
+  public ResponseEntity<RsData<Void>> ServiceExceptionHandle(UnihubException ex) {
+    return ResponseEntity.status(ex.getStatusCode())
+        .body(new RsData<>(ex.getCode(), ex.getMessage()));
+  }
 }
