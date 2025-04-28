@@ -53,6 +53,13 @@ jobs:
         run: chmod +x gradlew
         working-directory: backend
 
+      - name: Spotless Check (Code Style 검사)
+        if: steps.check_changes.outputs.backend-changed == 'true'
+        run: |
+          echo "🎯 Running spotlessCheck (코드 스타일 검사)"
+          ./gradlew spotlessCheck --no-daemon
+        working-directory: backend
+
       - name: Build and Test with Gradle
         if: steps.check_changes.outputs.backend-changed == 'true'
         run: |
