@@ -17,7 +17,7 @@ import lombok.*;
     uniqueConstraints = @UniqueConstraint(columnNames = {"university_id", "student_code"}))
 public class StudentProfile extends BaseTimeEntity {
 
-  @Id private Integer memberId; // PK와 FK를 공유 (1:1)
+  @Id private Long id; // PK와 FK를 공유 (1:1)
 
   @MapsId
   @OneToOne(fetch = FetchType.LAZY)

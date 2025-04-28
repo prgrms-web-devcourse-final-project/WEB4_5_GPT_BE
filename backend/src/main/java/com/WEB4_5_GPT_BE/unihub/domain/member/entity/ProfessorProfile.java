@@ -15,7 +15,7 @@ import lombok.*;
 @Table(name = "professor_profile")
 public class ProfessorProfile extends BaseTimeEntity {
 
-  @Id private Integer memberId;
+  @Id private Long id;
 
   @MapsId
   @OneToOne(fetch = FetchType.LAZY)

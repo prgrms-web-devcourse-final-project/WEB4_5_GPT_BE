@@ -15,7 +15,7 @@ import lombok.*;
     uniqueConstraints = @UniqueConstraint(columnNames = {"university_id", "name"}))
 public class Major extends BaseTimeEntity {
 
-  @Id @GeneratedValue private Integer id;
+  @Id @GeneratedValue private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "university_id", nullable = false)
