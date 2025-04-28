@@ -21,4 +21,16 @@ public class HomeController {
         );
     }
 
+    @GetMapping("/error")
+    public RsData<Void> error() {
+
+        if(true)
+            throw new HomeNoDataException("400", "에러가 발생했습니다.");
+
+        return new RsData<>(
+            "200",
+            "에러없이 성공"
+        );
+    }
+
 }
