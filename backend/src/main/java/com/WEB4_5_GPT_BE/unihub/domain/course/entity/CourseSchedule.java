@@ -26,8 +26,8 @@ public class CourseSchedule extends BaseTimeEntity {
   private DayOfWeek day;
 
   @Column(name = "start_time", nullable = false)
-  private LocalTime start_time;
+  private LocalTime startTime;
 
   @Column(name = "end_time", nullable = false)
-  private LocalTime end_time;
+  private LocalTime endTime;
 }
