@@ -1,6 +1,6 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.dto.request;
 
-import com.WEB4_5_GPT_BE.unihub.domain.common.entity.Role;
+import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
