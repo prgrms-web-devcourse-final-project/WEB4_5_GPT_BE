@@ -15,22 +15,21 @@ import lombok.*;
 @Table(name = "professor_profile")
 public class ProfessorProfile extends BaseTimeEntity {
 
-    @Id
-    private Integer memberId;
+  @Id private Integer memberId;
 
-    @MapsId
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id")
-    private Member member;
+  @MapsId
+  @OneToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "member_id")
+  private Member member;
 
-    @Column(name = "employee_id", nullable = false, unique = true, length = 20)
-    private String employeeId;
+  @Column(name = "employee_id", nullable = false, unique = true, length = 20)
+  private String employeeId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "university_id", nullable = false)
-    private University university;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "university_id", nullable = false)
+  private University university;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "major_id", nullable = false)
-    private Major major;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "major_id", nullable = false)
+  private Major major;
 }

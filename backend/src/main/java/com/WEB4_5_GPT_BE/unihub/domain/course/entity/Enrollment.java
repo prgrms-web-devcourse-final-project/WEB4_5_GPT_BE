@@ -11,19 +11,18 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "enrollment",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"course_id", "student_id"}))
+@Table(
+    name = "enrollment",
+    uniqueConstraints = @UniqueConstraint(columnNames = {"course_id", "student_id"}))
 public class Enrollment extends BaseTimeEntity {
 
-    @Id
-    @GeneratedValue
-    private Integer id;
+  @Id @GeneratedValue private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "course_id", nullable = false)
-    private Course course;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "course_id", nullable = false)
+  private Course course;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "student_id", nullable = false)
-    private StudentProfile student;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "student_id", nullable = false)
+  private StudentProfile student;
 }

@@ -5,30 +5,27 @@ import com.WEB4_5_GPT_BE.unihub.domain.common.entity.Role;
 import jakarta.persistence.*;
 import lombok.*;
 
-@Getter @Setter
+@Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor @Builder
+@AllArgsConstructor
+@Builder
 @Entity
-@Table(name = "member",
-        uniqueConstraints = @UniqueConstraint(columnNames = "email"))
+@Table(name = "member", uniqueConstraints = @UniqueConstraint(columnNames = "email"))
 public class Member extends BaseTimeEntity {
 
-    @Id @GeneratedValue
-    private Integer id;
+  @Id @GeneratedValue private Integer id;
 
-    @Column(nullable = false, unique = true, length = 120)
-    private String email;
+  @Column(nullable = false, unique = true, length = 120)
+  private String email;
 
-    @Column(nullable = false, length = 255)
-    private String password;
+  @Column(nullable = false, length = 255)
+  private String password;
 
-    @Column(nullable = false, length = 30)
-    private String name;
+  @Column(nullable = false, length = 30)
+  private String name;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private Role role;
-
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20)
+  private Role role;
 }
-
-
