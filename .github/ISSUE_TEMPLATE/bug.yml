@@ -1,0 +1,19 @@
+name: "[BUG] 버그 수정"
+description: "버그 발생 시 기록하는 이슈 템플릿입니다."
+title: "[BUG] 버그 발생 - "
+labels: ["bug"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: "## 🐞 버그 설명\n어떤 버그가 발생했는지 설명해주세요."
+
+  - type: textarea
+    id: bug_summary
+    attributes:
+      label: "🐛 버그 요약"
+      description: "버그를 한 줄로 요약해주세요."
+      placeholder: "예: 로그인 버튼을 눌렀을 때 500 에러 발생"
+    validations:
+      required: true

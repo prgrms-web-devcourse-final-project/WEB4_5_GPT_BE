@@ -1,0 +1,39 @@
+name: "[REFACTOR] 코드 리팩토링"
+description: "코드 개선이 필요한 경우 작성하는 템플릿입니다."
+title: "[REFACTOR] 리팩토링 대상 (예: UserService 코드 개선)"
+labels: ["refactor"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🔧 리팩토링 개요
+        코드 개선이 필요한 이유를 설명해주세요.
+
+  - type: textarea
+    id: refactor_goal
+    attributes:
+      label: "🎯 리팩토링 목표"
+      description: "리팩토링할 기능 또는 코드에 대한 설명을 입력해주세요."
+      placeholder: "예: UserService의 중복 로직 제거"
+    validations:
+      required: false
+
+  - type: textarea
+    id: refactor_tasks
+    attributes:
+      label: "📌 작업 내용 (Tasks)"
+      description: "리팩토링을 수행해야 할 작업을 나열해주세요."
+      placeholder: |
+        - [ ] 불필요한 코드 정리
+        - [ ] 중복 로직 함수로 분리
+        - [ ] 성능 개선을 위한 최적화
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional_info
+    attributes:
+      label: "💡 추가 정보"
+      description: "추가적으로 공유하고 싶은 내용이 있다면 작성해주세요."
