@@ -15,6 +15,7 @@ jobs:
     permissions:
       contents: read
       checks: write # 권한 추가
+      issues: write # 권한 추가
 
     steps:
       - uses: actions/checkout@v3
