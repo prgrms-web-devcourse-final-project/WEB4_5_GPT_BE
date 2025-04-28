@@ -10,6 +10,6 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(UnihubException.class)
   public ResponseEntity<RsData<Void>> ServiceExceptionHandle(UnihubException e) {
-    return ResponseEntity.status(e.getStatusCode()).body(e.getRsData());
+    return ResponseEntity.status(e.getStatusCode()).body(new RsData<>(e.getCode(), e.getMessage()));
   }
 }
