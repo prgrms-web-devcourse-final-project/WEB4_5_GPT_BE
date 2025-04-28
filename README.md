@@ -6,9 +6,9 @@
 
 |                **서준식**                 |                   **옥정현**                   |                   **정성철**                   |                 **강을찬**                  |                 **박주원**                  |
 | :-----------------------------------------: | :-----------------------------------------: | :-----------------------------------------: | :-----------------------------------------: | :-----------------------------------------: |
-| <img src="https://github.com/sojunsik.png" width="200"> | <img src="https://github.com/okjunghyeon.png" width="200"> | <img src="https://github.com/jsc5023.png" width="200"> | <img src="https://github.com/thegreatkang.png" width="200"> | <img src="https://github.com/.png" width="200"> |
+| <img src="https://github.com/sojunsik.png" width="200"> | <img src="https://github.com/okjunghyeon.png" width="200"> | <img src="https://github.com/jsc5023.png" width="200"> | <img src="https://github.com/thegreatkang.png" width="200"> | <img src="https://github.com/SalinatedCoffee.png" width="200"> |
 |                 **PO**                 |                     **BE-L**                     |                     **BE**                     |                   **BE**                    |                   **BE**                    |
-|   [GitHub](https://github.com/sojunsik)    |   [GitHub](https://github.com/okjunghyeon)    |   [GitHub](https://github.com/jsc5023)    |   [GitHub](https://github.com/thegreatkang)    |   [GitHub](https://github.com/)    |
+|   [GitHub](https://github.com/sojunsik)    |   [GitHub](https://github.com/okjunghyeon)    |   [GitHub](https://github.com/jsc5023)    |   [GitHub](https://github.com/thegreatkang)    |   [GitHub](https://github.com/SalinatedCoffee)    |
 
 
 ---
