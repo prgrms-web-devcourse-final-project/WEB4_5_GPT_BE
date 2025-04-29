@@ -32,8 +32,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class AdminServiceTest {
 
-  @Mock
-  private MemberRepository memberRepository;
+    @Mock
+    private MemberRepository memberRepository;
 
     @Mock
     private StudentProfileRepository studentProfileRepository;
