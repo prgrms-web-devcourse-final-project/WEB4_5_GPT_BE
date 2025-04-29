@@ -92,6 +92,8 @@ jobs:
             docker pull ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest && \
             docker stop unihubApp 2>/dev/null || true && \
             docker rm unihubApp   2>/dev/null || true && \
-            docker run -d --name unihubApp --network common -p 8080:8080 \
+            docker run -d --name unihubApp \
+            --restart unless-stopped \
+            --network common -p 8080:8080 \
             ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest && \
             docker rmi $(docker images -f "dangling=true" -q) || true
