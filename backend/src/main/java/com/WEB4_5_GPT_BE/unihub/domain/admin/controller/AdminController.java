@@ -1,8 +1,6 @@
 package com.WEB4_5_GPT_BE.unihub.domain.admin.controller;
 
-import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.request.AdminInviteRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.request.EnrollmentPeriodRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.request.ProfessorApprovalRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.request.*;
 import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.response.EnrollmentPeriodResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.response.ProfessorResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.response.StudentResponse;
@@ -26,8 +24,14 @@ public class AdminController {
      */
     @GetMapping("/students")
     public RsData<Page<StudentResponse>> getStudents(
+            @RequestParam(required = false) Long universityId,
+            @RequestParam(required = false) Long majorId,
+            @RequestParam(required = false) Integer grade,
+            @RequestParam(required = false) Integer semester,
             @PageableDefault Pageable pageable) {
-        Page<StudentResponse> students = adminService.getStudents(pageable);
+
+        StudentSearchRequest searchRequest = new StudentSearchRequest(universityId, majorId, grade, semester);
+        Page<StudentResponse> students = adminService.getStudents(searchRequest, pageable);
         return new RsData<>("200", "회원 목록 조회에 성공했습니다.", students);
     }
 
@@ -36,8 +40,19 @@ public class AdminController {
      */
     @GetMapping("/professors")
     public RsData<Page<ProfessorResponse>> getProfessors(
+            @RequestParam(required = false) Long universityId,
+            @RequestParam(required = false) String professorName,
+            @RequestParam(required = false) Long majorId,
+            @RequestParam(required = false) String status,
             @PageableDefault Pageable pageable) {
-        Page<ProfessorResponse> professors = adminService.getProfessors(pageable);
+
+        com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus approvalStatus = null;
+        if (status != null) {
+            approvalStatus = com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus.valueOf(status);
+        }
+
+        ProfessorSearchRequest searchRequest = new ProfessorSearchRequest(universityId, professorName, majorId, approvalStatus);
+        Page<ProfessorResponse> professors = adminService.getProfessors(searchRequest, pageable);
         return new RsData<>("200", "교직원 등록 신청 조회가 완료되었습니다.", professors);
     }
 
@@ -53,12 +68,20 @@ public class AdminController {
     }
 
     /**
-     * 수강신청기간 관리 조회
+     * 수강신청 기간 조회
      */
     @GetMapping("/enrollment-periods")
     public RsData<Page<EnrollmentPeriodResponse>> getEnrollmentPeriods(
+            @RequestParam(required = false) String universityName,
+            @RequestParam(required = false) String startDateFrom,
+            @RequestParam(required = false) String startDateTo,
+            @RequestParam(required = false) String endDateFrom,
+            @RequestParam(required = false) String endDateTo,
             @PageableDefault Pageable pageable) {
-        Page<EnrollmentPeriodResponse> periods = adminService.getEnrollmentPeriods(pageable);
+
+        EnrollmentPeriodSearchRequest searchRequest = new EnrollmentPeriodSearchRequest(
+                universityName, startDateFrom, startDateTo, endDateFrom, endDateTo);
+        Page<EnrollmentPeriodResponse> periods = adminService.getEnrollmentPeriods(searchRequest, pageable);
         return new RsData<>("200", "수강신청 기간 조회가 완료되었습니다.", periods);
     }
 
