@@ -6,6 +6,5 @@ public record EnrollmentPeriodRequest(
         @NotNull Long universityId,
         @NotNull Integer grade,
         @NotNull String startDate,
-        @NotNull String endDate
-) {
+        @NotNull String endDate) {
 }

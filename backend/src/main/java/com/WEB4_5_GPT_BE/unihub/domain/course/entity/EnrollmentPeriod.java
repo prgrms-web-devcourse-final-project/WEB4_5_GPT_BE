@@ -21,10 +21,10 @@ public class EnrollmentPeriod extends BaseTimeEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     private University university;
+
     private Integer grade;
     private LocalDate startDate;
     private LocalDate endDate;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
 }

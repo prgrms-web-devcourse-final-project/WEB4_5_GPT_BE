@@ -32,8 +32,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class AdminServiceTest {
 
-    @Mock
-    private MemberRepository memberRepository;
+  @Mock
+  private MemberRepository memberRepository;
 
     @Mock
     private StudentProfileRepository studentProfileRepository;
@@ -86,20 +86,20 @@ public class AdminServiceTest {
     @DisplayName("수강신청 기간 등록 테스트")
     void createEnrollmentPeriodTest() {
         // given
-        EnrollmentPeriodRequest request = new EnrollmentPeriodRequest(
-                1L, 1, "2025-05-01", "2025-05-10"
-        );
+        EnrollmentPeriodRequest request =
+                new EnrollmentPeriodRequest(1L, 1, "2025-05-01", "2025-05-10");
 
         University university = University.builder().id(1L).name("테스트 대학").build();
         when(universityRepository.getReferenceById(1L)).thenReturn(university);
 
-        EnrollmentPeriod savedPeriod = EnrollmentPeriod.builder()
-                .id(1L)
-                .university(university)
-                .grade(1)
-                .startDate(LocalDate.parse("2025-05-01"))
-                .endDate(LocalDate.parse("2025-05-10"))
-                .build();
+        EnrollmentPeriod savedPeriod =
+                EnrollmentPeriod.builder()
+                        .id(1L)
+                        .university(university)
+                        .grade(1)
+                        .startDate(LocalDate.parse("2025-05-01"))
+                        .endDate(LocalDate.parse("2025-05-10"))
+                        .build();
         when(courseRepository.save(any(EnrollmentPeriod.class))).thenReturn(savedPeriod);
 
         // when
@@ -118,9 +118,8 @@ public class AdminServiceTest {
     @DisplayName("수강신청 기간 등록 실패 - 시작일이 종료일보다 늦은 경우")
     void createEnrollmentPeriodFailTest() {
         // given
-        EnrollmentPeriodRequest request = new EnrollmentPeriodRequest(
-                1L, 1, "2025-05-10", "2025-05-01"
-        );
+        EnrollmentPeriodRequest request =
+                new EnrollmentPeriodRequest(1L, 1, "2025-05-10", "2025-05-01");
 
         // when & then
         assertThatThrownBy(() -> adminService.createEnrollmentPeriod(request))
@@ -133,21 +132,20 @@ public class AdminServiceTest {
     void updateEnrollmentPeriodTest() {
         // given
         Long periodId = 1L;
-        EnrollmentPeriodRequest request = new EnrollmentPeriodRequest(
-                2L, 2, "2025-06-01", "2025-06-10"
-        );
+        EnrollmentPeriodRequest request =
+                new EnrollmentPeriodRequest(2L, 2, "2025-06-01", "2025-06-10");
 
         University oldUniversity = University.builder().id(1L).name("이전 대학").build();
         University newUniversity = University.builder().id(2L).name("새 대학").build();
 
-        EnrollmentPeriod existingPeriod = EnrollmentPeriod.builder()
-                .id(periodId)
-                .university(oldUniversity)
-                .grade(1)
-                .startDate(LocalDate.parse("2025-05-01"))
-                .endDate(LocalDate.parse("2025-05-10"))
-                .build();
-
+        EnrollmentPeriod existingPeriod =
+                EnrollmentPeriod.builder()
+                        .id(periodId)
+                        .university(oldUniversity)
+                        .grade(1)
+                        .startDate(LocalDate.parse("2025-05-01"))
+                        .endDate(LocalDate.parse("2025-05-10"))
+                        .build();
 
         when(courseRepository.findById(periodId)).thenReturn(Optional.of(existingPeriod));
         when(universityRepository.getReferenceById(2L)).thenReturn(newUniversity);

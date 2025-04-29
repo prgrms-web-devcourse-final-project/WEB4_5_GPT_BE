@@ -8,6 +8,5 @@ public record EnrollmentPeriodSearchRequest(
         String startDateFrom,
         String startDateTo,
         String endDateFrom,
-        String endDateTo
-) {
+        String endDateTo) {
 }

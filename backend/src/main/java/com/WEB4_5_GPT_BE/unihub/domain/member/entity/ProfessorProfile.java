@@ -16,12 +16,13 @@ import lombok.*;
 @Table(name = "professor_profile")
 public class ProfessorProfile extends BaseTimeEntity {
 
-  @Id private Long id;
+    @Id
+    private Long id;
 
-  @MapsId
-  @OneToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "member_id")
-  private Member member;
+    @MapsId
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id")
+    private Member member;
 
     @Column(name = "employee_id", nullable = false, unique = true, length = 20)
     private String employeeId;

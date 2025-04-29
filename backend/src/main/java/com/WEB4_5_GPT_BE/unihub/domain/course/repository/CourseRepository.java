@@ -11,12 +11,13 @@ import java.time.LocalDate;
 
 public interface CourseRepository extends JpaRepository<EnrollmentPeriod, Long> {
 
-    @Query("SELECT e FROM EnrollmentPeriod e " +
-            "WHERE (:universityName IS NULL OR e.university.name = :universityName) " +
-            "AND (:startDateFrom IS NULL OR e.startDate >= :startDateFrom) " +
-            "AND (:startDateTo IS NULL OR e.startDate <= :startDateTo) " +
-            "AND (:endDateFrom IS NULL OR e.endDate >= :endDateFrom) " +
-            "AND (:endDateTo IS NULL OR e.endDate <= :endDateTo)")
+    @Query(
+            "SELECT e FROM EnrollmentPeriod e "
+                    + "WHERE (:universityName IS NULL OR e.university.name = :universityName) "
+                    + "AND (:startDateFrom IS NULL OR e.startDate >= :startDateFrom) "
+                    + "AND (:startDateTo IS NULL OR e.startDate <= :startDateTo) "
+                    + "AND (:endDateFrom IS NULL OR e.endDate >= :endDateFrom) "
+                    + "AND (:endDateTo IS NULL OR e.endDate <= :endDateTo)")
     Page<EnrollmentPeriod> findWithFilters(
             @Param("universityName") String universityName,
             @Param("startDateFrom") LocalDate startDateFrom,

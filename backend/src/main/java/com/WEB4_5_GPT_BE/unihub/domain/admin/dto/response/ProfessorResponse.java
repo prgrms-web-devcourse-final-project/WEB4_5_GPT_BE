@@ -13,6 +13,5 @@ public record ProfessorResponse(
         String memberName,
         String majorName,
         ApprovalStatus status,
-        LocalDateTime createdAt
-) {
+        LocalDateTime createdAt) {
 }

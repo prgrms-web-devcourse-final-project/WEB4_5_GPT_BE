@@ -37,44 +37,49 @@ public class AdminService {
      * 학생 회원 목록 조회
      */
     public Page<StudentResponse> getStudents(StudentSearchRequest searchRequest, Pageable pageable) {
-        Page<StudentProfile> students = studentProfileRepository.findStudentsWithFilters(
-                searchRequest.universityId(),
-                searchRequest.majorId(),
-                searchRequest.grade(),
-                searchRequest.semester(),
-                pageable
-        );
+        Page<StudentProfile> students =
+                studentProfileRepository.findStudentsWithFilters(
+                        searchRequest.universityId(),
+                        searchRequest.majorId(),
+                        searchRequest.grade(),
+                        searchRequest.semester(),
+                        pageable);
 
-        return students.map(profile -> new StudentResponse(
-                profile.getMember().getId(),
-                profile.getUniversity().getName(),
-                profile.getMember().getName(),
-                profile.getStudentCode(),
-                profile.getMajor().getName(),
-                profile.getGrade(),
-                profile.getSemester(),
-                profile.getMember().getCreatedAt()));
+        return students.map(
+                profile ->
+                        new StudentResponse(
+                                profile.getMember().getId(),
+                                profile.getUniversity().getName(),
+                                profile.getMember().getName(),
+                                profile.getStudentCode(),
+                                profile.getMajor().getName(),
+                                profile.getGrade(),
+                                profile.getSemester(),
+                                profile.getMember().getCreatedAt()));
     }
 
     /**
      * 교직원 등록 신청 조회
      */
-    public Page<ProfessorResponse> getProfessors(ProfessorSearchRequest searchRequest, Pageable pageable) {
-        Page<ProfessorProfile> professors = professorProfileRepository.findProfessorsWithFilters(
-                searchRequest.universityId(),
-                searchRequest.professorName(),
-                searchRequest.majorId(),
-                searchRequest.status(),
-                pageable
-        );
+    public Page<ProfessorResponse> getProfessors(
+            ProfessorSearchRequest searchRequest, Pageable pageable) {
+        Page<ProfessorProfile> professors =
+                professorProfileRepository.findProfessorsWithFilters(
+                        searchRequest.universityId(),
+                        searchRequest.professorName(),
+                        searchRequest.majorId(),
+                        searchRequest.status(),
+                        pageable);
 
-        return professors.map(profile -> new ProfessorResponse(
-                profile.getMember().getId(),
-                profile.getUniversity().getName(),
-                profile.getMember().getName(),
-                profile.getMajor().getName(),
-                profile.getApprovalStatus(),
-                profile.getMember().getCreatedAt()));
+        return professors.map(
+                profile ->
+                        new ProfessorResponse(
+                                profile.getMember().getId(),
+                                profile.getUniversity().getName(),
+                                profile.getMember().getName(),
+                                profile.getMajor().getName(),
+                                profile.getApprovalStatus(),
+                                profile.getMember().getCreatedAt()));
     }
 
     /**
@@ -83,8 +88,10 @@ public class AdminService {
     @Transactional
     public void changeProfessorStatus(Long memberId, ProfessorApprovalRequest request) {
 
-        ProfessorProfile professorProfile = professorProfileRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 교직원이 존재하지 않습니다."));
+        ProfessorProfile professorProfile =
+                professorProfileRepository
+                        .findById(memberId)
+                        .orElseThrow(() -> new IllegalArgumentException("해당 교직원이 존재하지 않습니다."));
 
         professorProfile.setApprovalStatus(request.approvalStatus());
     }
@@ -92,31 +99,36 @@ public class AdminService {
     /**
      * 수강신청 기간 조회
      */
-    public Page<EnrollmentPeriodResponse> getEnrollmentPeriods(EnrollmentPeriodSearchRequest searchRequest, Pageable pageable) {
-        LocalDate startDateFrom = searchRequest.startDateFrom() != null ?
-                LocalDate.parse(searchRequest.startDateFrom()) : null;
-        LocalDate startDateTo = searchRequest.startDateTo() != null ?
-                LocalDate.parse(searchRequest.startDateTo()) : null;
-        LocalDate endDateFrom = searchRequest.endDateFrom() != null ?
-                LocalDate.parse(searchRequest.endDateFrom()) : null;
-        LocalDate endDateTo = searchRequest.endDateTo() != null ?
-                LocalDate.parse(searchRequest.endDateTo()) : null;
+    public Page<EnrollmentPeriodResponse> getEnrollmentPeriods(
+            EnrollmentPeriodSearchRequest searchRequest, Pageable pageable) {
+        LocalDate startDateFrom =
+                searchRequest.startDateFrom() != null
+                        ? LocalDate.parse(searchRequest.startDateFrom())
+                        : null;
+        LocalDate startDateTo =
+                searchRequest.startDateTo() != null ? LocalDate.parse(searchRequest.startDateTo()) : null;
+        LocalDate endDateFrom =
+                searchRequest.endDateFrom() != null ? LocalDate.parse(searchRequest.endDateFrom()) : null;
+        LocalDate endDateTo =
+                searchRequest.endDateTo() != null ? LocalDate.parse(searchRequest.endDateTo()) : null;
 
-        Page<EnrollmentPeriod> periods = courseRepository.findWithFilters(
-                searchRequest.universityName(),
-                startDateFrom,
-                startDateTo,
-                endDateFrom,
-                endDateTo,
-                pageable
-        );
+        Page<EnrollmentPeriod> periods =
+                courseRepository.findWithFilters(
+                        searchRequest.universityName(),
+                        startDateFrom,
+                        startDateTo,
+                        endDateFrom,
+                        endDateTo,
+                        pageable);
 
-        return periods.map(period -> new EnrollmentPeriodResponse(
-                period.getId(),
-                period.getUniversity().getName(),
-                period.getGrade(),
-                period.getStartDate(),
-                period.getEndDate()));
+        return periods.map(
+                period ->
+                        new EnrollmentPeriodResponse(
+                                period.getId(),
+                                period.getUniversity().getName(),
+                                period.getGrade(),
+                                period.getStartDate(),
+                                period.getEndDate()));
     }
 
     /**
@@ -133,12 +145,13 @@ public class AdminService {
         }
 
         University university = universityRepository.getReferenceById(request.universityId());
-        EnrollmentPeriod enrollmentPeriod = EnrollmentPeriod.builder()
-                .university(university)
-                .grade(request.grade())
-                .startDate(startDate)
-                .endDate(endDate)
-                .build();
+        EnrollmentPeriod enrollmentPeriod =
+                EnrollmentPeriod.builder()
+                        .university(university)
+                        .grade(request.grade())
+                        .startDate(startDate)
+                        .endDate(endDate)
+                        .build();
 
         EnrollmentPeriod savedPeriod = courseRepository.save(enrollmentPeriod);
 
@@ -154,9 +167,12 @@ public class AdminService {
      * 수강신청 기간 수정
      */
     @Transactional
-    public EnrollmentPeriodResponse updateEnrollmentPeriod(Long periodId, EnrollmentPeriodRequest request) {
-        EnrollmentPeriod enrollmentPeriod = courseRepository.findById(periodId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 수강신청 기간이 존재하지 않습니다."));
+    public EnrollmentPeriodResponse updateEnrollmentPeriod(
+            Long periodId, EnrollmentPeriodRequest request) {
+        EnrollmentPeriod enrollmentPeriod =
+                courseRepository
+                        .findById(periodId)
+                        .orElseThrow(() -> new IllegalArgumentException("해당 수강신청 기간이 존재하지 않습니다."));
 
         // 시작일이 종료일보다 늦은 경우 에러 발생
         LocalDate startDate = LocalDate.parse(request.startDate());
@@ -194,7 +210,6 @@ public class AdminService {
         courseRepository.deleteById(periodId);
     }
 
-
     /**
      * 관리자 초대
      */
@@ -206,12 +221,13 @@ public class AdminService {
         }
 
         // 관리자 생성 및 초대 메일 발송 로직
-        Member admin = Member.builder()
-                .name(request.adminName())
-                .email(request.email())
-                .password("changeme")
-                .role(Role.ADMIN)
-                .build();
+        Member admin =
+                Member.builder()
+                        .name(request.adminName())
+                        .email(request.email())
+                        .password("changeme")
+                        .role(Role.ADMIN)
+                        .build();
 
         memberRepository.save(admin);
 

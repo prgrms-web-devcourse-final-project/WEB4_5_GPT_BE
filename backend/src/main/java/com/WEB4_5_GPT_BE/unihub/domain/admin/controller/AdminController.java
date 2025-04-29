@@ -30,7 +30,8 @@ public class AdminController {
             @RequestParam(required = false) Integer semester,
             @PageableDefault Pageable pageable) {
 
-        StudentSearchRequest searchRequest = new StudentSearchRequest(universityId, majorId, grade, semester);
+        StudentSearchRequest searchRequest =
+                new StudentSearchRequest(universityId, majorId, grade, semester);
         Page<StudentResponse> students = adminService.getStudents(searchRequest, pageable);
         return new RsData<>("200", "회원 목록 조회에 성공했습니다.", students);
     }
@@ -51,7 +52,8 @@ public class AdminController {
             approvalStatus = com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus.valueOf(status);
         }
 
-        ProfessorSearchRequest searchRequest = new ProfessorSearchRequest(universityId, professorName, majorId, approvalStatus);
+        ProfessorSearchRequest searchRequest =
+                new ProfessorSearchRequest(universityId, professorName, majorId, approvalStatus);
         Page<ProfessorResponse> professors = adminService.getProfessors(searchRequest, pageable);
         return new RsData<>("200", "교직원 등록 신청 조회가 완료되었습니다.", professors);
     }
@@ -61,8 +63,7 @@ public class AdminController {
      */
     @PatchMapping("/professors/{memberId}")
     public RsData<Void> changeProfessorStatus(
-            @PathVariable Long memberId,
-            @RequestBody ProfessorApprovalRequest request) {
+            @PathVariable Long memberId, @RequestBody ProfessorApprovalRequest request) {
         adminService.changeProfessorStatus(memberId, request);
         return new RsData<>("200", "교직원 상태가 변경되었습니다.");
     }
@@ -79,9 +80,11 @@ public class AdminController {
             @RequestParam(required = false) String endDateTo,
             @PageableDefault Pageable pageable) {
 
-        EnrollmentPeriodSearchRequest searchRequest = new EnrollmentPeriodSearchRequest(
-                universityName, startDateFrom, startDateTo, endDateFrom, endDateTo);
-        Page<EnrollmentPeriodResponse> periods = adminService.getEnrollmentPeriods(searchRequest, pageable);
+        EnrollmentPeriodSearchRequest searchRequest =
+                new EnrollmentPeriodSearchRequest(
+                        universityName, startDateFrom, startDateTo, endDateFrom, endDateTo);
+        Page<EnrollmentPeriodResponse> periods =
+                adminService.getEnrollmentPeriods(searchRequest, pageable);
         return new RsData<>("200", "수강신청 기간 조회가 완료되었습니다.", periods);
     }
 
@@ -100,8 +103,7 @@ public class AdminController {
      */
     @PutMapping("/enrollment-periods/{periodId}")
     public RsData<EnrollmentPeriodResponse> updateEnrollmentPeriod(
-            @PathVariable Long periodId,
-            @RequestBody EnrollmentPeriodRequest request) {
+            @PathVariable Long periodId, @RequestBody EnrollmentPeriodRequest request) {
         EnrollmentPeriodResponse period = adminService.updateEnrollmentPeriod(periodId, request);
         return new RsData<>("200", "수강신청 기간이 수정되었습니다.", period);
     }
@@ -110,19 +112,16 @@ public class AdminController {
      * 수강신청기간 관리 삭제
      */
     @DeleteMapping("/enrollment-periods/{periodId}")
-    public RsData<Void> deleteEnrollmentPeriod(
-            @PathVariable Long periodId) {
+    public RsData<Void> deleteEnrollmentPeriod(@PathVariable Long periodId) {
         adminService.deleteEnrollmentPeriod(periodId);
         return new RsData<>("200", "수강신청 기간이 삭제되었습니다.");
     }
-
 
     /**
      * 관리자 초대
      */
     @PostMapping("/invite")
-    public RsData<Void> inviteAdmin(
-            @RequestBody AdminInviteRequest request) {
+    public RsData<Void> inviteAdmin(@RequestBody AdminInviteRequest request) {
         adminService.inviteAdmin(request);
         return new RsData<>("201", "관리자 초대가 완료되었습니다.");
     }

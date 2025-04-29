@@ -13,6 +13,5 @@ public record StudentResponse(
         String majorName,
         Integer grade,
         Integer semester,
-        LocalDateTime createdAt
-) {
+        LocalDateTime createdAt) {
 }
