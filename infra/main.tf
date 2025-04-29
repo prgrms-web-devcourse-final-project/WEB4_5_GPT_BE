@@ -9,10 +9,16 @@ terraform {
 # AWS 설정 시작
 provider "aws" {
   region = var.region
+
+  default_tags {
+    tags = {
+      Team = "devcos5-team08"
+    }
+  }
 }
 
 resource "aws_vpc" "unihub_vpc_1" {
-  cidr_block = "10.0.0.0/16"
+  cidr_block = "10.8.0.0/16"
 
   enable_dns_support   = true
   enable_dns_hostnames = true
@@ -24,7 +30,7 @@ resource "aws_vpc" "unihub_vpc_1" {
 
 resource "aws_subnet" "unihub_subnet_1" {
   vpc_id                  = aws_vpc.unihub_vpc_1.id
-  cidr_block              = "10.0.1.0/24"
+  cidr_block              = "10.8.1.0/24"
   availability_zone       = "${var.region}b"
   map_public_ip_on_launch = true
 
@@ -250,13 +256,13 @@ resource "aws_instance" "unihub_ec2_1" {
 
   # 인스턴스에 태그 설정
   tags = {
-    Name = "${var.prefix}-ec2-1"
+    Name = "${var.prefix}-ec2-main"
   }
 
   # 루트 볼륨 설정
   root_block_device {
     volume_type = "gp3"
-    volume_size = 12 # 볼륨 크기를 12GB로 설정
+    volume_size = 25
   }
 
   user_data = <<-EOF

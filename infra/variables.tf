@@ -1,6 +1,6 @@
 variable "prefix" {
   description = "Prefix for all resources"
-  default     = "unihub"
+  default     = "team08"
 }
 
 variable "region" {
