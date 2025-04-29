@@ -2,28 +2,26 @@ name: deploy
 
 on:
   push:
+    branches:
+      - develop # TODO: 추후 main branch로 변경
+      - 옥정현/feat-11
     paths:
       - '.github/workflows/**'
       - 'backend/src/**'
       - 'backend/build.gradle'
       - 'backend/settings.gradle'
       - 'backend/Dockerfile'
-    branches:
-      - develop  # TODO: main 브랜치로 변경 필요
-
-env:
-  DOCKER_REGISTRY: ghcr.io
-  OWNER: gptplz
-  DOCKER_IMAGE_NAME: unihub_backend
 
 jobs:
-  build_and_push:
+  buildImageAndPush:
     name: 도커 이미지 빌드 및 푸시
     runs-on: ubuntu-latest
+    outputs:
+      owner_lc: ${{ steps.export_owner.outputs.owner_lc }}
+      image_name: ${{ steps.export_image.outputs.image_name }}
 
     steps:
       - uses: actions/checkout@v4
-
       - name: application-secret.yml 생성
         env:
           APPLICATION_SECRET: ${{ secrets.APPLICATION_SECRET }}
@@ -36,54 +34,64 @@ jobs:
       - name: 레지스트리 로그인
         uses: docker/login-action@v2
         with:
-          registry: ${{ env.DOCKER_REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 소유자 설정
+        id: export_owner
+        run: |
+          OWNER_LC="${GITHUB_REPOSITORY_OWNER,,}"
+          echo "owner_lc=$OWNER_LC" >> $GITHUB_OUTPUT
+
+      - name: image 이름 설정
+        id: export_image
+        run: echo "image_name=unihub_backend" >> $GITHUB_OUTPUT
 
       - name: 빌드 및 푸시
         uses: docker/build-push-action@v3
         with:
           context: backend
           push: true
-          cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/${{ env.OWNER }}/${{ env.DOCKER_IMAGE_NAME }}:cache
-          cache-to:   type=registry,ref=${{ env.DOCKER_REGISTRY }}/${{ env.OWNER }}/${{ env.DOCKER_IMAGE_NAME }}:cache,mode=max
+          cache-from: type=registry,ref=ghcr.io/${{ steps.export_owner.outputs.owner_lc }}/${{ steps.export_image.outputs.image_name }}:cache
+          cache-to: type=registry,ref=ghcr.io/${{ steps.export_owner.outputs.owner_lc }}/${{ steps.export_image.outputs.image_name }}:cache,mode=max
           tags: |
-            ${{ env.DOCKER_REGISTRY }}/${{ env.OWNER }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+            ghcr.io/${{ steps.export_owner.outputs.owner_lc }}/${{ steps.export_image.outputs.image_name }}:latest
 
   deploy:
     name: AWS SSM 배포
+    needs: [ buildImageAndPush ]
     runs-on: ubuntu-latest
-    needs: build_and_push
-
     steps:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-region:          ${{ secrets.AWS_REGION }}
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      - name: EC2 인스턴스 ID 조회
+      - name: EC2 인스턴스 ID 조회 (team08-ec2-main)
         id: get_instance_id
         run: |
-          INSTANCE_ID=$(aws ec2 describe-instances \
-            --filters "Name=tag:Name,Values=unihub-ec2-1" \
-                      "Name=instance-state-name,Values=running" \
-            --query "Reservations[].Instances[].InstanceId" \
-            --output text)
+          INSTANCE_ID=$(aws ec2 describe-instances --filters \
+          "Name=tag:Name,Values=team08-ec2-main" \
+          "Name=instance-state-name,Values=running" \
+          --query "Reservations[].Instances[].InstanceId" --output text)
           echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
 
       - name: AWS SSM Send-Command
         uses: peterkimzz/aws-ssm-send-command@master
+        id: ssm
         with:
-          aws-region:            ${{ secrets.AWS_REGION }}
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          instance-ids:          ${{ env.INSTANCE_ID }}
-          comment:               Deploy
+          instance-ids: ${{ env.INSTANCE_ID }}
+          working-directory: /
+          comment: Deploy
           command: |
-            docker pull ${{ env.DOCKER_REGISTRY }}/${{ env.OWNER }}/${{ env.DOCKER_IMAGE_NAME }}:latest && \
+            docker pull ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest && \
             docker stop unihubApp 2>/dev/null || true && \
             docker rm unihubApp   2>/dev/null || true && \
             docker run -d --name unihubApp --network common -p 8080:8080 \
-              ${{ env.DOCKER_REGISTRY }}/${{ env.OWNER }}/${{ env.DOCKER_IMAGE_NAME }}:latest && \
+            ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest && \
             docker rmi $(docker images -f "dangling=true" -q) || true
