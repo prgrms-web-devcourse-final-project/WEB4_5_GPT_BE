@@ -269,3 +269,14 @@ resource "aws_instance" "unihub_ec2_1" {
 ${local.ec2_user_data_base}
 EOF
 }
+
+# 2) 탄력적 IP 할당
+resource "aws_eip" "unihub_eip_1" {
+  domain   = "vpc"  # VPC에서 사용
+  instance = aws_instance.unihub_ec2_1.id
+  tags = {
+    Name = "${var.prefix}-eip"
+  }
+}
+
+
