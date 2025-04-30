@@ -10,6 +10,7 @@ import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -66,6 +67,19 @@ public class AuthServiceImpl implements AuthService {
                   recordLoginFailure(email);
                   return new UnihubException("401", "이메일 또는 비밀번호가 잘못되었습니다.");
                 });
+
+    // 탈퇴한 회원 로그인 시 처리
+    if (member.isDeleted()) {
+      if (member.getDeletedAt() != null &&
+              member.getDeletedAt().plusDays(30).isBefore(LocalDateTime.now())) {
+        memberRepository.delete(member); // 영구 삭제
+        throw new UnihubException("404", "30일이 지나 계정이 삭제되었습니다.");
+      }
+
+      // 탈퇴 후 30일 이내 로그인 시 복구 처리
+      member.setDeleted(false);
+      member.setDeletedAt(null);
+    }
 
     if (!passwordEncoder.matches(password, member.getPassword())) {
       recordLoginFailure(email);
