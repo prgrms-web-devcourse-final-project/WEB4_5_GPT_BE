@@ -14,9 +14,8 @@ public class HomeController {
     InetAddress localHost = InetAddress.getLocalHost();
     return """
           Welcome to the Unihub API!!
-          hostName:%s
           hostAddress:%s
           """
-        .formatted(localHost.getHostName(), localHost.getHostAddress());
+        .formatted(localHost.getHostAddress());
   }
 }
