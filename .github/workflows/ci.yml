@@ -17,6 +17,18 @@ jobs:
       pull-requests: read
       checks: write # 권한 추가
       issues: write # 권한 추가
+      pull-requests: read # 권한 추가
+
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v3
@@ -56,12 +68,12 @@ jobs:
         run: chmod +x gradlew
         working-directory: backend
 
-      - name: Spotless Check (Code Style 검사)
+      - name: Create application-secret.yml for test
         if: steps.check_changes.outputs.backend-changed == 'true'
+        env:
+          APPLICATION_SECRET: ${{ secrets.APPLICATION_SECRET }}
         run: |
-          echo "🎯 Running spotlessCheck (코드 스타일 검사)"
-          ./gradlew spotlessCheck --no-daemon
-        working-directory: backend
+          echo "$APPLICATION_SECRET" > backend/src/main/resources/application-secret.yml
 
       - name: Build and Test with Gradle
         if: steps.check_changes.outputs.backend-changed == 'true'

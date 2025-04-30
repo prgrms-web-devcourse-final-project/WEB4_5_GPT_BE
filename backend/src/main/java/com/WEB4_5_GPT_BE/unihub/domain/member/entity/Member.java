@@ -28,4 +28,18 @@ public class Member extends BaseTimeEntity {
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 20)
   private Role role;
+
+  @OneToOne(
+      mappedBy = "member",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.LAZY)
+  private StudentProfile studentProfile; // role == STUDENT일 때만 존재
+
+  @OneToOne(
+      mappedBy = "member",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.LAZY)
+  private ProfessorProfile professorProfile; // role == PROFESSOR일 때만 존재
 }
