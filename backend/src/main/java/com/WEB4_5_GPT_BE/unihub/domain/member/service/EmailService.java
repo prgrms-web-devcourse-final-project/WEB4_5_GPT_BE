@@ -1,12 +1,13 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 
-import java.time.Duration;
-import java.util.Random;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+
+import java.time.Duration;
+import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
@@ -25,7 +26,8 @@ public class EmailService {
 
     SimpleMailMessage message = new SimpleMailMessage();
     message.setTo(realEmailAddress);
-    message.setSubject("[UniHub] 이메일 인증 요청");
+    message.setFrom("UniHub <awsweb72@gmail.com>");
+    message.setSubject("[UniHub] 확인 코드 안내");
     message.setText(
         """
                 안녕하세요, UniHub입니다.
