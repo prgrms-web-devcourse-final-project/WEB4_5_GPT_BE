@@ -101,14 +101,14 @@ jobs:
             TIMEOUT=60
 
             # 현재 실행 중인 컨테이너 확인
-            if docker ps --format '{{.Names}}' | grep -q "app1_1"; then
-              CURRENT="app1_1"
-              NEXT="app1_2"
+            if docker ps --format '{{.Names}}' | grep -q "unihubApp1_1"; then
+              CURRENT="unihubApp1_1"
+              NEXT="unihubApp1_2"
               CURRENT_PORT=8080
               NEXT_PORT=8081
             else
-              CURRENT="app1_2"
-              NEXT="app1_1"
+              CURRENT="unihubApp1_2"
+              NEXT="unihubApp1_1"
               CURRENT_PORT=8081
               NEXT_PORT=8080
             fi
@@ -119,12 +119,11 @@ jobs:
             docker stop "$NEXT" 2>/dev/null
             docker rm "$NEXT" 2>/dev/null
             docker run -d \
-              --network $NETWORK \
-              --restart unless-stopped \
               --name "$NEXT" \
+              --restart unless-stopped \
+              --network $NETWORK \
               -p "$NEXT_PORT":8080 \
               "$IMAGE"
-            
             
             # 헬스체크 대기
             echo "Waiting for health check..."

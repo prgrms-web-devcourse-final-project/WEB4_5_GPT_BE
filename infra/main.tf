@@ -196,9 +196,9 @@ defaults
 
 frontend http_front
     bind *:80
-    acl host_app1 hdr_beg(host) -i api.un1hub.site
+    acl host_unihubApp1 hdr_beg(host) -i api.un1hub.site
 
-    use_backend http_back_1 if host_app1
+    use_backend http_back_1 if host_unihubApp1
 
 backend http_back_1
     balance roundrobin
@@ -207,17 +207,18 @@ backend http_back_1
     option redispatch
     http-response lua.retry_on_502_504
 
-    server app_server_1_1 app1_1:8080 check
-    server app_server_1_2 app1_2:8080 check
+    server unihubApp_server_1 unihubApp1_1:8080 check
+    server unihubApp_server_2 unihubApp1_2:8080 check
 " > /dockerProjects/ha_proxy_1/volumes/usr/local/etc/haproxy/haproxy.cfg
 
 docker run \
   -d \
+  --name ha_proxy_1 \
+  --restart unless-stopped \
   --network common \
   -p 8090:80 \
-  -v /dockerProjects/ha_proxy_1/volumes/usr/local/etc/haproxy:/usr/local/etc/haproxy \
   -e TZ=Asia/Seoul \
-  --name ha_proxy_1 \
+  -v /dockerProjects/ha_proxy_1/volumes/usr/local/etc/haproxy:/usr/local/etc/haproxy \
   haproxy
 
 # redis 설치
@@ -233,12 +234,12 @@ docker run -d \
 docker run -d \
   --name mysql_1 \
   --restart unless-stopped \
-  -v /dockerProjects/mysql_1/volumes/var/lib/mysql:/var/lib/mysql \
-  -v /dockerProjects/mysql_1/volumes/etc/mysql/conf.d:/etc/mysql/conf.d \
   --network common \
   -p 3306:3306 \
-  -e MYSQL_ROOT_PASSWORD=${var.password_1} \
   -e TZ=Asia/Seoul \
+  -v /dockerProjects/mysql_1/volumes/var/lib/mysql:/var/lib/mysql \
+  -v /dockerProjects/mysql_1/volumes/etc/mysql/conf.d:/etc/mysql/conf.d \
+  -e MYSQL_ROOT_PASSWORD=${var.password_1} \
   mysql:latest
 
 # MySQL 컨테이너가 준비될 때까지 대기
