@@ -81,6 +81,7 @@ jobs:
           "Name=instance-state-name,Values=running" \
           --query "Reservations[].Instances[].InstanceId" --output text)
           echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
+          echo $INSTANCE_ID
 
       - name: AWS SSM Send-Command
         uses: peterkimzz/aws-ssm-send-command@master
@@ -100,41 +101,30 @@ jobs:
             TIMEOUT=60
 
             # 현재 실행 중인 컨테이너 확인
-            if docker ps --format '{{.Names}}' | grep -q "unihubApp_1"; then
-              CURRENT="unihubApp_1"
-              NEXT="unihubApp_2"
+            if docker ps --format '{{.Names}}' | grep -q "app1_1"; then
+              CURRENT="app1_1"
+              NEXT="app1_2"
               CURRENT_PORT=8080
               NEXT_PORT=8081
             else
-              CURRENT="unihubApp_2"
-              NEXT="unihubApp_1"
+              CURRENT="app1_2"
+              NEXT="app1_1"
               CURRENT_PORT=8081
               NEXT_PORT=8080
             fi
-
+            
             # 다음 컨테이너 실행
             echo "Starting new container: $NEXT on port $NEXT_PORT..."
-            docker pull "$IMAGE" && \
-            docker stop "$NEXT" 2>/dev/null || true && \
-            docker rm "$NEXT" 2>/dev/null || true && \
+            docker pull "$IMAGE"
+            docker stop "$NEXT" 2>/dev/null
+            docker rm "$NEXT" 2>/dev/null
             docker run -d \
-              --name "$NEXT" \
-              --restart unless-stopped \
               --network $NETWORK \
+              --restart unless-stopped \
+              --name "$NEXT" \
               -p "$NEXT_PORT":8080 \
               "$IMAGE"
-
-            # HAProxy 컨테이너 재시작
-            docker rm -f ha_proxy_1 || true
-            docker run \
-            -d \
-            --name ha_proxy_1 \
-            --restart unless-stopped \
-            --network common \
-            -p 8090:80 \
-            -v /dockerProjects/ha_proxy_1/volumes/usr/local/etc/haproxy:/usr/local/etc/haproxy \
-            -e TZ=Asia/Seoul \
-            haproxy
+            
             
             # 헬스체크 대기
             echo "Waiting for health check..."
@@ -158,12 +148,12 @@ jobs:
               echo "⏳ Waiting for $NEXT to be UP..."
               sleep 5
             done
-
+            
             # 기존 컨테이너 중지 및 제거
             echo "Stopping old container: $CURRENT"
             docker stop "$CURRENT" 2>/dev/null
             docker rm "$CURRENT" 2>/dev/null
-
+            
             # dangling image 제거
             docker rmi $(docker images -f "dangling=true" -q) 2>/dev/null
 
