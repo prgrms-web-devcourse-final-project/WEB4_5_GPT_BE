@@ -17,6 +17,21 @@ on:
       - 'backend/Dockerfile'
 
 jobs:
+  # 이미지 생성 및 배포 전에 테스트를 수행
+  test:
+    name: 백엔드 테스트
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: 21
+          distribution: temurin
+      - name: Run backend tests
+        working-directory: backend
+        run: ./gradlew test
+
   buildImageAndPush:
     name: 도커 이미지 빌드 및 푸시
     runs-on: ubuntu-latest
