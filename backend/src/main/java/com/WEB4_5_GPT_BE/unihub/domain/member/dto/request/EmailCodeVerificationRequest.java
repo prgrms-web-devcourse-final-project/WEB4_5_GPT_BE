@@ -4,4 +4,4 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
 public record EmailCodeVerificationRequest(
-    @Email @NotBlank String email, @NotBlank String emailCode) {}
+    @NotBlank @Email(message = "이메일 형식이 잘못되었습니다.") String email, @NotBlank String emailCode) {}
