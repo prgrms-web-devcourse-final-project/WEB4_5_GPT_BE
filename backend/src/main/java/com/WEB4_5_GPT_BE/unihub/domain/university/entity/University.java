@@ -2,10 +2,9 @@ package com.WEB4_5_GPT_BE.unihub.domain.university.entity;
 
 import com.WEB4_5_GPT_BE.unihub.domain.common.entity.BaseTimeEntity;
 import jakarta.persistence.*;
-import lombok.*;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.*;
 
 @Getter
 @Setter
