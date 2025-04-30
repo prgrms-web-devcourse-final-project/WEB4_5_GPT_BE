@@ -34,6 +34,7 @@ jobs:
 
   buildImageAndPush:
     name: 도커 이미지 빌드 및 푸시
+    needs: [ test ]
     runs-on: ubuntu-latest
     outputs:
       owner_lc: ${{ steps.export_owner.outputs.owner_lc }}
