@@ -170,56 +170,56 @@ mkdir -p /dockerProjects/ha_proxy_1/volumes/usr/local/etc/haproxy/lua
 
 cat << 'EOF' > /dockerProjects/ha_proxy_1/volumes/usr/local/etc/haproxy/lua/retry_on_502_504.lua
 core.register_action("retry_on_502_504", { "http-res" }, function(txn)
-  local status = txn.sf:status()
-  if status == 502 or status == 504 then
-    txn:Done()
-  end
+ local status = txn.sf:status()
+ if status == 502 or status == 504 then
+   txn:Done()
+ end
 end)
 EOF
 
 ## 설정파일 생성
 echo -e "
 global
-    lua-load /usr/local/etc/haproxy/lua/retry_on_502_504.lua
+   lua-load /usr/local/etc/haproxy/lua/retry_on_502_504.lua
 
 resolvers docker
-    nameserver dns1 127.0.0.11:53
-    resolve_retries       3
-    timeout retry         1s
-    hold valid            10s
+   nameserver dns1 127.0.0.11:53
+   resolve_retries       3
+   timeout retry         1s
+   hold valid            10s
 
 defaults
-    mode http
-    timeout connect 5s
-    timeout client 60s
-    timeout server 60s
+   mode http
+   timeout connect 5s
+   timeout client 60s
+   timeout server 60s
 
 frontend http_front
-    bind *:80
-    acl host_unihubApp hdr_beg(host) -i api.glog.oa.gg
+   bind *:80
+   acl host_unihubApp hdr_beg(host) -i api.un1hub.site
 
-    use_backend http_back_1 if host_unihubApp
+   use_backend http_back_1 if host_unihubApp
 
 backend http_back_1
-    balance roundrobin
-    option httpchk GET /actuator/health
-    default-server inter 2s rise 1 fall 1 init-addr last,libc,none resolvers docker
-    option redispatch
-    http-response lua.retry_on_502_504
+   balance roundrobin
+   option httpchk GET /actuator/health
+   default-server inter 2s rise 1 fall 1 init-addr last,libc,none resolvers docker
+   option redispatch
+   http-response lua.retry_on_502_504
 
-    server app_server_1_1 unihubApp_1:8080 check
-    server app_server_1_2 unihubApp_2:8080 check
+   server app_server_1_1 unihubApp_1:8080 check
+   server app_server_1_2 unihubApp_2:8080 check
 " > /dockerProjects/ha_proxy_1/volumes/usr/local/etc/haproxy/haproxy.cfg
 
 docker run \
-  -d \
-  --network common \
-  --restart unless-stopped \
-  -p 8090:80 \
-  -v /dockerProjects/ha_proxy_1/volumes/usr/local/etc/haproxy:/usr/local/etc/haproxy \
-  -e TZ=Asia/Seoul \
-  --name ha_proxy_1 \
-  haproxy
+ -d \
+ --name ha_proxy_1 \
+ --restart unless-stopped \
+ --network common \
+ -p 8090:80 \
+ -v /dockerProjects/ha_proxy_1/volumes/usr/local/etc/haproxy:/usr/local/etc/haproxy \
+ -e TZ=Asia/Seoul \
+ haproxy
 
 # redis 설치
 docker run -d \
