@@ -214,6 +214,7 @@ backend http_back_1
 docker run \
   -d \
   --network common \
+  --restart unless-stopped \
   -p 8090:80 \
   -v /dockerProjects/ha_proxy_1/volumes/usr/local/etc/haproxy:/usr/local/etc/haproxy \
   -e TZ=Asia/Seoul \
