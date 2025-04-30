@@ -33,6 +33,11 @@ spring:
         use_sql_comments: true
         default_batch_fetch_size: 100
 
+  # TODO: 추후 제거 필요 (redis를 자동설정에서 제외)
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+
 logging:
   level:
     org.hibernate.SQL: DEBUG
