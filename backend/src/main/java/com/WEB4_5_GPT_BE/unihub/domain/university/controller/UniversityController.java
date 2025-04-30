@@ -6,9 +6,10 @@ import com.WEB4_5_GPT_BE.unihub.domain.university.dto.response.UniversityRespons
 import com.WEB4_5_GPT_BE.unihub.domain.university.service.UniversityService;
 import com.WEB4_5_GPT_BE.unihub.global.response.RsData;
 import jakarta.validation.Valid;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/universities")
@@ -24,7 +25,7 @@ public class UniversityController {
     return new RsData<>("200", "대학 목록 조회에 성공했습니다.", universities);
   }
 
-  /** 대학 상세 조회 */
+  /** 대학 단건 조회 */
   @GetMapping("/{universityId}")
   public RsData<UniversityResponse> getUniversity(@PathVariable Long universityId) {
     UniversityResponse university = universityService.getUniversity(universityId);
