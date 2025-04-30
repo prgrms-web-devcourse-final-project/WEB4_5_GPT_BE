@@ -7,7 +7,6 @@ import com.WEB4_5_GPT_BE.unihub.global.security.SecurityUser;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -16,6 +15,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
+
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -90,7 +91,7 @@ public class Rq {
 
   public void addCookie(String name, String value) {
     Cookie cookie = new Cookie(name, value);
-    cookie.setDomain("localhost");
+    //cookie.setDomain("localhost");
     cookie.setPath("/");
     cookie.setHttpOnly(true);
     cookie.setSecure(true);
@@ -101,7 +102,7 @@ public class Rq {
 
   public void removeCookie(String name) {
     Cookie cookie = new Cookie(name, null);
-    cookie.setDomain("localhost");
+    //cookie.setDomain("localhost");
     cookie.setPath("/");
     cookie.setHttpOnly(true);
     cookie.setSecure(true);
