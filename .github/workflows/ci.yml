@@ -10,10 +10,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  springboot-test:
+  backend-ci:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: read
+      checks: write # 권한 추가
+      issues: write # 권한 추가
 
     steps:
       - uses: actions/checkout@v3
@@ -70,10 +73,11 @@ jobs:
           SPRING_PROFILES_ACTIVE: test
 
       - name: Publish Unit Test Results
-        if: always()
+        if: steps.check_changes.outputs.backend-changed == 'true' || failure()
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           files: "backend/**/build/test-results/test/TEST-*.xml"
+          comment_mode: off
 
       - name: Skip backend tests (no changes)
         if: steps.check_changes.outputs.backend-changed == 'false'

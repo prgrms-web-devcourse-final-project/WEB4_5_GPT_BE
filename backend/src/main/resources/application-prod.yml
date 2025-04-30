@@ -1,0 +1,37 @@
+spring:
+  data:
+    redis:
+      host: redis_1
+      password: "${custom.prod.redis.password}"
+      port: 6379
+
+  datasource:
+    url: jdbc:mysql://mysql_1:3306/unihub
+    username: unihublocal
+    password: "${custom.prod.db.password}"
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      auto-commit: false
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: false
+        highlight_sql: false
+        use_sql_comments: false
+
+logging:
+  level:
+    com.example: INFO
+    org.hibernate.SQL: INFO
+    org.hibernate.orm.jdbc.bind: INFO
+    org.hibernate.orm.jdbc.extract: INFO
+    org.springframework.transaction.interceptor: INFO
+
+custom:
+  site:
+    domain: "${custom.prod.domain}"
+    backUrl: "${custom.prod.backUrl}"
+    frontUrl: "${custom.prod.frontUrl}"
