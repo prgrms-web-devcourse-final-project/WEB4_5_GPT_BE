@@ -6,10 +6,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record ProfessorSignUpRequest(
-    @Email @NotBlank String email,
-    @NotBlank String password,
-    @NotBlank String name,
-    @NotBlank String employeeId,
-    @NotNull Long universityId,
-    @NotNull Long majorId,
-    @NotNull Role role) {}
+    @NotBlank(message = "필수 입력 값이 누락되었습니다") @Email(message = "이메일 형식이 잘못되었습니다.") String email,
+    @NotBlank(message = "필수 입력 값이 누락되었습니다") String password,
+    @NotBlank(message = "필수 입력 값이 누락되었습니다") String name,
+    @NotBlank(message = "필수 입력 값이 누락되었습니다") String employeeId,
+    @NotNull(message = "필수 입력 값이 누락되었습니다") Long universityId,
+    @NotNull(message = "필수 입력 값이 누락되었습니다") Long majorId,
+    @NotNull(message = "필수 입력 값이 누락되었습니다") Role role) {}
