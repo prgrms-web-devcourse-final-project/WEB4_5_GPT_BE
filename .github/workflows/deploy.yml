@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-      - develop # TODO: 추후 main branch로 변경
-      - 옥정현/feat-11
     paths:
       - '.github/workflows/**'
       - 'backend/src/**'
