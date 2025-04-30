@@ -2,7 +2,6 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.4.5'
 	id 'io.spring.dependency-management' version '1.1.7'
-	id 'com.diffplug.spotless' version '6.25.0'
 }
 
 group = 'com.WEB4_5_GPT_BE'
@@ -25,30 +24,31 @@ repositories {
 }
 
 dependencies {
+	// JWT 라이브러리 (JJWT)
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    compileOnly 'org.projectlombok:lombok'
-    developmentOnly 'org.springframework.boot:spring-boot-devtools'
-    runtimeOnly 'com.h2database:h2'
-    annotationProcessor 'org.projectlombok:lombok'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.session:spring-session-data-redis'
     implementation 'org.springframework.session:spring-session-jdbc'
+    compileOnly 'org.projectlombok:lombok'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    runtimeOnly 'com.h2database:h2'
     runtimeOnly 'com.mysql:mysql-connector-j'
-    // implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.3.0' s3 사용 시 적용
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.springframework.security:spring-security-test'
 
+    // implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.3.0' // S3 사용 시 적용
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
-}
-
-spotless {
-	java {
-		googleJavaFormat('1.17.0')
-		target 'src/**/*.java'
-	}
 }
