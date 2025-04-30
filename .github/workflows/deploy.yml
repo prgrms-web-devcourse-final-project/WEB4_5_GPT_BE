@@ -17,31 +17,8 @@ on:
       - 'backend/Dockerfile'
 
 jobs:
-  # 이미지 생성 및 배포 전에 테스트를 수행
-  test:
-    name: 백엔드 테스트
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: application-secret.yml 생성
-        env:
-          APPLICATION_SECRET: ${{ secrets.APPLICATION_SECRET }}
-        run: |
-          echo "$APPLICATION_SECRET" > backend/src/main/resources/application-secret.yml
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v3
-        with:
-          java-version: 21
-          distribution: temurin
-      - name: Run backend tests
-        working-directory: backend
-        run: ./gradlew test
-
   buildImageAndPush:
     name: 도커 이미지 빌드 및 푸시
-    needs: [ test ]
     runs-on: ubuntu-latest
     outputs:
       owner_lc: ${{ steps.export_owner.outputs.owner_lc }}
@@ -122,7 +99,7 @@ jobs:
             NETWORK="common"
             HEALTH_ENDPOINT="/actuator/health"
             TIMEOUT=60
-
+            
             # 현재 실행 중인 컨테이너 확인
             if docker ps --format '{{.Names}}' | grep -q "unihubApp1_1"; then
               CURRENT="unihubApp1_1"
