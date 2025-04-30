@@ -6,7 +6,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface UniversityRepository extends JpaRepository<University, Long> {
-    
-    // 대학교 이름이 존재하는지 확인
-    boolean existsByName(String name);
+
+  // 대학교 이름이 존재하는지 확인
+  boolean existsByName(String name);
 }
