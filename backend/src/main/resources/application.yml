@@ -51,15 +51,14 @@ logging:
       fail-on-empty-beans: false
 
 custom:
-  appName: unihub
   dev:
     domain: localhost
     backUrl: "http://${custom.dev.domain}:${server.port}"
     frontUrl: "http://${custom.dev.domain}:3000"
   prod:
-    domain: sulee.site # TODO: 임시로 설정한 도메인 프로젝트 도메인으로 변경 필요
-    backUrl: "https://api.${custom.appName}.${custom.prod.domain}"
-    frontUrl: "https://www.${custom.appName}.${custom.prod.domain}"
+    domain: un1hub.site
+    backUrl: "https://api.${custom.prod.domain}"
+    frontUrl: "https://www.${custom.prod.domain}"
   site:
     domain: "${custom.dev.domain}"
     backUrl: "${custom.dev.backUrl}"
