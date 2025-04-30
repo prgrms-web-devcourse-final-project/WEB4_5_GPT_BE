@@ -114,13 +114,13 @@ jobs:
 
             # 다음 컨테이너 실행
             echo "Starting new container: $NEXT on port $NEXT_PORT..."
-            docker pull "$IMAGE"
-            docker stop "$NEXT" 2>/dev/null
-            docker rm "$NEXT" 2>/dev/null
+            docker pull "$IMAGE" && \
+            docker stop "$NEXT" 2>/dev/null || true && \
+            docker rm "$NEXT" 2>/dev/null || true && \
             docker run -d \
-              --network $NETWORK \
-              --restart unless-stopped \
               --name "$NEXT" \
+              --restart unless-stopped \
+              --network $NETWORK \
               -p "$NEXT_PORT":8080 \
               "$IMAGE"
 
