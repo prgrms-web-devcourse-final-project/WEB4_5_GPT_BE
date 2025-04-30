@@ -54,10 +54,3 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
-
-spotless {
-	java {
-		googleJavaFormat('1.17.0')
-		target 'src/**/*.java'
-	}
-}
