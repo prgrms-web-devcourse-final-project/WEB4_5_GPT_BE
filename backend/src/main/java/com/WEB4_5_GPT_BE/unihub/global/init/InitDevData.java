@@ -1,19 +1,19 @@
 package com.WEB4_5_GPT_BE.unihub.global.init;
 
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
-import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.MemberService;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.MajorRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.UniversityRepository;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +26,7 @@ public class InitDevData {
     private final MajorRepository majorRepository;
     private final MemberService memberService;
     private final MemberRepository memberRepository;
-    private final StudentProfileRepository studentProfileRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @PostConstruct
     @Transactional
@@ -46,26 +46,15 @@ public class InitDevData {
         ));
 
         // --- 교직원 계정 생성 ---
-        Member professor = Member.builder()
-                .email("professor@auni.ac.kr")
-                .password("password")
-                .name("김교수")
-                .role(Role.PROFESSOR)
-                .build();
-        memberRepository.save(professor);
-
-        professor.setProfessorProfile(ProfessorProfile.builder()
-                .id(professor.getId())
-                .member(professor)
-                .employeeId("EMP20250001")
-                .university(university)
-                .major(major)
-                .build());
+        memberService.signUpProfessor(new ProfessorSignUpRequest(
+                "professor@auni.ac.kr", "password", "김교수", "EMP20250001",
+                university.getId(), major.getId(), Role.PROFESSOR
+        ));
 
         // --- 관리자 계정 생성 ---
         Member admin = Member.builder()
                 .email("adminmaster@auni.ac.kr")
-                .password("adminPw")
+                .password(passwordEncoder.encode("adminPw")) // 암호화 필수
                 .name("최고관리자")
                 .role(Role.ADMIN)
                 .build();

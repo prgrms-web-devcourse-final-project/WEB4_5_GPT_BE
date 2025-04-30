@@ -10,6 +10,7 @@ public class SecurityConstants {
           "/api/members/email/code",
           "/api/members/email/verify",
           "/api/members/login",
+          "/api/members/login/admin",
           "/api/members/refresh",
           "/api/members/password-reset/confirm",
           "/swagger-ui/**",

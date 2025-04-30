@@ -1,9 +1,9 @@
 package com.WEB4_5_GPT_BE.unihub.global.init;
 
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.MemberService;
@@ -67,21 +67,10 @@ public class InitTestData {
             Role.STUDENT));
 
     // --- 교직원 생성 ---
-    Member professor = Member.builder()
-            .email("professor@auni.ac.kr")
-            .password("password") // 암호화 안 되어 있으면 추후 encode 필요
-            .name("김교수")
-            .role(Role.PROFESSOR)
-            .build();
-    memberRepository.save(professor);
-
-    professor.setProfessorProfile(ProfessorProfile.builder()
-            .id(professor.getId())  // @MapsId이므로 id는 member.id
-            .member(professor)
-            .employeeId("EMP20250001")
-            .university(university)
-            .major(major)
-            .build());
+    memberService.signUpProfessor(new ProfessorSignUpRequest(
+            "professor@auni.ac.kr", "password", "김교수", "EMP20250001",
+            university.getId(), major.getId(), Role.PROFESSOR
+    ));
 
     // --- 관리자 생성 ---
     Member admin = Member.builder()
