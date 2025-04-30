@@ -207,8 +207,8 @@ backend http_back_1
    option redispatch
    http-response lua.retry_on_502_504
 
-   server app_server_1_1 unihubApp_1:8080 check
-   server app_server_1_2 unihubApp_2:8080 check
+   server app_server_1 unihubApp_1:8080 check
+   server app_server_2 unihubApp_2:8080 check
 " > /dockerProjects/ha_proxy_1/volumes/usr/local/etc/haproxy/haproxy.cfg
 
 docker run \

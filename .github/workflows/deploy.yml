@@ -124,6 +124,18 @@ jobs:
               -p "$NEXT_PORT":8080 \
               "$IMAGE"
 
+            # HAProxy 컨테이너 재시작
+            docker rm -f ha_proxy_1 || true
+            docker run \
+            -d \
+            --name ha_proxy_1 \
+            --restart unless-stopped \
+            --network common \
+            -p 8090:80 \
+            -v /dockerProjects/ha_proxy_1/volumes/usr/local/etc/haproxy:/usr/local/etc/haproxy \
+            -e TZ=Asia/Seoul \
+            haproxy
+            
             # 헬스체크 대기
             echo "Waiting for health check..."
             START_TIME=$(date +%s)
