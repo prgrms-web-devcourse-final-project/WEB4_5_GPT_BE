@@ -74,6 +74,13 @@ jobs:
           ./gradlew spotlessCheck --no-daemon
         working-directory: backend
 
+      - name: Create application-secret.yml for test
+        if: steps.check_changes.outputs.backend-changed == 'true'
+        env:
+          APPLICATION_SECRET: ${{ secrets.APPLICATION_SECRET }}
+        run: |
+          echo "$APPLICATION_SECRET" > backend/src/main/resources/application-secret.yml
+
       - name: Build and Test with Gradle
         if: steps.check_changes.outputs.backend-changed == 'true'
         run: |
