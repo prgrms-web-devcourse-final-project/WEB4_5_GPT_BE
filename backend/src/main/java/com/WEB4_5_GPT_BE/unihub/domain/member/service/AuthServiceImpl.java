@@ -1,5 +1,6 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 
+import com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.AdminLoginRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.MemberLoginRequest;
@@ -66,6 +67,12 @@ public class AuthServiceImpl implements AuthService {
     if (!passwordEncoder.matches(password, member.getPassword())) {
       recordLoginFailure(email);
       throw new InvalidCredentialException();
+    }
+
+    if (member.getRole() == Role.PROFESSOR) {
+      if (member.getProfessorProfile() == null || member.getProfessorProfile().getApprovalStatus() != ApprovalStatus.APPROVED) {
+        throw new ProfessorNotApprovedException();
+      }
     }
 
     resetLoginFailure(email);

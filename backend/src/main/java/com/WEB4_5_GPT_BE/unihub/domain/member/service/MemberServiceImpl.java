@@ -1,5 +1,6 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 
+import com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.EmailCodeVerificationRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.PasswordResetConfirmationRequest;
@@ -97,6 +98,7 @@ public class MemberServiceImpl implements MemberService {
             .employeeId(request.employeeId())
             .university(university)
             .major(major)
+            .approvalStatus(ApprovalStatus.PENDING)
             .build();
 
     Member member =
