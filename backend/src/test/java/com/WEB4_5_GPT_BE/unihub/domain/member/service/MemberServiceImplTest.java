@@ -30,6 +30,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.*;
 import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
@@ -214,12 +216,13 @@ class MemberServiceImplTest {
 
     EmailCodeVerificationRequest request = new EmailCodeVerificationRequest(email, wrongCode);
 
-    when(emailService.verifyCode(email, wrongCode)).thenReturn(false);
+    doThrow(new UnihubException("400", "이메일 인증 코드가 잘못되었습니다."))
+            .when(emailService).verifyCode(email, wrongCode);
 
     // when / then
     assertThatThrownBy(() -> memberService.verifyEmailCode(request))
-        .isInstanceOf(UnihubException.class)
-        .hasMessageContaining("인증코드가 일치하지 않습니다.");
+            .isInstanceOf(UnihubException.class)
+            .hasMessageContaining("이메일 인증 코드가 잘못되었습니다.");
   }
 
   @DisplayName("비밀번호 재설정에 성공한다")

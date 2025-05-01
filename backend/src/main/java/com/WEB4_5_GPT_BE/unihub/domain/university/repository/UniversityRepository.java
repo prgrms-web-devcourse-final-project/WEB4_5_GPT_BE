@@ -5,6 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UniversityRepository extends JpaRepository<University, Long> {
 
-  // 필요 시: 이름으로 검색
-  boolean existsByName(String name);
+    // 필요 시: 이름으로 검색
+    boolean existsByName(String name);
 }

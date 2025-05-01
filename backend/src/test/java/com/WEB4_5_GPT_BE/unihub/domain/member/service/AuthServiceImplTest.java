@@ -1,19 +1,15 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
-
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.AdminLoginRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.MemberLoginRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.AdminLoginResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.MemberLoginResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.global.Rq;
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
 import jakarta.servlet.http.Cookie;
-import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +21,13 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceImplTest {
@@ -129,7 +132,7 @@ class AuthServiceImplTest {
     // given
     String email = "admin@example.com";
     String password = "adminPassword";
-    MemberLoginRequest request = new MemberLoginRequest(email, password);
+    AdminLoginRequest request = new AdminLoginRequest(email, password);
 
     Member adminMember =
         Member.builder()
@@ -145,7 +148,7 @@ class AuthServiceImplTest {
     when(authTokenService.genRefreshToken(adminMember.getId())).thenReturn("adminRefreshToken");
 
     // when
-    MemberLoginResponse response = authService.adminLogin(request);
+    AdminLoginResponse response = authService.adminLogin(request);
 
     // then
     verify(redisTemplate).delete("login:fail:" + email);
@@ -167,7 +170,7 @@ class AuthServiceImplTest {
     // given
     String email = "student@example.com";
     String password = "studentPassword";
-    MemberLoginRequest request = new MemberLoginRequest(email, password);
+    AdminLoginRequest request = new AdminLoginRequest(email, password);
 
     Member studentMember =
         Member.builder()

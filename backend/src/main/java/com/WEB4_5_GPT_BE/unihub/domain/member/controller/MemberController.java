@@ -3,6 +3,7 @@ package com.WEB4_5_GPT_BE.unihub.domain.member.controller;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.TokenMemberPayload;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.AdminLoginResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.MemberLoginResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageProfessorResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageStudentResponse;
@@ -64,6 +65,12 @@ public class MemberController {
   public RsData<MemberLoginResponse> login(@RequestBody @Valid MemberLoginRequest request) {
     MemberLoginResponse response = authService.login(request);
     return new RsData<>("200", "로그인에 성공했습니다.", response);
+  }
+
+  @PostMapping("/login/admin")
+  public RsData<AdminLoginResponse> adminLogin(@RequestBody @Valid AdminLoginRequest request) {
+    AdminLoginResponse response = authService.adminLogin(request);
+    return new RsData<>("200", "관리자 로그인 성공.", response);
   }
 
   @PostMapping("/logout")
