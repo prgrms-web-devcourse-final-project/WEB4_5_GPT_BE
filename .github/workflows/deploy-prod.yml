@@ -16,6 +16,9 @@ jobs:
   buildImageAndPush:
     name: 도커 이미지 빌드 및 푸시
     runs-on: ubuntu-latest
+    permissions:
+      contents: read        # 소스코드 읽기 권한
+      packages: write       # GHCR(패키지 레지스트리) 쓰기 권한
     outputs:
       owner_lc: ${{ steps.export_owner.outputs.owner_lc }}
       image_name: ${{ steps.export_image.outputs.image_name }}
