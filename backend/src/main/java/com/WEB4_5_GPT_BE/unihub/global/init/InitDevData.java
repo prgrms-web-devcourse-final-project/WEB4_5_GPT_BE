@@ -45,7 +45,7 @@ public class InitDevData {
         String studentEmail = "haneulkim@auni.ac.kr";
         emailService.markEmailAsVerified(studentEmail);
         memberService.signUpStudent(new StudentSignUpRequest(
-                studentEmail, "비밀번호", "김하늘", "20250001",
+                studentEmail, "studentPw", "김하늘", "20250001",
                 university.getId(), major.getId(), 1, 1, Role.STUDENT
         ));
 
