@@ -26,13 +26,15 @@ public class ProfessorProfile extends BaseTimeEntity {
   @Column(name = "employee_id", nullable = false, unique = true, length = 20)
   private String employeeId;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "university_id", nullable = false)
-  private University university;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "university_id", nullable = false)
+    private University university;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "major_id", nullable = false)
-  private Major major;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "major_id", nullable = false)
+    private Major major;
 
-  private ApprovalStatus approvalStatus;
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ApprovalStatus approvalStatus = ApprovalStatus.PENDING;
 }
