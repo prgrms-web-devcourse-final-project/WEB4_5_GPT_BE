@@ -1,11 +1,11 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.controller;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.*;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.MemberLoginRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.PasswordResetConfirmationRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.service.EmailService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
@@ -17,6 +17,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -26,9 +30,13 @@ public class MemberControllerTest {
 
   @Autowired private ObjectMapper objectMapper;
 
+  @Autowired private EmailService emailService;
+
   @Test
   @DisplayName("학생 회원가입 - 성공")
   void signUpStudent_success() throws Exception {
+    emailService.markEmailAsVerified("haneulkim@auni.ac.kr");
+
     StudentSignUpRequest request =
         new StudentSignUpRequest(
             "haneulkim@auni.ac.kr", "password", "김하늘", "20250001", 1L, 1L, 1, 1, Role.STUDENT);
@@ -46,6 +54,8 @@ public class MemberControllerTest {
   @Test
   @DisplayName("교직원 회원가입 - 성공")
   void signUpProfessor_success() throws Exception {
+    emailService.markEmailAsVerified("kim@auni.ac.kr");
+
     ProfessorSignUpRequest request =
         new ProfessorSignUpRequest(
             "kim@auni.ac.kr", "password", "김교수", "20250001", 1L, 1L, Role.PROFESSOR);

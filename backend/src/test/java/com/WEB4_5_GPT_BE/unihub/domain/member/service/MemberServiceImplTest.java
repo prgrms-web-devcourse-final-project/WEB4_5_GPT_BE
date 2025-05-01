@@ -55,6 +55,7 @@ class MemberServiceImplTest {
     University university = University.builder().id(1L).name("테스트대학").build();
     Major major = Major.builder().id(1L).name("컴퓨터공학과").university(university).build();
 
+    when(emailService.isAlreadyVerified(request.email())).thenReturn(true);
     when(memberRepository.existsByEmail(request.email())).thenReturn(false);
     when(studentProfileRepository.existsByStudentCodeAndUniversityId(
             request.studentCode(), request.universityId()))
@@ -70,20 +71,35 @@ class MemberServiceImplTest {
     verify(memberRepository, times(1)).save(any(Member.class));
   }
 
+  @DisplayName("이메일 인증이 안 되었을 때 회원가입에 실패한다")
+  @Test
+  void givenUnverifiedEmail_whenSignUpStudent_thenThrowUnihubException() {
+    // given
+    StudentSignUpRequest request = new StudentSignUpRequest(
+            "student@example.com", "password", "홍길동", "20240001", 1L, 1L, 1, 1, Role.STUDENT);
+
+    when(emailService.isAlreadyVerified(request.email())).thenReturn(false); // 인증 안 됨
+
+    // when / then
+    assertThatThrownBy(() -> memberService.signUpStudent(request))
+            .isInstanceOf(UnihubException.class)
+            .hasMessageContaining("이메일 인증을 완료해주세요.");
+  }
+
   @DisplayName("이메일이 중복되면 학생 회원가입에 실패한다")
   @Test
   void givenDuplicatedEmail_whenSignUpStudent_thenThrowUnihubException() {
     // given
-    StudentSignUpRequest request =
-        new StudentSignUpRequest(
+    StudentSignUpRequest request = new StudentSignUpRequest(
             "student@example.com", "password", "홍길동", "20240001", 1L, 1L, 1, 1, Role.STUDENT);
 
+    when(emailService.isAlreadyVerified(request.email())).thenReturn(true); // 인증 됨
     when(memberRepository.existsByEmail(request.email())).thenReturn(true);
 
     // when / then
     assertThatThrownBy(() -> memberService.signUpStudent(request))
-        .isInstanceOf(UnihubException.class)
-        .hasMessageContaining("이메일 또는 학번이 이미 등록되어 있습니다.");
+            .isInstanceOf(UnihubException.class)
+            .hasMessageContaining("이메일 또는 학번이 이미 등록되어 있습니다.");
   }
 
   @DisplayName("존재하지 않는 대학 ID로 학생 회원가입 시 실패한다")
@@ -134,6 +150,7 @@ class MemberServiceImplTest {
     University university = University.builder().id(1L).name("테스트대학").build();
     Major major = Major.builder().id(1L).name("소프트웨어학과").university(university).build();
 
+    when(emailService.isAlreadyVerified(request.email())).thenReturn(true);
     when(memberRepository.existsByEmail(request.email())).thenReturn(false);
     when(professorProfileRepository.existsByEmployeeIdAndUniversityId(
             request.employeeId(), request.universityId()))
@@ -149,20 +166,35 @@ class MemberServiceImplTest {
     verify(memberRepository, times(1)).save(any(Member.class));
   }
 
+  @DisplayName("이메일 인증이 안 되었으면 교직원 회원가입에 실패한다")
+  @Test
+  void givenUnverifiedEmail_whenSignUpProfessor_thenThrowUnihubException() {
+    // given
+    ProfessorSignUpRequest request = new ProfessorSignUpRequest(
+            "professor@example.com", "password", "김교수", "EMP20240001", 1L, 1L, Role.PROFESSOR);
+
+    when(emailService.isAlreadyVerified(request.email())).thenReturn(false); // 인증 안 됨
+
+    // when / then
+    assertThatThrownBy(() -> memberService.signUpProfessor(request))
+            .isInstanceOf(UnihubException.class)
+            .hasMessageContaining("이메일 인증을 완료해주세요.");
+  }
+
   @DisplayName("이메일이 중복되면 교직원 회원가입에 실패한다")
   @Test
   void givenDuplicatedEmail_whenSignUpProfessor_thenThrowUnihubException() {
     // given
-    ProfessorSignUpRequest request =
-        new ProfessorSignUpRequest(
+    ProfessorSignUpRequest request = new ProfessorSignUpRequest(
             "professor@example.com", "password", "김교수", "EMP20240001", 1L, 1L, Role.PROFESSOR);
 
-    when(memberRepository.existsByEmail(request.email())).thenReturn(true);
+    when(emailService.isAlreadyVerified(request.email())).thenReturn(true);  // ✅ 인증은 됨
+    when(memberRepository.existsByEmail(request.email())).thenReturn(true);  // ✅ 중복
 
     // when / then
     assertThatThrownBy(() -> memberService.signUpProfessor(request))
-        .isInstanceOf(UnihubException.class)
-        .hasMessageContaining("이메일 또는 사번이 이미 등록되어 있습니다.");
+            .isInstanceOf(UnihubException.class)
+            .hasMessageContaining("이메일 또는 사번이 이미 등록되어 있습니다.");
   }
 
   @Test

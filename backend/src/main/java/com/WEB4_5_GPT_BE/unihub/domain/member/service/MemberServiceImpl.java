@@ -40,6 +40,7 @@ public class MemberServiceImpl implements MemberService {
   public void signUpStudent(StudentSignUpRequest request) {
     University university = universityService.getUniversity(request.universityId());
     Major major = majorService.getMajor(request.universityId(), request.majorId());
+    validateEmailVerification(request.email());
 
     validateStudentSignUp(request);
 
@@ -66,6 +67,13 @@ public class MemberServiceImpl implements MemberService {
     memberRepository.save(member);
   }
 
+  private void validateEmailVerification(String email) {
+    if (!emailService.isAlreadyVerified(email)) {
+      throw new UnihubException("400", "이메일 인증을 완료해주세요.");
+    }
+  }
+
+
   private void validateStudentSignUp(StudentSignUpRequest request) {
     if (memberRepository.existsByEmail(request.email())) {
       throw new UnihubException("409", "이메일 또는 학번이 이미 등록되어 있습니다.");
@@ -81,7 +89,7 @@ public class MemberServiceImpl implements MemberService {
   public void signUpProfessor(ProfessorSignUpRequest request) {
     University university = universityService.getUniversity(request.universityId());
     Major major = majorService.getMajor(request.universityId(), request.majorId());
-
+    validateEmailVerification(request.email());
     validateProfessorSignUp(request);
 
     ProfessorProfile profile =
