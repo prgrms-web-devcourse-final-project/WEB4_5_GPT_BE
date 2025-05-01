@@ -1,11 +1,6 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.time.Duration;
+import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,6 +11,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+
+import java.time.Duration;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class EmailServiceTest {
@@ -67,10 +70,9 @@ public class EmailServiceTest {
 
     when(redisTemplate.opsForValue().get("email:verification:" + email)).thenReturn(savedCode);
 
-    // when
-    boolean result = emailService.verifyCode(email, wrongCode);
-
-    // then
-    assertThat(result).isFalse();
+    // when & then
+    assertThatThrownBy(() -> emailService.verifyCode(email, wrongCode))
+            .isInstanceOf(UnihubException.class)
+            .hasMessage("이메일 인증 코드가 잘못되었습니다.");
   }
 }
