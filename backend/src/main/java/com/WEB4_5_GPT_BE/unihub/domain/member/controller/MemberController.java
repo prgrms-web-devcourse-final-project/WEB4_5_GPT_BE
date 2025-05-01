@@ -31,7 +31,7 @@ public class MemberController {
   private final AuthService authService;
 
   @PostMapping("/signup/student")
-  public RsData<Empty> signUpStudent(@RequestBody @Valid StudentSignUpRequest request) {
+  public RsData<Empty> signUpStudent(@RequestBody @Valid StudentSignupRequest request) {
     memberService.signUpStudent(request);
     return new RsData<>("200", "학생 가입이 완료되었습니다.");
   }

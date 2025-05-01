@@ -3,7 +3,7 @@ package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.EmailCodeVerificationRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.PasswordResetConfirmationRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignupRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignupRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageProfessorResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageStudentResponse;
@@ -16,7 +16,7 @@ import java.util.Optional;
 
 public interface MemberService {
   // 학생 회원가입
-  void signUpStudent(StudentSignUpRequest request);
+  void signUpStudent(StudentSignupRequest request);
 
   // 교직원 회원가입
   void signUpProfessor(ProfessorSignupRequest request);

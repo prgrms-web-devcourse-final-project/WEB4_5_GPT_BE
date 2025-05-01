@@ -2,7 +2,7 @@ package com.WEB4_5_GPT_BE.unihub.global.init;
 
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignupRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignupRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.MemberService;
@@ -40,7 +40,7 @@ public class InitProdData {
                 Major.builder().name("소프트웨어전공").university(university).build());
 
         // --- 학생 계정 생성 ---
-        memberService.signUpStudent(new StudentSignUpRequest(
+        memberService.signUpStudent(new StudentSignupRequest(
                 "haneulkim@auni.ac.kr", "비밀번호", "김하늘", "20250001",
                 university.getId(), major.getId(), 1, 1, Role.STUDENT
         ));

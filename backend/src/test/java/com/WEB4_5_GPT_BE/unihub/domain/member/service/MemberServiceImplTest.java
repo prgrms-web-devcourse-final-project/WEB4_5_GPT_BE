@@ -4,7 +4,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.EmailCodeVerificationRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.PasswordResetConfirmationRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignupRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignupRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
@@ -56,8 +56,8 @@ class MemberServiceImplTest {
   @Test
   void givenValidStudentSignUpRequest_whenSignUpStudent_thenMemberSaved() {
     // given
-    StudentSignUpRequest request =
-        new StudentSignUpRequest(
+      StudentSignupRequest request =
+              new StudentSignupRequest(
             "student@example.com", "password", "홍길동", "20240001", 1L, 1L, 1, 1, Role.STUDENT);
 
     University university = University.builder().id(1L).name("테스트대학").build();
@@ -82,8 +82,8 @@ class MemberServiceImplTest {
   @Test
   void givenDuplicatedEmail_whenSignUpStudent_thenThrowUnihubException() {
     // given
-    StudentSignUpRequest request =
-        new StudentSignUpRequest(
+      StudentSignupRequest request =
+              new StudentSignupRequest(
             "student@example.com", "password", "홍길동", "20240001", 1L, 1L, 1, 1, Role.STUDENT);
 
     when(memberRepository.existsByEmail(request.email())).thenReturn(true);
@@ -98,8 +98,8 @@ class MemberServiceImplTest {
   @Test
   void givenInvalidUniversityId_whenSignUpStudent_thenThrowUnihubException() {
     // given
-    StudentSignUpRequest request =
-        new StudentSignUpRequest(
+      StudentSignupRequest request =
+              new StudentSignupRequest(
             "student@example.com", "password", "홍길동", "20240001", 9999L, 1L, 1, 1, Role.STUDENT);
 
     when(universityService.getUniversity(request.universityId()))
@@ -115,8 +115,8 @@ class MemberServiceImplTest {
   @Test
   void givenInvalidMajorId_whenSignUpStudent_thenThrowUnihubException() {
     // given
-    StudentSignUpRequest request =
-        new StudentSignUpRequest(
+      StudentSignupRequest request =
+              new StudentSignupRequest(
             "student@example.com", "password", "홍길동", "20240001", 1L, 9999L, 1, 1, Role.STUDENT);
 
     University university = University.builder().id(1L).name("테스트대학").build();

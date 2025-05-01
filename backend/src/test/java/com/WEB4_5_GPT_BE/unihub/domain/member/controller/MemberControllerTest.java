@@ -4,7 +4,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.MemberLoginRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.PasswordResetConfirmationRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignupRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignupRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
@@ -38,8 +38,8 @@ public class MemberControllerTest {
   @Test
   @DisplayName("학생 회원가입 - 성공")
   void signUpStudent_success() throws Exception {
-    StudentSignUpRequest request =
-        new StudentSignUpRequest(
+      StudentSignupRequest request =
+              new StudentSignupRequest(
             "haneulkim@auni.ac.kr", "password", "김하늘", "20250001", 1L, 1L, 1, 1, Role.STUDENT);
 
     mockMvc
