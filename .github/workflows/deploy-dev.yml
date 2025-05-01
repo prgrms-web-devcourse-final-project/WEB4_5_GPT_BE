@@ -17,19 +17,6 @@ jobs:
   buildImageAndPush:
     name: 도커 이미지 빌드 및 푸시
     runs-on: ubuntu-latest
-    permissions:
-      contents: read        # 소스코드 읽기 권한
-      packages: write       # GHCR(패키지 레지스트리) 쓰기 권한
-    services:
-      redis:
-        image: redis:7
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     outputs:
       owner_lc: ${{ steps.export_owner.outputs.owner_lc }}
       image_name: ${{ steps.export_image.outputs.image_name }}
