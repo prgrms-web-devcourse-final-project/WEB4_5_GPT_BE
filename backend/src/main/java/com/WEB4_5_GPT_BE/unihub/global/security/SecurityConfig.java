@@ -1,7 +1,5 @@
 package com.WEB4_5_GPT_BE.unihub.global.security;
 
-import static com.WEB4_5_GPT_BE.unihub.global.security.SecurityConstants.AUTH_WHITELIST;
-
 import com.WEB4_5_GPT_BE.unihub.global.response.RsData;
 import com.WEB4_5_GPT_BE.unihub.global.util.Ut;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +14,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.frameoptions.XFrameOptionsHeaderWriter;
+
+import static com.WEB4_5_GPT_BE.unihub.global.security.SecurityConstants.AUTH_WHITELIST;
 
 @Configuration
 @EnableWebSecurity
@@ -35,6 +35,8 @@ public class SecurityConfig {
         .authorizeHttpRequests(
             (authorizeHttpRequests) ->
                 authorizeHttpRequests
+                    .requestMatchers("/actuator/health")
+                    .permitAll()
                     .requestMatchers("/h2-console/**")
                     .permitAll()
                     .requestMatchers(AUTH_WHITELIST.toArray(String[]::new))
