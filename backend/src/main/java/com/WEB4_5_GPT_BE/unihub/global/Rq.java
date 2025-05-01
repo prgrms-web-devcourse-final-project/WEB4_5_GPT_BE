@@ -16,6 +16,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
 
+import java.time.Duration;
 import java.util.List;
 
 @Component
@@ -89,13 +90,14 @@ public class Rq {
     response.setHeader(name, value);
   }
 
-  public void addCookie(String name, String value) {
+  public void addCookie(String name, String value, Duration maxAge) {
     Cookie cookie = new Cookie(name, value);
     // cookie.setDomain("localhost");
     cookie.setPath("/");
     cookie.setHttpOnly(true);
     cookie.setSecure(true);
     cookie.setAttribute("SameSite", "None");
+    cookie.setMaxAge((int) maxAge.getSeconds());
 
     response.addCookie(cookie);
   }
