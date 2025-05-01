@@ -4,6 +4,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.university.dto.request.UniversityRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.university.dto.response.UniversityResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.UniversityRepository;
+import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -81,7 +82,7 @@ public class UniversityServiceTest {
 
         // when & then
         assertThatThrownBy(() -> universityService.getUniversity(universityId))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(UnihubException.class)
                 .hasMessageContaining("해당 대학이 존재하지 않습니다");
 
         verify(universityRepository, times(1)).findById(universityId);
@@ -158,7 +159,7 @@ public class UniversityServiceTest {
 
         // when & then
         assertThatThrownBy(() -> universityService.updateUniversity(universityId, request))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(UnihubException.class)
                 .hasMessageContaining("해당 대학이 존재하지 않습니다");
 
         verify(universityRepository, times(1)).findById(universityId);
@@ -213,7 +214,7 @@ public class UniversityServiceTest {
 
         // when & then
         assertThatThrownBy(() -> universityService.deleteUniversity(universityId))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(UnihubException.class)
                 .hasMessageContaining("해당 대학이 존재하지 않습니다");
 
         verify(universityRepository, times(1)).findById(universityId);
