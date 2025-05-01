@@ -1,6 +1,5 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.controller;
 
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.TokenMemberPayload;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.AdminLoginResponse;
@@ -38,7 +37,7 @@ public class MemberController {
   }
 
   @PostMapping("/signup/professor")
-  public RsData<Empty> signUpProfessor(@RequestBody @Valid ProfessorSignUpRequest request) {
+  public RsData<Empty> signUpProfessor(@RequestBody @Valid ProfessorSignupRequest request) {
     memberService.signUpProfessor(request);
     return new RsData<>("201", "교직원 가입 신청이 완료되었습니다. 관리자의 승인을 기다려 주세요.");
   }

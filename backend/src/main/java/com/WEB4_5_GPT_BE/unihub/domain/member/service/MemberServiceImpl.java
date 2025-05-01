@@ -3,7 +3,7 @@ package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.EmailCodeVerificationRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.PasswordResetConfirmationRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignupRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageProfessorResponse;
@@ -21,16 +21,14 @@ import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.service.MajorService;
 import com.WEB4_5_GPT_BE.unihub.domain.university.service.UniversityService;
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
-
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -88,7 +86,7 @@ public class MemberServiceImpl implements MemberService {
   }
 
   @Override
-  public void signUpProfessor(ProfessorSignUpRequest request) {
+  public void signUpProfessor(ProfessorSignupRequest request) {
     University university = universityService.getUniversity(request.universityId());
     Major major = majorService.getMajor(request.universityId(), request.majorId());
 
@@ -115,7 +113,7 @@ public class MemberServiceImpl implements MemberService {
     memberRepository.save(member);
   }
 
-  private void validateProfessorSignUp(ProfessorSignUpRequest request) {
+    private void validateProfessorSignUp(ProfessorSignupRequest request) {
     if (memberRepository.existsByEmail(request.email())) {
       throw new UnihubException("409", "이메일 또는 사번이 이미 등록되어 있습니다.");
     }

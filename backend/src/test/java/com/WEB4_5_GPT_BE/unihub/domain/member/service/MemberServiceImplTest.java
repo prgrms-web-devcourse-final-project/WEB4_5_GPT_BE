@@ -1,14 +1,9 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
-
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.EmailCodeVerificationRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.PasswordResetConfirmationRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignupRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
@@ -30,9 +25,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.*;
 import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class MemberServiceImplTest {
@@ -137,8 +135,8 @@ class MemberServiceImplTest {
   @Test
   void givenValidProfessorSignUpRequest_whenSignUpProfessor_thenMemberSaved() {
     // given
-    ProfessorSignUpRequest request =
-        new ProfessorSignUpRequest(
+      ProfessorSignupRequest request =
+              new ProfessorSignupRequest(
             "professor@example.com", "password", "김교수", "EMP20240001", 1L, 1L, Role.PROFESSOR);
 
     University university = University.builder().id(1L).name("테스트대학").build();
@@ -163,8 +161,8 @@ class MemberServiceImplTest {
   @Test
   void givenDuplicatedEmail_whenSignUpProfessor_thenThrowUnihubException() {
     // given
-    ProfessorSignUpRequest request =
-        new ProfessorSignUpRequest(
+      ProfessorSignupRequest request =
+              new ProfessorSignupRequest(
             "professor@example.com", "password", "김교수", "EMP20240001", 1L, 1L, Role.PROFESSOR);
 
     when(memberRepository.existsByEmail(request.email())).thenReturn(true);
