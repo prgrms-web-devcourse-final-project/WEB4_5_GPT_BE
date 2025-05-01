@@ -73,6 +73,7 @@ public class AuthServiceImpl implements AuthService {
 
           member.setDeleted(false);
           member.setDeletedAt(null);
+          memberRepository.save(member);
       }
 
     if (!passwordEncoder.matches(password, member.getPassword())) {

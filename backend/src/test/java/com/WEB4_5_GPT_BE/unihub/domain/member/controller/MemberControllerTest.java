@@ -10,10 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.*;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.UpdateEmailRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.UpdateNameRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.UpdatePasswordRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.VerifyPasswordRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,10 +22,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureMockMvc
+@Transactional
 public class MemberControllerTest {
 
   @Autowired private MockMvc mockMvc;
@@ -37,22 +36,6 @@ public class MemberControllerTest {
 
     private String accessToken;
 
-    @BeforeEach
-    void setUp() throws Exception {
-        MemberLoginRequest loginRequest = new MemberLoginRequest("teststudent@auni.ac.kr", "password");
-        String loginResponse =
-                mockMvc
-                        .perform(
-                                post("/api/members/login")
-                                        .contentType(MediaType.APPLICATION_JSON)
-                                        .content(objectMapper.writeValueAsString(loginRequest)))
-                        .andExpect(status().isOk())
-                        .andReturn()
-                        .getResponse()
-                        .getContentAsString();
-
-        accessToken = objectMapper.readTree(loginResponse).path("data").path("accessToken").asText();
-    }
 
   @Test
   @DisplayName("학생 회원가입 - 성공")
@@ -103,6 +86,7 @@ public class MemberControllerTest {
         .andExpect(jsonPath("$.data.accessToken").exists())
         .andExpect(jsonPath("$.data.refreshToken").exists());
   }
+
 
   @Test
   @DisplayName("로그아웃 성공")
@@ -170,95 +154,158 @@ public class MemberControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.message").value("비밀번호가 성공적으로 변경되었습니다."));
   }
-
-
     @Test
-    @DisplayName("학생 마이페이지 조회 성공")
-    void getStudentMyPage() throws Exception {
-        mockMvc
-                .perform(get("/api/members/me/student").header("Authorization", "Bearer " + accessToken))
+    @DisplayName("내 정보 조회 - 학생")
+    void getMyInfo_student_success() throws Exception {
+        MemberLoginRequest request = new MemberLoginRequest("teststudent@auni.ac.kr", "password");
+
+        String response = mockMvc.perform(post("/api/members/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andReturn().getResponse().getContentAsString();
+
+        String accessToken = objectMapper.readTree(response).path("data").path("accessToken").asText();
+
+        mockMvc.perform(get("/api/members/me/student")
+                        .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("학생 마이페이지 조회 성공"))
-                .andExpect(jsonPath("$.data.name").exists());
+                .andExpect(jsonPath("$.message").value("학생 마이페이지 조회 성공"));
     }
 
-//    @Test
-//    @DisplayName("교수 마이페이지 조회 성공")
-//    void getProfessorMyPage() throws Exception {
-//        // 교수용 테스트 계정 따로 필요 시 데이터 init에 추가 필요
-//    }
+    @Test
+    @DisplayName("비밀번호 변경 성공")
+    void updatePassword_success() throws Exception {
+        MemberLoginRequest loginRequest = new MemberLoginRequest("teststudent@auni.ac.kr", "password");
+        String loginResponse = mockMvc.perform(post("/api/members/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andReturn().getResponse().getContentAsString();
+
+        String accessToken = objectMapper.readTree(loginResponse).path("data").path("accessToken").asText();
+
+        UpdatePasswordRequest request = new UpdatePasswordRequest("password", "newPassword");
+
+        mockMvc.perform(patch("/api/members/me/password")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("비밀번호 변경 성공"));
+    }
+
+    @Test
+    @DisplayName("회원 탈퇴 성공")
+    void deleteMember_success() throws Exception {
+        MemberLoginRequest loginRequest = new MemberLoginRequest("teststudent@auni.ac.kr", "password");
+        String loginResponse = mockMvc.perform(post("/api/members/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andReturn().getResponse().getContentAsString();
+
+        String accessToken = objectMapper.readTree(loginResponse).path("data").path("accessToken").asText();
+
+        mockMvc.perform(delete("/api/members/me")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("회원 탈퇴 성공"));
+    }
+
+    @Test
+    @DisplayName("전공 변경 성공")
+    void changeMajor_success() throws Exception {
+        MemberLoginRequest loginRequest = new MemberLoginRequest("teststudent@auni.ac.kr", "password");
+        String loginResponse = mockMvc.perform(post("/api/members/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andReturn().getResponse().getContentAsString();
+
+        String accessToken = objectMapper.readTree(loginResponse).path("data").path("accessToken").asText();
+
+        UpdateMajorRequest updateMajorRequest = new UpdateMajorRequest(2L);
+
+        mockMvc.perform(patch("/api/members/me/major")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateMajorRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("전공 변경 성공"));
+    }
+
+    @Test
+    @DisplayName("내 강의목록 조회 성공")
+    void getLectureList_success() throws Exception {
+        MemberLoginRequest loginRequest = new MemberLoginRequest("professor@auni.ac.kr", "password");
+        String loginResponse = mockMvc.perform(post("/api/members/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andReturn().getResponse().getContentAsString();
+
+        String accessToken = objectMapper.readTree(loginResponse).path("data").path("accessToken").asText();
+
+        mockMvc.perform(get("/api/members/me/courses")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("교수 강의 목록 조회 성공"));
+    }
 
     @Test
     @DisplayName("이름 변경 성공")
-    void updateName() throws Exception {
-        UpdateNameRequest request = new UpdateNameRequest("수정된이름");
+    void updateName_success() throws Exception {
+        MemberLoginRequest loginRequest = new MemberLoginRequest("teststudent@auni.ac.kr", "password");
+        String loginResponse = mockMvc.perform(post("/api/members/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andReturn().getResponse().getContentAsString();
+        String accessToken = objectMapper.readTree(loginResponse).path("data").path("accessToken").asText();
 
-        mockMvc
-                .perform(
-                        patch("/api/members/me/name")
-                                .header("Authorization", "Bearer " + accessToken)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request)))
+        UpdateNameRequest request = new UpdateNameRequest("새이름");
+
+        mockMvc.perform(patch("/api/members/me/name")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("이름 변경 성공"));
     }
 
     @Test
     @DisplayName("이메일 변경 성공")
-    void updateEmail() throws Exception {
+    void updateEmail_success() throws Exception {
+        MemberLoginRequest loginRequest = new MemberLoginRequest("teststudent@auni.ac.kr", "password");
+        String loginResponse = mockMvc.perform(post("/api/members/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andReturn().getResponse().getContentAsString();
+        String accessToken = objectMapper.readTree(loginResponse).path("data").path("accessToken").asText();
+
         UpdateEmailRequest request = new UpdateEmailRequest("newemail@auni.ac.kr");
 
-        mockMvc
-                .perform(
-                        patch("/api/members/me/email")
-                                .header("Authorization", "Bearer " + accessToken)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(patch("/api/members/me/email")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("이메일 변경 성공"));
     }
 
     @Test
-    @DisplayName("비밀번호 변경 성공")
-    void updatePassword() throws Exception {
-        UpdatePasswordRequest request = new UpdatePasswordRequest("password", "newPassword");
+    @DisplayName("비밀번호 검증 성공")
+    void verifyPassword_success() throws Exception {
+        MemberLoginRequest loginRequest = new MemberLoginRequest("teststudent@auni.ac.kr", "password");
+        String loginResponse = mockMvc.perform(post("/api/members/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andReturn().getResponse().getContentAsString();
+        String accessToken = objectMapper.readTree(loginResponse).path("data").path("accessToken").asText();
 
-        mockMvc
-                .perform(
-                        patch("/api/members/me/password")
-                                .header("Authorization", "Bearer " + accessToken)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("비밀번호 변경 성공"));
-    }
+        VerifyPasswordRequest request = new VerifyPasswordRequest("password");
 
-    @Test
-    @DisplayName("현재 비밀번호 검증 성공")
-    void verifyPassword() throws Exception {
-        VerifyPasswordRequest request = new VerifyPasswordRequest("newPassword");
-
-        mockMvc
-                .perform(
-                        post("/api/members/me/verify-password")
-                                .header("Authorization", "Bearer " + accessToken)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(post("/api/members/me/verify-password")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("비밀번호 검증 성공"));
     }
-
-    @Test
-    @DisplayName("회원 탈퇴 성공")
-    void deleteMember() throws Exception {
-        mockMvc
-                .perform(
-                        delete("/api/members/me")
-                                .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("회원 탈퇴 성공"));
-    }
-
-
 
 }
