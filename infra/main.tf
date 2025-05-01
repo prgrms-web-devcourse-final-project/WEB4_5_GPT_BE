@@ -164,6 +164,63 @@ docker run -d \
   -v /dockerProjects/npm_1/volumes/etc/letsencrypt:/etc/letsencrypt \
   jc21/nginx-proxy-manager:latest
 
+# ha proxy 설치
+## 설정파일을 위한 디렉토리 생성
+mkdir -p /dockerProjects/ha_proxy_1/volumes/usr/local/etc/haproxy/lua
+
+cat << 'EOF' > /dockerProjects/ha_proxy_1/volumes/usr/local/etc/haproxy/lua/retry_on_502_504.lua
+core.register_action("retry_on_502_504", { "http-res" }, function(txn)
+  local status = txn.sf:status()
+  if status == 502 or status == 504 then
+    txn:Done()
+  end
+end)
+EOF
+
+## 설정파일 생성
+echo -e "
+global
+    lua-load /usr/local/etc/haproxy/lua/retry_on_502_504.lua
+
+resolvers docker
+    nameserver dns1 127.0.0.11:53
+    resolve_retries       3
+    timeout retry         1s
+    hold valid            10s
+
+defaults
+   mode http
+   timeout connect 5s
+   timeout client 60s
+   timeout server 60s
+
+frontend http_front
+    bind *:80
+    acl host_unihubApp1 hdr_beg(host) -i api.un1hub.site
+
+    use_backend http_back_1 if host_unihubApp1
+
+backend http_back_1
+    balance roundrobin
+    option httpchk GET /actuator/health
+    default-server inter 4s rise 3 fall 3 init-addr last,libc,none resolvers docker
+    option redispatch
+    http-response lua.retry_on_502_504
+
+    server unihubApp_server_1 unihubApp1_1:8080 check
+    server unihubApp_server_2 unihubApp1_2:8080 check
+" > /dockerProjects/ha_proxy_1/volumes/usr/local/etc/haproxy/haproxy.cfg
+
+docker run \
+  -d \
+  --name ha_proxy_1 \
+  --restart unless-stopped \
+  --network common \
+  -p 8090:80 \
+  -e TZ=Asia/Seoul \
+  -v /dockerProjects/ha_proxy_1/volumes/usr/local/etc/haproxy:/usr/local/etc/haproxy \
+  haproxy
+
 # redis 설치
 docker run -d \
   --name=redis_1 \
@@ -177,12 +234,12 @@ docker run -d \
 docker run -d \
   --name mysql_1 \
   --restart unless-stopped \
-  -v /dockerProjects/mysql_1/volumes/var/lib/mysql:/var/lib/mysql \
-  -v /dockerProjects/mysql_1/volumes/etc/mysql/conf.d:/etc/mysql/conf.d \
   --network common \
   -p 3306:3306 \
-  -e MYSQL_ROOT_PASSWORD=${var.password_1} \
   -e TZ=Asia/Seoul \
+  -v /dockerProjects/mysql_1/volumes/var/lib/mysql:/var/lib/mysql \
+  -v /dockerProjects/mysql_1/volumes/etc/mysql/conf.d:/etc/mysql/conf.d \
+  -e MYSQL_ROOT_PASSWORD=${var.password_1} \
   mysql:latest
 
 # MySQL 컨테이너가 준비될 때까지 대기
@@ -206,7 +263,6 @@ CREATE DATABASE unihub;
 
 FLUSH PRIVILEGES;
 "
-
 echo "${var.github_access_token_1}" | docker login ghcr.io -u ${var.github_access_token_1_owner} --password-stdin
 
 END_OF_FILE
