@@ -9,6 +9,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorProfileRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.university.dto.response.UniversityResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.service.MajorService;
@@ -56,11 +57,11 @@ class MemberServiceImplTest {
     Major major = Major.builder().id(1L).name("컴퓨터공학과").university(university).build();
 
     when(memberRepository.existsByEmail(request.email())).thenReturn(false);
-    when(studentProfileRepository.existsByStudentCodeAndUniversityId(
-            request.studentCode(), request.universityId()))
-        .thenReturn(false);
-    when(universityService.getUniversity(request.universityId())).thenReturn(university);
-    when(majorService.getMajor(request.universityId(), request.majorId())).thenReturn(major);
+      when(studentProfileRepository.existsByStudentCodeAndUniversityId(
+              request.studentCode(), request.universityId()))
+              .thenReturn(false);
+      when(universityService.getUniversity(request.universityId())).thenReturn(UniversityResponse.from(university));
+      when(majorService.getMajor(request.universityId(), request.majorId())).thenReturn(major);
     when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
 
     // when
@@ -113,9 +114,9 @@ class MemberServiceImplTest {
 
     University university = University.builder().id(1L).name("테스트대학").build();
 
-    when(universityService.getUniversity(request.universityId())).thenReturn(university);
-    when(majorService.getMajor(request.universityId(), request.majorId()))
-        .thenThrow(new UnihubException("404", "존재하지 않는 전공입니다."));
+      when(universityService.getUniversity(request.universityId())).thenReturn(UniversityResponse.from(university));
+      when(majorService.getMajor(request.universityId(), request.majorId()))
+              .thenThrow(new UnihubException("404", "존재하지 않는 전공입니다."));
 
     // when / then
     assertThatThrownBy(() -> memberService.signUpStudent(request))
@@ -135,11 +136,11 @@ class MemberServiceImplTest {
     Major major = Major.builder().id(1L).name("소프트웨어학과").university(university).build();
 
     when(memberRepository.existsByEmail(request.email())).thenReturn(false);
-    when(professorProfileRepository.existsByEmployeeIdAndUniversityId(
-            request.employeeId(), request.universityId()))
-        .thenReturn(false);
-    when(universityService.getUniversity(request.universityId())).thenReturn(university);
-    when(majorService.getMajor(request.universityId(), request.majorId())).thenReturn(major);
+      when(professorProfileRepository.existsByEmployeeIdAndUniversityId(
+              request.employeeId(), request.universityId()))
+              .thenReturn(false);
+      when(universityService.getUniversity(request.universityId())).thenReturn(UniversityResponse.from(university));
+      when(majorService.getMajor(request.universityId(), request.majorId())).thenReturn(major);
     when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
 
     // when
