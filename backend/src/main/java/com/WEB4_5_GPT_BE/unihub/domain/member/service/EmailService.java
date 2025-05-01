@@ -1,5 +1,6 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 
+import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
@@ -55,7 +56,16 @@ public class EmailService {
   }
 
   public boolean verifyCode(String email, String inputCode) {
-    String savedCode = redisTemplate.opsForValue().get(buildVerificationKey(email));
+    String savedCode = redisTemplate.opsForValue().get(buildVerificationKey(email)); // nullable: Redis 미존재 시 null
+
+    if (savedCode == null) {
+      throw new UnihubException("400", "이메일 인증 코드가 만료되었습니다.");
+    }
+
+    if (!savedCode.equals(inputCode)) {
+      throw new UnihubException("400", "이메일 인증 코드가 잘못되었습니다.");
+    }
+
     return savedCode.equals(inputCode);
   }
 
