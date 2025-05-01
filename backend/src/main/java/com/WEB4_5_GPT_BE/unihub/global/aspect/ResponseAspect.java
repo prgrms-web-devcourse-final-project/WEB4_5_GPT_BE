@@ -17,27 +17,27 @@ public class ResponseAspect {
 
   @Around(
       """
-              (
-                  within
-                  (
-                      @org.springframework.web.bind.annotation.RestController *
-                  )
-                  &&
-                  (
-                      @annotation(org.springframework.web.bind.annotation.GetMapping)
-                      ||
-                      @annotation(org.springframework.web.bind.annotation.PostMapping)
-                      ||
-                      @annotation(org.springframework.web.bind.annotation.PutMapping)
-                      ||
-                      @annotation(org.springframework.web.bind.annotation.DeleteMapping)
-                      ||
-                      @annotation(org.springframework.web.bind.annotation.PatchMapping)
-                  )
-              )
-              ||
-              @annotation(org.springframework.web.bind.annotation.ResponseBody)
-              """)
+            (
+                within
+                (
+                    @org.springframework.web.bind.annotation.RestController *
+                )
+                &&
+                (
+                    @annotation(org.springframework.web.bind.annotation.GetMapping)
+                    ||
+                    @annotation(org.springframework.web.bind.annotation.PostMapping)
+                    ||
+                    @annotation(org.springframework.web.bind.annotation.PutMapping)
+                    ||
+                    @annotation(org.springframework.web.bind.annotation.DeleteMapping)
+                    ||
+                    @annotation(org.springframework.web.bind.annotation.PatchMapping)
+                )
+            )
+            ||
+            @annotation(org.springframework.web.bind.annotation.ResponseBody)
+            """)
   public Object responseAspect(ProceedingJoinPoint joinPoint) throws Throwable {
     Object result = joinPoint.proceed();
 
