@@ -99,7 +99,6 @@ public class AuthServiceImpl implements AuthService {
     String refreshToken = authTokenService.genRefreshToken(member.getId());
     saveRefreshToken(member.getId(), refreshToken);
     rq.addCookie("refreshToken", refreshToken, REFRESH_TOKEN_DURATION);
-
     return new MemberLoginResponse(accessToken, refreshToken);
   }
 
