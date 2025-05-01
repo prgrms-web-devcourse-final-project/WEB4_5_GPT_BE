@@ -6,6 +6,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.member.service.EmailService;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.MemberService;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
@@ -27,6 +28,7 @@ public class InitTestData {
   private final MemberService memberService;
   private final MemberRepository memberRepository;
   private final StudentProfileRepository studentProfileRepository;
+  private final EmailService emailService;
 
   @PostConstruct
   @Transactional
@@ -42,37 +44,28 @@ public class InitTestData {
     Major major = Major.builder().name("소프트웨어전공").university(university).build();
     majorRepository.save(major);
 
-    memberService.signUpStudent(
-        new StudentSignUpRequest(
-            "teststudent@auni.ac.kr",
-            "password",
-            "테스트학생",
-            "20250002",
-            university.getId(),
-            major.getId(),
-            1,
-            1,
-            Role.STUDENT));
+    // 학생 1 생성
+    String studentEmail1 = "teststudent@auni.ac.kr";
+    emailService.markEmailAsVerified(studentEmail1);
+    memberService.signUpStudent(new StudentSignUpRequest(
+            studentEmail1, "password", "테스트학생", "20250002",
+            university.getId(), major.getId(), 1, 1, Role.STUDENT));
 
-    memberService.signUpStudent(
-        new StudentSignUpRequest(
-            "teststudent2@auni.ac.kr",
-            "password",
-            "테스트학생2",
-            "20250003",
-            university.getId(),
-            major.getId(),
-            1,
-            1,
-            Role.STUDENT));
+    // 학생 2 생성
+    String studentEmail2 = "teststudent2@auni.ac.kr";
+    emailService.markEmailAsVerified(studentEmail2);
+    memberService.signUpStudent(new StudentSignUpRequest(
+            studentEmail2, "password", "테스트학생2", "20250003",
+            university.getId(), major.getId(), 1, 1, Role.STUDENT));
 
-    // --- 교직원 생성 ---
+    // 교직원 생성
+    String professorEmail = "professor@auni.ac.kr";
+    emailService.markEmailAsVerified(professorEmail);
     memberService.signUpProfessor(new ProfessorSignUpRequest(
-            "professor@auni.ac.kr", "password", "김교수", "EMP20250001",
-            university.getId(), major.getId(), Role.PROFESSOR
-    ));
+            professorEmail, "password", "김교수", "EMP20250001",
+            university.getId(), major.getId(), Role.PROFESSOR));
 
-    // --- 관리자 생성 ---
+    // 관리자 생성 ---
     Member admin = Member.builder()
             .email("adminmaster@auni.ac.kr")
             .password("adminPw") // 암호화 안 되어 있으면 추후 encode 필요

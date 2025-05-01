@@ -5,6 +5,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.member.service.EmailService;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.MemberService;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
@@ -27,6 +28,7 @@ public class InitDevData {
     private final MemberService memberService;
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     @PostConstruct
     @Transactional
@@ -40,14 +42,18 @@ public class InitDevData {
                 Major.builder().name("소프트웨어전공").university(university).build());
 
         // --- 학생 계정 생성 ---
+        String studentEmail = "haneulkim@auni.ac.kr";
+        emailService.markEmailAsVerified(studentEmail);
         memberService.signUpStudent(new StudentSignUpRequest(
-                "haneulkim@auni.ac.kr", "비밀번호", "김하늘", "20250001",
+                studentEmail, "비밀번호", "김하늘", "20250001",
                 university.getId(), major.getId(), 1, 1, Role.STUDENT
         ));
 
         // --- 교직원 계정 생성 ---
+        String professorEmail = "professor@auni.ac.kr";
+        emailService.markEmailAsVerified(professorEmail);
         memberService.signUpProfessor(new ProfessorSignUpRequest(
-                "professor@auni.ac.kr", "password", "김교수", "EMP20250001",
+                professorEmail, "password", "김교수", "EMP20250001",
                 university.getId(), major.getId(), Role.PROFESSOR
         ));
 
