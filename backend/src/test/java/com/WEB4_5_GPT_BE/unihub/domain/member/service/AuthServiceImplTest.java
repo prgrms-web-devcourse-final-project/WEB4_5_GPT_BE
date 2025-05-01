@@ -226,6 +226,35 @@ class AuthServiceImplTest {
   }
 
   @Test
+  @DisplayName("승인되지 않은 교직원 계정은 로그인할 수 없다")
+  void givenUnapprovedProfessor_whenLogin_thenThrowApprovalException() {
+    // given
+    String email = "pending@auni.ac.kr";
+    String password = "password";
+    MemberLoginRequest request = new MemberLoginRequest(email, password);
+
+    Member pendingProfessor = Member.builder()
+            .email(email)
+            .password("encodedPassword")
+            .role(Role.PROFESSOR)
+            .professorProfile(
+                    com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile.builder()
+                            .approvalStatus(com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus.PENDING)
+                            .build()
+            )
+            .build();
+
+    when(redisTemplate.opsForValue().get("login:fail:" + email)).thenReturn("0");
+    when(memberRepository.findByEmail(email)).thenReturn(Optional.of(pendingProfessor));
+    when(passwordEncoder.matches(password, pendingProfessor.getPassword())).thenReturn(true);
+
+    // when / then
+    assertThatThrownBy(() -> authService.login(request))
+            .isInstanceOf(UnihubException.class)
+            .hasMessageContaining("아직 승인이 완료되지 않은 교직원 계정입니다.");
+  }
+
+  @Test
   @DisplayName("AccessToken이 유효하지 않으면 유효하지 않은 형식 예외를 발생시킨다")
   void givenInvalidAccessToken_whenLogout_thenThrowInvalidTokenException() {
     // given

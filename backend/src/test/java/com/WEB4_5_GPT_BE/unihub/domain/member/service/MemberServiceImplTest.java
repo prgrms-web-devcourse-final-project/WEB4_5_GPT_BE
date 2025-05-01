@@ -17,11 +17,13 @@ import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
@@ -164,6 +166,39 @@ class MemberServiceImplTest {
 
     // then
     verify(memberRepository, times(1)).save(any(Member.class));
+  }
+
+  @DisplayName("교직원 회원가입 시 approvalStatus는 기본값으로 PENDING이다")
+  @Test
+  void givenValidProfessorSignUpRequest_whenSignUpProfessor_thenApprovalStatusIsPending() {
+    // given
+    ProfessorSignUpRequest request =
+            new ProfessorSignUpRequest(
+                    "professor@example.com", "password", "김교수", "EMP20240001", 1L, 1L, Role.PROFESSOR);
+
+    University university = University.builder().id(1L).name("테스트대학").build();
+    Major major = Major.builder().id(1L).name("소프트웨어학과").university(university).build();
+
+    when(emailService.isAlreadyVerified(request.email())).thenReturn(true);
+    when(memberRepository.existsByEmail(request.email())).thenReturn(false);
+    when(professorProfileRepository.existsByEmployeeIdAndUniversityId(
+            request.employeeId(), request.universityId())).thenReturn(false);
+    when(universityService.getUniversity(request.universityId())).thenReturn(university);
+    when(majorService.getMajor(request.universityId(), request.majorId())).thenReturn(major);
+    when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
+
+    // 캡처용 ArgumentCaptor 추가
+    ArgumentCaptor<Member> captor = ArgumentCaptor.forClass(Member.class);
+
+    // when
+    memberService.signUpProfessor(request);
+
+    // then
+    verify(memberRepository).save(captor.capture());
+    Member saved = captor.getValue();
+
+    assertThat(saved.getProfessorProfile().getApprovalStatus())
+            .isEqualTo(com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus.PENDING);
   }
 
   @DisplayName("이메일 인증이 안 되었으면 교직원 회원가입에 실패한다")

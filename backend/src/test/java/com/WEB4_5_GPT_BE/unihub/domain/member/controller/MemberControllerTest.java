@@ -152,4 +152,35 @@ public class MemberControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.message").value("비밀번호가 성공적으로 변경되었습니다."));
   }
+
+  @Test
+  @DisplayName("승인되지 않은 교직원은 로그인에 실패한다")
+  void login_unapprovedProfessor_thenFail() throws Exception {
+    MemberLoginRequest request = new MemberLoginRequest("pending@auni.ac.kr", "password");
+
+    mockMvc
+            .perform(
+                    post("/api/members/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.message").value("아직 승인이 완료되지 않은 교직원 계정입니다."));
+  }
+
+  @Test
+  @DisplayName("이메일 인증 없이 학생 회원가입 시 실패한다")
+  void signUpStudent_withoutEmailVerification_thenFail() throws Exception {
+    StudentSignUpRequest request =
+            new StudentSignUpRequest(
+                    "unverified@auni.ac.kr", "password", "학생", "20251234", 1L, 1L, 1, 1, Role.STUDENT);
+
+    // 이메일 인증을 하지 않았기 때문에 실패해야 함
+    mockMvc
+            .perform(
+                    post("/api/members/signup/student")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("이메일 인증을 완료해주세요."));
+  }
 }
