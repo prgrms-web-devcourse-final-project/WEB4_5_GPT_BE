@@ -203,7 +203,7 @@ frontend http_front
 backend http_back_1
     balance roundrobin
     option httpchk GET /actuator/health
-    default-server inter 2s rise 1 fall 3 init-addr last,libc,none resolvers docker
+    default-server inter 4s rise 3 fall 3 init-addr last,libc,none resolvers docker
     option redispatch
     http-response lua.retry_on_502_504
 
