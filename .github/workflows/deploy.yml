@@ -3,11 +3,7 @@ name: deploy
 on:
   push:
     branches:
-      # 무중단 배포 테스트를 위해 develop 브랜치와 옥정현/feat-17 브랜치 추가
-      # TODO: 추후 배포 안정화 되면 main에서만 재배포 되도록 수정 필요
       - main
-      - develop
-      - 옥정현/feat-17
 
     paths:
       - '.github/workflows/**'
