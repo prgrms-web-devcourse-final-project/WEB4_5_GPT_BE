@@ -134,9 +134,7 @@ public class MemberServiceImpl implements MemberService {
     String email = request.email();
     String emailCode = request.emailCode();
 
-    if (!emailService.verifyCode(email, emailCode)) {
-      throw new UnihubException("400", "인증코드가 일치하지 않습니다.");
-    }
+    emailService.verifyCode(email, emailCode);
 
     emailService.markEmailAsVerified(email); // 인증 완료 표시
     emailService.deleteVerificationCode(email); // 인증코드 삭제
