@@ -5,6 +5,11 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.EmailCodeVerificationR
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.PasswordResetConfirmationRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageProfessorResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageStudentResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.ProfessorCourseResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.UpdateMajorResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
@@ -16,6 +21,11 @@ import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.service.MajorService;
 import com.WEB4_5_GPT_BE.unihub.domain.university.service.UniversityService;
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
+
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -163,4 +173,110 @@ public class MemberServiceImpl implements MemberService {
   public Optional<Member> findById(Long id) {
     return memberRepository.findById(id);
   }
+
+  @Override
+  @Transactional(readOnly = true)
+  public MyPageStudentResponse getStudentMyPage(Long memberId) {
+    Member member = findActiveMemberById(memberId);
+    StudentProfile profile = studentProfileRepository.findById(memberId)
+            .orElseThrow(() -> new UnihubException("404", "학생 프로필을 찾을 수 없습니다."));
+    return MyPageStudentResponse.from(member, profile);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public MyPageProfessorResponse getProfessorMyPage(Long memberId) {
+    Member member = findActiveMemberById(memberId);
+    ProfessorProfile profile = professorProfileRepository.findById(memberId)
+            .orElseThrow(() -> new UnihubException("404", "교수 프로필을 찾을 수 없습니다."));
+    return MyPageProfessorResponse.from(member, profile);
+  }
+
+  @Override
+  public List<ProfessorCourseResponse> getProfessorCourses(Long memberId) {
+    Member member = findActiveMemberById(memberId);
+
+    if (member.getRole() != Role.PROFESSOR) {
+      throw new UnihubException("403", "교수만 접근할 수 있는 기능입니다.");
+    }
+    // TODO: 실제 강의 목록 조회 로직 작성 예정
+    return Collections.emptyList(); // TODO: 강의 도메인 연동 필요
+
+  }
+
+  @Override
+  public void updateName(Long memberId, UpdateNameRequest request) {
+    findActiveMemberById(memberId).setName(request.name());
+  }
+
+  @Override
+  public void updatePassword(Long memberId, UpdatePasswordRequest request) {
+    Member member = findActiveMemberById(memberId);
+    if (!passwordEncoder.matches(request.password(), member.getPassword())) {
+      throw new UnihubException("400", "현재 비밀번호가 일치하지 않습니다.");
+    }
+    member.setPassword(passwordEncoder.encode(request.newPassword()));
+  }
+
+
+  @Override
+  public void updateEmail(Long memberId, UpdateEmailRequest request) {
+    Member member = findActiveMemberById(memberId);
+    if (member.getEmail().equals(request.newEmail())) {
+      throw new UnihubException("400", "현재 사용 중인 이메일과 동일합니다.");
+    }
+    if (memberRepository.existsByEmail(request.newEmail())) {
+      throw new UnihubException("409", "이미 사용 중인 이메일입니다.");
+    }
+    member.setEmail(request.newEmail());
+  }
+
+  @Override
+  public UpdateMajorResponse updateMajor(Long memberId, UpdateMajorRequest request) {
+    Member member = findActiveMemberById(memberId);
+
+    if (member.getRole() != Role.STUDENT) {
+      throw new UnihubException("403", "학생만 전공을 변경할 수 있습니다.");
+    }
+
+    StudentProfile profile = studentProfileRepository.findById(memberId)
+            .orElseThrow(() -> new UnihubException("404", "학생 프로필을 찾을 수 없습니다."));
+    if (profile.getMajor().getId().equals(request.majorId())) {
+      throw new UnihubException("400", "현재 전공과 동일합니다.");
+    }
+    Major newMajor = majorService.getMajor(profile.getUniversity().getId(), request.majorId());
+    profile.setMajor(newMajor);
+    return UpdateMajorResponse.from(newMajor);
+  }
+
+  @Override
+  public void verifyPassword(Long memberId, VerifyPasswordRequest request) {
+    Member member = findActiveMemberById(memberId);
+    if (!passwordEncoder.matches(request.password(), member.getPassword())) {
+      throw new UnihubException("403", "비밀번호가 일치하지 않습니다.");
+    }
+  }
+
+  @Override
+  public void deleteMember(Long memberId) {
+    Member member = findActiveMemberById(memberId);
+    member.markDeleted();
+  }
+
+  private Member findActiveMemberById(Long id) {
+    Member member = memberRepository.findById(id)
+            .orElseThrow(() -> new UnihubException("404", "회원 정보를 찾을 수 없습니다."));
+
+    if (member.isDeleted()) {
+      if (member.getDeletedAt() != null &&
+              member.getDeletedAt().plusDays(30).isBefore(LocalDateTime.now())) {
+        memberRepository.delete(member);
+        throw new UnihubException("404", "30일이 경과하여 계정이 삭제되었습니다.");
+      }
+      throw new UnihubException("401", "탈퇴한 계정입니다. 30일 이내 로그인 시 복구됩니다.");
+    }
+
+    return member;
+  }
 }
+

@@ -42,6 +42,9 @@ public class InitTestData {
     Major major = Major.builder().name("소프트웨어전공").university(university).build();
     majorRepository.save(major);
 
+    Major major2 = Major.builder().name("컴퓨터공학전공").university(university).build();
+    majorRepository.save(major2);
+
     memberService.signUpStudent(
         new StudentSignUpRequest(
             "teststudent@auni.ac.kr",
