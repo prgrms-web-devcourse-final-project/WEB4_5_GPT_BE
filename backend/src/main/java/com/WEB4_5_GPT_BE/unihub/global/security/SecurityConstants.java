@@ -15,5 +15,7 @@ public class SecurityConstants {
           "/api/members/password-reset/confirm",
           "/swagger-ui/**",
           "/v3/api-docs/**",
-          "/h2-console/**");
+          "/h2-console/**",
+          "/actuator/**",
+          "/");
 }
