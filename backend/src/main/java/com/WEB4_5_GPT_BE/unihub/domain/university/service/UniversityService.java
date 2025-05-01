@@ -71,10 +71,12 @@ public class UniversityService {
     universityRepository.delete(university);
   }
 
-  /** 대학 ID로 조회 (없으면 예외 발생) */
-  private University findUniversityById(Long universityId) {
-    return universityRepository
-        .findById(universityId)
-        .orElseThrow(() -> new IllegalArgumentException("해당 대학이 존재하지 않습니다."));
+  /**
+   * 대학 ID로 조회 (없으면 예외 발생)
+   */
+  public University findUniversityById(Long universityId) {
+      return universityRepository
+              .findById(universityId)
+              .orElseThrow(() -> new IllegalArgumentException("해당 대학이 존재하지 않습니다."));
   }
 }

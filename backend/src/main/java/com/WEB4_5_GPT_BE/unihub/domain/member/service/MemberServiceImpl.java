@@ -16,11 +16,12 @@ import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.service.MajorService;
 import com.WEB4_5_GPT_BE.unihub.domain.university.service.UniversityService;
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -37,8 +38,8 @@ public class MemberServiceImpl implements MemberService {
 
   @Override
   public void signUpStudent(StudentSignUpRequest request) {
-    University university = universityService.getUniversity(request.universityId());
-    Major major = majorService.getMajor(request.universityId(), request.majorId());
+      University university = universityService.findUniversityById(request.universityId());
+      Major major = majorService.getMajor(request.universityId(), request.majorId());
 
     validateStudentSignUp(request);
 
@@ -78,8 +79,8 @@ public class MemberServiceImpl implements MemberService {
 
   @Override
   public void signUpProfessor(ProfessorSignUpRequest request) {
-    University university = universityService.getUniversity(request.universityId());
-    Major major = majorService.getMajor(request.universityId(), request.majorId());
+      University university = universityService.findUniversityById(request.universityId());
+      Major major = majorService.getMajor(request.universityId(), request.majorId());
 
     validateProfessorSignUp(request);
 
