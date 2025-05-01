@@ -4,6 +4,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.university.dto.request.UniversityRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.university.dto.response.UniversityResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.UniversityRepository;
+import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,20 +17,24 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class UniversityService {
 
-  private final UniversityRepository universityRepository;
+    private final UniversityRepository universityRepository;
 
-  /** 대학 목록 조회 (전체) */
-  public List<UniversityResponse> getAllUniversities() {
-    return universityRepository.findAll().stream()
-        .map(UniversityResponse::from)
-        .collect(Collectors.toList());
-  }
+    /**
+     * 대학 목록 조회 (전체)
+     */
+    public List<UniversityResponse> getAllUniversities() {
+        return universityRepository.findAll().stream()
+                .map(UniversityResponse::from)
+                .collect(Collectors.toList());
+    }
 
-  /** 대학 단건 조회 */
-  public UniversityResponse getUniversity(Long universityId) {
-    University university = findUniversityById(universityId);
-    return UniversityResponse.from(university);
-  }
+    /**
+     * 대학 단건 조회
+     */
+    public UniversityResponse getUniversity(Long universityId) {
+        University university = findUniversityById(universityId);
+        return UniversityResponse.from(university);
+    }
 
     /**
      * 대학 생성
@@ -62,21 +67,23 @@ public class UniversityService {
 
         university.setName(request.name());
         return UniversityResponse.from(university);
-  }
+    }
 
-  /** 대학 삭제 */
-  @Transactional
-  public void deleteUniversity(Long universityId) {
-    University university = findUniversityById(universityId);
-    universityRepository.delete(university);
-  }
+    /**
+     * 대학 삭제
+     */
+    @Transactional
+    public void deleteUniversity(Long universityId) {
+        University university = findUniversityById(universityId);
+        universityRepository.delete(university);
+    }
 
-  /**
-   * 대학 ID로 조회 (없으면 예외 발생)
-   */
-  public University findUniversityById(Long universityId) {
-      return universityRepository
-              .findById(universityId)
-              .orElseThrow(() -> new IllegalArgumentException("해당 대학이 존재하지 않습니다."));
-  }
+    /**
+     * 대학 ID로 조회 (없으면 예외 발생)
+     */
+    public University findUniversityById(Long universityId) {
+        return universityRepository
+                .findById(universityId)
+                .orElseThrow(() -> new UnihubException("404", "해당 대학이 존재하지 않습니다."));
+    }
 }
