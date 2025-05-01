@@ -36,5 +36,6 @@ public class ProfessorProfile extends BaseTimeEntity {
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     private ApprovalStatus approvalStatus = ApprovalStatus.PENDING;
 }
