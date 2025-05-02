@@ -81,7 +81,6 @@ public class CourseService {
             throw new UnihubException(String.valueOf(HttpStatus.CONFLICT.value()), "강사/교수가 이미 수업 중입니다.");
         }
         Course res = courseRequest.toEntity(m, 0, p);
-        courseRequest.schedule().forEach(sc -> res.getSchedules().add(sc.toEntity(res, u.getId())));
         return CourseWithFullScheduleResponse.from(courseRepository.save(res));
     }
 
@@ -113,7 +112,6 @@ public class CourseService {
         }
         Course res = courseRequest.toEntity(m, orig.getEnrolled(), p);
         res.setId(orig.getId());
-        courseRequest.schedule().forEach(sc -> res.getSchedules().add(sc.toEntity(res, u.getId())));
         return CourseWithFullScheduleResponse.from(courseRepository.save(res));
     }
 
