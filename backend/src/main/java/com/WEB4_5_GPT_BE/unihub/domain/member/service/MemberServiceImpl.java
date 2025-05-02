@@ -1,10 +1,8 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 
+import com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.EmailCodeVerificationRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.PasswordResetConfirmationRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignupRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageProfessorResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageStudentResponse;
@@ -48,9 +46,10 @@ public class MemberServiceImpl implements MemberService {
 
   @Override
   public void signUpStudent(StudentSignUpRequest request) {
-      University university = universityService.findUniversityById(request.universityId());
-      Major major = majorService.getMajor(request.universityId(), request.majorId());
 
+    University university = universityService.findUniversityById(request.universityId());
+    Major major = majorService.getMajor(request.universityId(), request.majorId());
+    validateEmailVerification(request.email());
     validateStudentSignUp(request);
 
     StudentProfile profile =
@@ -76,29 +75,36 @@ public class MemberServiceImpl implements MemberService {
     memberRepository.save(member);
   }
 
-    private void validateStudentSignUp(StudentSignUpRequest request) {
-        if (memberRepository.existsByEmail(request.email())) {
-            throw new UnihubException("409", "이메일 또는 학번이 이미 등록되어 있습니다.");
-        }
+  private void validateEmailVerification(String email) {
+    if (!emailService.isAlreadyVerified(email)) {
+      throw new UnihubException("400", "이메일 인증을 완료해주세요.");
+    }
+  }
 
-        if (studentProfileRepository.existsByStudentCodeAndUniversityId(
-                request.studentCode(), request.universityId())) {
-            throw new UnihubException("409", "이메일 또는 학번이 이미 등록되어 있습니다.");
-        }
+  private void validateStudentSignUp(StudentSignUpRequest request) {
+    if (memberRepository.existsByEmail(request.email())) {
+        throw new UnihubException("409", "이메일 또는 학번이 이미 등록되어 있습니다.");
     }
 
-    @Override
-    public void signUpProfessor(ProfessorSignupRequest request) {
-        University university = universityService.findUniversityById(request.universityId());
-        Major major = majorService.getMajor(request.universityId(), request.majorId());
+    if (studentProfileRepository.existsByStudentCodeAndUniversityId(
+            request.studentCode(), request.universityId())) {
+        throw new UnihubException("409", "이메일 또는 학번이 이미 등록되어 있습니다.");
+    }
+  }
 
-        validateProfessorSignUp(request);
+  @Override
+  public void signUpProfessor(ProfessorSignUpRequest request) {
+    University university = universityService.findUniversityById(request.universityId());
+    Major major = majorService.getMajor(request.universityId(), request.majorId());
+    validateEmailVerification(request.email());
+    validateProfessorSignUp(request);
 
-        ProfessorProfile profile =
-                ProfessorProfile.builder()
-                        .employeeId(request.employeeId())
-                        .university(university)
-                        .major(major)
+    ProfessorProfile profile =
+        ProfessorProfile.builder()
+            .employeeId(request.employeeId())
+            .university(university)
+            .major(major)
+            .approvalStatus(ApprovalStatus.PENDING)
             .build();
 
     Member member =
@@ -115,16 +121,17 @@ public class MemberServiceImpl implements MemberService {
     memberRepository.save(member);
   }
 
-    private void validateProfessorSignUp(ProfessorSignupRequest request) {
-        if (memberRepository.existsByEmail(request.email())) {
-            throw new UnihubException("409", "이메일 또는 사번이 이미 등록되어 있습니다.");
-        }
 
-        if (professorProfileRepository.existsByEmployeeIdAndUniversityId(
-                request.employeeId(), request.universityId())) {
-            throw new UnihubException("409", "이메일 또는 사번이 이미 등록되어 있습니다.");
-        }
+  private void validateProfessorSignUp(ProfessorSignUpRequest request) {
+    if (memberRepository.existsByEmail(request.email())) {
+        throw new UnihubException("409", "이메일 또는 사번이 이미 등록되어 있습니다.");
     }
+
+    if (professorProfileRepository.existsByEmployeeIdAndUniversityId(
+            request.employeeId(), request.universityId())) {
+        throw new UnihubException("409", "이메일 또는 사번이 이미 등록되어 있습니다.");
+    }
+  }
 
   @Override
   public void sendVerificationCode(String email) {
