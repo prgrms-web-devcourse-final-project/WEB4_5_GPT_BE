@@ -6,7 +6,6 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.PasswordResetConfirmat
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
-import com.WEB4_5_GPT_BE.unihub.global.config.RedisTestContainerConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
@@ -27,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
-@RedisTestContainerConfig
+//@RedisTestContainerConfig
 public class MemberControllerTest {
 
   @Autowired private MockMvc mockMvc;
