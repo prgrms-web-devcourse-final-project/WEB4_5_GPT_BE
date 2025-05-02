@@ -10,7 +10,7 @@ on:
       - 'backend/src/**'
       - 'backend/build.gradle'
       - 'backend/settings.gradle'
-      - 'backend/Dockerfile'
+      - 'backend/Dockerfile.prod'
 
 jobs:
   buildImageAndPush:
