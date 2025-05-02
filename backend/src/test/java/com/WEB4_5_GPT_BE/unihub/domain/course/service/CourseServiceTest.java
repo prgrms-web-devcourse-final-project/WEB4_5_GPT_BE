@@ -115,13 +115,13 @@ class CourseServiceTest {
         testMember1.setProfessorProfile(testProfessorProfile1);
         testCourseRequest1 = new CourseRequest("testCourseRequest1", testMajor2.getName(), testUniversity1.getName(),
                 testCourse1.getLocation(), 40, 3, null, 4, 2, null,
-                List.of(new CourseScheduleDto("MON", "13:00", "14:00")));
+                List.of(new CourseScheduleDto(DayOfWeek.MON, "13:00", "14:00")));
         testCourseRequest2 = new CourseRequest("testCourseRequest2", testMajor2.getName(), testUniversity1.getName(),
                 "nonexistentLocation", 40, 3, testProfessorProfile1.getEmployeeId(), 4, 2, null,
-                List.of(new CourseScheduleDto("MON", "13:00", "14:00")));
+                List.of(new CourseScheduleDto(DayOfWeek.MON, "13:00", "14:00")));
         testCourseRequest3 = new CourseRequest("testCourseRequest3", testMajor2.getName(), testUniversity1.getName(),
                 "nonexistentLocation", 40, 3, testProfessorProfile1.getEmployeeId(), 4, 2, null,
-                List.of(new CourseScheduleDto("TUE", "13:00", "14:00")));
+                List.of(new CourseScheduleDto(DayOfWeek.TUE, "13:00", "14:00")));
     }
 
     @Test

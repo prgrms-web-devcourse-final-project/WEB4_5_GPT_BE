@@ -1,5 +1,6 @@
 package com.WEB4_5_GPT_BE.unihub.domain.course.repository;
 
+import com.WEB4_5_GPT_BE.unihub.domain.common.enums.DayOfWeek;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.CourseSchedule;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -21,7 +22,7 @@ public interface CourseScheduleRepository extends JpaRepository<CourseSchedule, 
     """)
     Boolean existsByProfEmpIdAndDayOfWeek(
             @Param("profId") String profId,
-            @Param("dayOfWeek") String dayOfWeek,
+            @Param("dayOfWeek") DayOfWeek dayOfWeek,
             @Param("pStartTime") LocalTime pStartTime,
             @Param("pEndTime") LocalTime pEndTime);
 
@@ -38,7 +39,7 @@ public interface CourseScheduleRepository extends JpaRepository<CourseSchedule, 
     Boolean existsByUnivIdAndLocationAndDayOfWeek(
             @Param("univId") Long univId,
             @Param("location") String location,
-            @Param("dayOfWeek") String dayOfWeek,
+            @Param("dayOfWeek") DayOfWeek dayOfWeek,
             @Param("pStartTime") LocalTime pStartTime,
             @Param("pEndTime") LocalTime pEndTime);
 }

@@ -8,13 +8,13 @@ import jakarta.validation.constraints.NotEmpty;
 import java.time.LocalTime;
 
 public record CourseScheduleDto(
-        @NotEmpty String day,
+        @NotEmpty DayOfWeek day,
         @NotEmpty String startTime,
         @NotEmpty String endTime
 ) {
     public static CourseScheduleDto from(CourseSchedule courseSchedule) {
         return new CourseScheduleDto(
-                courseSchedule.getDay().toString(),
+                courseSchedule.getDay(),
                 courseSchedule.getStartTime().toString(),
                 courseSchedule.getEndTime().toString()
         );
@@ -27,7 +27,7 @@ public record CourseScheduleDto(
                 universityId,
                 course.getLocation(),
                 course.getProfessor() != null ? course.getProfessor().getEmployeeId() : null,
-                DayOfWeek.valueOf(day),
+                day,
                 LocalTime.parse(startTime),
                 LocalTime.parse(endTime)
         );
