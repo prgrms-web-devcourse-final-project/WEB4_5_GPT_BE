@@ -6,13 +6,13 @@ spring:
   data:
     redis:
       host: redis_1
-      password: "${custom.prod.redis.password}"
+      password: "${custom.prodKey.redis.password}"
       port: 6379
 
   datasource:
     url: jdbc:mysql://mysql_1:3306/unihub
     username: unihublocal
-    password: "${custom.prod.db.password}"
+    password: "${custom.prodKey.db.password}"
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       auto-commit: false
