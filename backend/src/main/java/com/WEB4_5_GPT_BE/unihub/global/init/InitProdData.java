@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
-@Profile("prod") // 실제 운영 환경에서만 실행
+@Profile({"prod", "dev"}) // 개발, 운영 배포 환경에서만 실행
 @RequiredArgsConstructor
 public class InitProdData {
 
