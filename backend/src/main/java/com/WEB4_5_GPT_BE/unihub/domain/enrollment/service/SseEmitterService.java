@@ -21,32 +21,32 @@ public class SseEmitterService {
     /**
      * 새로운 SSE 연결 생성
      */
-    public SseEmitter createEmitter(String userId) {
+    public SseEmitter createEmitter(String memberId) {
         // 기존 연결이 있으면 완료 처리
-        removeEmitterIfExists(userId);
+        removeEmitterIfExists(memberId);
 
         // 새로운 이미터 생성
         SseEmitter emitter = new SseEmitter(TIMEOUT);
 
         // 이벤트 핸들러 등록
         emitter.onCompletion(() -> {
-            log.info("SSE 연결 완료: {}", userId);
-            removeEmitterIfExists(userId);
+            log.info("SSE 연결 완료: {}", memberId);
+            removeEmitterIfExists(memberId);
         });
 
         emitter.onTimeout(() -> {
-            log.info("SSE 연결 타임아웃: {}", userId);
-            removeEmitterIfExists(userId);
+            log.info("SSE 연결 타임아웃: {}", memberId);
+            removeEmitterIfExists(memberId);
         });
 
         emitter.onError(e -> {
-            log.error("SSE 연결 오류: {}, 에러: {}", userId, e.getMessage());
-            removeEmitterIfExists(userId);
+            log.error("SSE 연결 오류: {}, 에러: {}", memberId, e.getMessage());
+            removeEmitterIfExists(memberId);
         });
 
         // 이미터 저장
-        emitters.put(userId, emitter);
-        log.info("새로운 SSE 연결 생성: {}", userId);
+        emitters.put(memberId, emitter);
+        log.info("새로운 SSE 연결 생성: {}", memberId);
 
         // 연결 유지를 위한 초기 이벤트 전송
         sendHeartbeat(emitter);
@@ -57,26 +57,19 @@ public class SseEmitterService {
     /**
      * 특정 사용자에게 대기열 상태 업데이트 전송
      */
-    public void sendQueueStatus(String userId, QueueStatusDto status) {
-        SseEmitter emitter = emitters.get(userId);
+    public void sendQueueStatus(String memberId, QueueStatusDto status) {
+        SseEmitter emitter = emitters.get(memberId);
         if (emitter != null) {
             try {
                 emitter.send(SseEmitter.event()
                         .name("QUEUE_STATUS")
                         .data(status));
-                log.debug("대기열 상태 전송: {}, 상태: {}", userId, status);
+                log.debug("대기열 상태 전송: {}, 상태: {}", memberId, status);
             } catch (IOException e) {
-                log.error("이벤트 전송 실패: {}", userId, e);
-                removeEmitterIfExists(userId);
+                log.error("이벤트 전송 실패: {}", memberId, e);
+                removeEmitterIfExists(memberId);
             }
         }
-    }
-
-    /**
-     * 모든 대기열 사용자에게 상태 업데이트 전송
-     */
-    public void sendQueueStatusToAll(Map<String, QueueStatusDto> statusMap) {
-        statusMap.forEach(this::sendQueueStatus);
     }
 
     /**
@@ -100,15 +93,15 @@ public class SseEmitterService {
     }
 
     /**
-     * uae30uc874 uc774ubbf8ud130 uc81cuac70
+     * 기존 이미터 제거
      */
-    private void removeEmitterIfExists(String userId) {
-        SseEmitter emitter = emitters.remove(userId);
+    private void removeEmitterIfExists(String memberId) {
+        SseEmitter emitter = emitters.remove(memberId);
         if (emitter != null) {
             try {
                 emitter.complete();
             } catch (Exception e) {
-                log.error("uc774ubbf8ud130 uc644ub8cc ucc98ub9ac uc2e4ud328: {}", userId, e);
+                log.error("이미터 완료 처리 실패: {}", memberId, e);
             }
         }
     }
