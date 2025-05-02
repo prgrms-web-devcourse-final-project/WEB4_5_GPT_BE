@@ -126,7 +126,7 @@ class MemberServiceImplTest {
         long invalidUniversityId = 9999L;
         StudentSignUpRequest request = new StudentSignUpRequest(
                 "student@example.com", "password", "홍길동", "20240001", invalidUniversityId, 1L, 1, 1, Role.STUDENT);
-        
+
         when(universityService.findUniversityById(eq(invalidUniversityId)))
                 .thenThrow(new UnihubException("404", "해당 대학이 존재하지 않습니다."));
 

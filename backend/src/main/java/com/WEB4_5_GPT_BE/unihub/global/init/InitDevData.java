@@ -29,7 +29,7 @@ public class InitDevData {
         University university = helper.createUniversity("A대학교");
         Major major = helper.createMajor("소프트웨어전공", university);
 
-        helper.createStudent("haneulkim@auni.ac.kr", "studentPw", "김하늘", "20250001",
+        helper.createStudent("haneulkim@auni.ac.kr", "패스워드", "김하늘", "20250001",
                 university.getId(), major.getId());
 
         helper.createProfessor("professor@auni.ac.kr", "password", "김교수", "EMP20250001",
