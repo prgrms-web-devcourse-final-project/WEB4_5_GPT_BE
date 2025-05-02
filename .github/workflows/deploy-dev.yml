@@ -5,7 +5,7 @@ on:
     branches:
       - develop
       - 옥정현/feat-34
-      - 
+
     paths:
       - '.github/workflows/**'
       - 'backend/src/**'
@@ -41,7 +41,13 @@ jobs:
           echo "$APPLICATION_SECRET" > backend/src/main/resources/application-secret.yml
 
       - name: Docker Buildx 설치
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
+        with:
+          # BuildKit에 host 네트워크 entitlement 허용
+          buildkitd-flags: --allow-insecure-entitlement network.host
+          # 빌더가 host 네트워크 사용하도록 설정
+          driver-opts: |
+            network=host
 
       - name: 레지스트리 로그인
         uses: docker/login-action@v2
@@ -65,6 +71,9 @@ jobs:
         with:
           context: backend
           file: backend/Dockerfile.dev
+          # host 네트워크로 Redis 서비스에 접근
+          network: host
+          allow: network.host
           push: true
           cache-from: type=registry,ref=ghcr.io/${{ steps.export_owner.outputs.owner_lc }}/${{ steps.export_image.outputs.image_name }}:cache
           cache-to: type=registry,ref=ghcr.io/${{ steps.export_owner.outputs.owner_lc }}/${{ steps.export_image.outputs.image_name }}:cache,mode=max
