@@ -12,7 +12,6 @@ spring:
       enabled: always
 
   profiles:
-    active: dev
     include: secret
 
   datasource:
@@ -73,8 +72,12 @@ custom:
     domain: localhost
     backUrl: "http://${custom.dev.domain}:${server.port}"
     frontUrl: "http://${custom.dev.domain}:3000"
-  prod:
+  prod-main:
     domain: un1hub.site
+    backUrl: "https://api.${custom.prod.domain}"
+    frontUrl: "https://www.${custom.prod.domain}"
+  prod-dev:
+    domain: sulee.site
     backUrl: "https://api.${custom.prod.domain}"
     frontUrl: "https://www.${custom.prod.domain}"
   site:

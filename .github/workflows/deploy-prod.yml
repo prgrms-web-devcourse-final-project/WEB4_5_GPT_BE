@@ -48,10 +48,11 @@ jobs:
         id: export_image
         run: echo "image_name=unihub_backend" >> $GITHUB_OUTPUT
 
-      - name: 빌드 및 푸시
+      - name: 빌드 및 푸시 (Dockerfile.prod 운영용)
         uses: docker/build-push-action@v3
         with:
           context: backend
+          file: backend/Dockerfile.prod
           push: true
           cache-from: type=registry,ref=ghcr.io/${{ steps.export_owner.outputs.owner_lc }}/${{ steps.export_image.outputs.image_name }}:cache
           cache-to: type=registry,ref=ghcr.io/${{ steps.export_owner.outputs.owner_lc }}/${{ steps.export_image.outputs.image_name }}:cache,mode=max

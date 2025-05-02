@@ -32,6 +32,6 @@ logging:
 
 custom:
   site:
-    domain: "${custom.prod-main.domain}"
-    backUrl: "${custom.prod-main.backUrl}"
-    frontUrl: "${custom.prod-main.frontUrl}"
+    domain: "${custom.prod-dev.domain}"
+    backUrl: "${custom.prod-dev.backUrl}"
+    frontUrl: "${custom.prod-dev.frontUrl}"
