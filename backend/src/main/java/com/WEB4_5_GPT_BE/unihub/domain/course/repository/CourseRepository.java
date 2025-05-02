@@ -25,7 +25,7 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
             ON c.major = mj
         WHERE mj.university.id = :univId
             AND c.title LIKE CONCAT('%', :title, '%')
-            AND me.name LIKE CONCAT('%', :profName, '%')
+            AND COALESCE(me.name, "") LIKE CONCAT('%', :profName, '%')
     """)
     Page<Course> findByTitleLikeAndProfessorNameLike(
             @Param("univId") Long univId,
