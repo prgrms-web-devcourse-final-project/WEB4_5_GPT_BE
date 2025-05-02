@@ -6,6 +6,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.MemberLoginRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.AdminLoginResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.MemberLoginResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
+import com.WEB4_5_GPT_BE.unihub.domain.member.exception.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.global.Rq;
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
@@ -49,7 +50,7 @@ public class AuthServiceImpl implements AuthService {
     Member member = authenticate(request.email(), request.password());
 
     if (member.getRole() != Role.ADMIN) {
-      throw new UnihubException("403", "관리자 권한이 없습니다.");
+      throw new AdminPermissionDeniedException();
     }
 
     return toAdminLoginResponse(member);
@@ -60,12 +61,24 @@ public class AuthServiceImpl implements AuthService {
 
     Member member = memberRepository.findByEmail(email).orElseThrow(() -> {
       recordLoginFailure(email);
-      return new UnihubException("401", "이메일 또는 비밀번호가 잘못되었습니다.");
+      return new InvalidCredentialException();
     });
+      //[복구] 탈퇴 회원 처리
+      if (member.isDeleted()) {
+          if (member.getDeletedAt() != null &&
+                  member.getDeletedAt().plusDays(30).isBefore(java.time.LocalDateTime.now())) {
+              memberRepository.delete(member);
+              throw new UnihubException("404", "30일이 지나 계정이 삭제되었습니다.");
+          }
+
+          member.setDeleted(false);
+          member.setDeletedAt(null);
+          memberRepository.save(member);
+      }
 
     if (!passwordEncoder.matches(password, member.getPassword())) {
       recordLoginFailure(email);
-      throw new UnihubException("401", "이메일 또는 비밀번호가 잘못되었습니다.");
+      throw new InvalidCredentialException();
     }
 
     resetLoginFailure(email);
@@ -78,7 +91,7 @@ public class AuthServiceImpl implements AuthService {
             .map(Integer::parseInt).orElse(0);
 
     if (failCount >= MAX_FAIL_COUNT) {
-      throw new UnihubException("429", "비밀번호 오류 5회 이상. 5분간 로그인이 제한됩니다.");
+      throw new LoginLockedException();
     }
   }
 
@@ -114,10 +127,10 @@ public class AuthServiceImpl implements AuthService {
   @Transactional
   public void logout(HttpServletRequest request, HttpServletResponse response) {
     String accessToken = rq.getAccessToken();
-    if (accessToken == null) throw new UnihubException("401", "인증이 필요합니다.");
+    if (accessToken == null) throw new AccessTokenNotFoundException();
 
     Long memberId = authTokenService.getMemberIdFromToken(accessToken);
-    if (memberId == null) throw new UnihubException("401", "유효하지 않은 형식.");
+    if (memberId == null) throw new InvalidAccessTokenException();
 
     redisTemplate.delete("refresh:" + memberId);
     rq.removeCookie("refreshToken");
@@ -127,21 +140,21 @@ public class AuthServiceImpl implements AuthService {
   @Transactional
   public MemberLoginResponse refreshAccessToken(HttpServletRequest request, HttpServletResponse response) {
     String refreshToken = rq.getRefreshToken();
-    if (refreshToken == null) throw new UnihubException("401", "Refresh Token이 존재하지 않습니다.");
+    if (refreshToken == null) throw new RefreshTokenNotFoundException();
     if (!authTokenService.validateRefreshToken(refreshToken)) {
-      throw new UnihubException("401", "유효하지 않은 refreshToken입니다.");
+      throw new InvalidRefreshTokenException();
     }
 
     Long memberId = authTokenService.getMemberIdFromToken(refreshToken);
-    if (memberId == null) throw new UnihubException("400", "잘못된 refreshToken 형식입니다.");
+    if (memberId == null) throw new InvalidRefreshTokenFormatException();
 
     String redisRefreshToken = redisTemplate.opsForValue().get("refresh:" + memberId);
     if (redisRefreshToken == null || !redisRefreshToken.equals(refreshToken)) {
-      throw new UnihubException("401", "Refresh Token 정보가 일치하지 않습니다.");
+      throw new RefreshTokenMismatchException();
     }
 
     Member member = memberRepository.findById(memberId)
-            .orElseThrow(() -> new UnihubException("404", "존재하지 않는 회원입니다."));
+            .orElseThrow(MemberNotFoundException::new);
 
     String newAccessToken = authTokenService.genAccessToken(member);
     return new MemberLoginResponse(newAccessToken, null);

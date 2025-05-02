@@ -5,6 +5,8 @@ import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -29,7 +31,14 @@ public class Member extends BaseTimeEntity {
   @Column(nullable = false, length = 20)
   private Role role;
 
-  @OneToOne(
+  @Column(nullable = false)
+  @Builder.Default
+  private boolean isDeleted = false; // 탈퇴 여부
+
+    @Column
+    private LocalDateTime deletedAt; // 탈퇴일
+
+    @OneToOne(
       mappedBy = "member",
       cascade = CascadeType.ALL,
       orphanRemoval = true,
@@ -42,4 +51,10 @@ public class Member extends BaseTimeEntity {
       orphanRemoval = true,
       fetch = FetchType.LAZY)
   private ProfessorProfile professorProfile; // role == PROFESSOR일 때만 존재
+
+  // 소프트 삭제 처리 메서드
+  public void markDeleted() {
+      this.isDeleted = true;
+      this.deletedAt = LocalDateTime.now();
+  }
 }

@@ -1,19 +1,19 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.*;
-
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.EmailCodeVerificationRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.PasswordResetConfirmationRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignupRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorProfileRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
+import com.WEB4_5_GPT_BE.unihub.domain.university.repository.MajorRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.service.MajorService;
 import com.WEB4_5_GPT_BE.unihub.domain.university.service.UniversityService;
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
@@ -24,6 +24,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class MemberServiceImplTest {
@@ -37,6 +44,7 @@ class MemberServiceImplTest {
   @Mock private UniversityService universityService;
 
   @Mock private MajorService majorService;
+  @Mock private MajorRepository majorRepository;
 
   @Mock private PasswordEncoder passwordEncoder;
 
@@ -127,8 +135,8 @@ class MemberServiceImplTest {
   @Test
   void givenValidProfessorSignUpRequest_whenSignUpProfessor_thenMemberSaved() {
     // given
-    ProfessorSignUpRequest request =
-        new ProfessorSignUpRequest(
+      ProfessorSignupRequest request =
+              new ProfessorSignupRequest(
             "professor@example.com", "password", "김교수", "EMP20240001", 1L, 1L, Role.PROFESSOR);
 
     University university = University.builder().id(1L).name("테스트대학").build();
@@ -153,8 +161,8 @@ class MemberServiceImplTest {
   @Test
   void givenDuplicatedEmail_whenSignUpProfessor_thenThrowUnihubException() {
     // given
-    ProfessorSignUpRequest request =
-        new ProfessorSignUpRequest(
+      ProfessorSignupRequest request =
+              new ProfessorSignupRequest(
             "professor@example.com", "password", "김교수", "EMP20240001", 1L, 1L, Role.PROFESSOR);
 
     when(memberRepository.existsByEmail(request.email())).thenReturn(true);
@@ -206,12 +214,13 @@ class MemberServiceImplTest {
 
     EmailCodeVerificationRequest request = new EmailCodeVerificationRequest(email, wrongCode);
 
-    when(emailService.verifyCode(email, wrongCode)).thenReturn(false);
+    doThrow(new UnihubException("400", "이메일 인증 코드가 잘못되었습니다."))
+            .when(emailService).verifyCode(email, wrongCode);
 
     // when / then
     assertThatThrownBy(() -> memberService.verifyEmailCode(request))
-        .isInstanceOf(UnihubException.class)
-        .hasMessageContaining("인증코드가 일치하지 않습니다.");
+            .isInstanceOf(UnihubException.class)
+            .hasMessageContaining("이메일 인증 코드가 잘못되었습니다.");
   }
 
   @DisplayName("비밀번호 재설정에 성공한다")
@@ -287,4 +296,102 @@ class MemberServiceImplTest {
         .isInstanceOf(UnihubException.class)
         .hasMessageContaining("기존 비밀번호와 동일한 비밀번호로는 변경할 수 없습니다.");
   }
+
+    @DisplayName("이름 변경에 성공한다")
+    @Test
+    void givenValidRequest_whenUpdateName_thenNameIsUpdated() {
+        // given
+        Member member = Member.builder().id(1L).name("oldName").build();
+        given(memberRepository.findById(1L)).willReturn(Optional.of(member));
+
+        // when
+        memberService.updateName(1L, new UpdateNameRequest("newName"));
+
+        // then
+        assertThat(member.getName()).isEqualTo("newName");
+    }
+
+    @DisplayName("비밀번호 변경에 성공한다")
+    @Test
+    void givenCorrectPassword_whenUpdatePassword_thenPasswordUpdated() {
+        // given
+        Member member = Member.builder().id(1L).password("encodedOld").build();
+        given(memberRepository.findById(1L)).willReturn(Optional.of(member));
+        given(passwordEncoder.matches("oldPass", "encodedOld")).willReturn(true);
+        given(passwordEncoder.encode("newPass")).willReturn("encodedNew");
+
+        // when
+        memberService.updatePassword(1L, new UpdatePasswordRequest("oldPass", "newPass"));
+
+        // then
+        assertThat(member.getPassword()).isEqualTo("encodedNew");
+    }
+
+    @DisplayName("이메일 변경에 성공한다")
+    @Test
+    void givenUniqueEmail_whenUpdateEmail_thenEmailUpdated() {
+        // given
+        Member member = Member.builder().id(1L).email("old@email.com").build();
+        given(memberRepository.findById(1L)).willReturn(Optional.of(member));
+        given(memberRepository.existsByEmail("new@email.com")).willReturn(false);
+
+        // when
+        memberService.updateEmail(1L, new UpdateEmailRequest("new@email.com"));
+
+        // then
+        assertThat(member.getEmail()).isEqualTo("new@email.com");
+    }
+
+    @DisplayName("전공 변경에 성공한다")
+    @Test
+    void givenValidMajorId_whenUpdateMajor_thenMajorIsUpdated() {
+        // given
+        University university = University.builder()
+                .id(1L)
+                .name("테스트대학교")
+                .build();
+
+        Major oldMajor = Major.builder().id(1L).name("컴퓨터공학").university(university).build();
+        Major newMajor = Major.builder().id(2L).name("전자공학").university(university).build();
+
+        StudentProfile profile = StudentProfile.builder()
+                .id(1L)
+                .major(oldMajor)
+                .university(university) // ✅ 여기가 null이면 안 됨
+                .build();
+
+        Member member = Member.builder()
+                .id(1L)
+                .isDeleted(false)
+                .role(Role.STUDENT)
+                .build();
+
+        given(memberRepository.findById(1L)).willReturn(Optional.of(member));
+        given(studentProfileRepository.findById(1L)).willReturn(Optional.of(profile));
+        given(majorService.getMajor(1L, 2L)).willReturn(newMajor);
+
+        // when
+        memberService.updateMajor(1L, new UpdateMajorRequest(2L));
+
+        // then
+        assertThat(profile.getMajor().getName()).isEqualTo("전자공학");
+    }
+
+
+
+    @DisplayName("비밀번호 검증에 실패한다")
+    @Test
+    void givenWrongPassword_whenVerifyPassword_thenThrowException() {
+        // given
+        Member member = Member.builder().id(1L).password("encodedPass").build();
+        given(memberRepository.findById(1L)).willReturn(Optional.of(member));
+        given(passwordEncoder.matches("wrong", "encodedPass")).willReturn(false);
+
+        // when / then
+        assertThatThrownBy(() -> memberService.verifyPassword(1L, new VerifyPasswordRequest("wrong")))
+                .isInstanceOf(UnihubException.class)
+                .hasMessageContaining("비밀번호가 일치하지 않습니다.");
+    }
+
+
 }
