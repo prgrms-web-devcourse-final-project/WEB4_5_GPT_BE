@@ -1,19 +1,13 @@
 package com.WEB4_5_GPT_BE.unihub.global.init;
 
-import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
-import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
-import com.WEB4_5_GPT_BE.unihub.domain.member.service.MemberService;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
-import com.WEB4_5_GPT_BE.unihub.domain.university.repository.MajorRepository;
-import com.WEB4_5_GPT_BE.unihub.domain.university.repository.UniversityRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,66 +16,35 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class InitTestData {
 
-  private final UniversityRepository universityRepository;
-  private final MajorRepository majorRepository;
-  private final MemberService memberService;
-  private final MemberRepository memberRepository;
-  private final StudentProfileRepository studentProfileRepository;
+    private final InitDataHelper helper;
+    private final StudentProfileRepository studentProfileRepository;
+    private final PasswordEncoder passwordEncoder;
 
-  @PostConstruct
-  @Transactional
-  public void init() {
-    studentProfileRepository.deleteAll();
-    memberRepository.deleteAll();
-    majorRepository.deleteAll();
-    universityRepository.deleteAll();
+    @PostConstruct
+    @Transactional
+    public void init() {
+        // 테스트 환경에서는 항상 초기화
+        studentProfileRepository.deleteAll();
+        helper.clearAllMemberData();
 
-    University university = University.builder().name("A대학교").build();
-    university = universityRepository.save(university);
+        University university = helper.createUniversity("A대학교");
+        Major major = helper.createMajor("소프트웨어전공", university);
+        Major major2 = helper.createMajor("컴퓨터공학전공", university);
 
-    Major major = Major.builder().name("소프트웨어전공").university(university).build();
-    majorRepository.save(major);
+        helper.createStudent("teststudent@auni.ac.kr", "password", "테스트학생", "20250002",
+                university.getId(), major.getId());
 
-    Major major2 = Major.builder().name("컴퓨터공학전공").university(university).build();
-    majorRepository.save(major2);
+        helper.createStudent("teststudent2@auni.ac.kr", "password", "테스트학생2", "20250003",
+                university.getId(), major.getId());
 
-    memberService.signUpStudent(
-            new StudentSignUpRequest(
-            "teststudent@auni.ac.kr",
-            "password",
-            "테스트학생",
-            "20250002",
-            university.getId(),
-            major.getId(),
-            1,
-            1,
-            Role.STUDENT));
+        // 승인된 교수 (로그인 성공용)
+        helper.createProfessor("professor@auni.ac.kr", "password", "김교수", "EMP00001",
+                university.getId(), major.getId(), ApprovalStatus.APPROVED);
 
-    memberService.signUpStudent(
-            new StudentSignUpRequest(
-            "teststudent2@auni.ac.kr",
-            "password",
-            "테스트학생2",
-            "20250003",
-            university.getId(),
-            major.getId(),
-            1,
-            1,
-            Role.STUDENT));
+        // 승인 안 된 교수 (로그인 실패용)
+        helper.createProfessor("pending@auni.ac.kr", "password", "대기중교수", "EMP00002",
+                university.getId(), major.getId(), ApprovalStatus.PENDING);
 
-    // --- 교직원 생성 ---
-      memberService.signUpProfessor(new ProfessorSignUpRequest(
-            "professor@auni.ac.kr", "password", "김교수", "EMP20250001",
-            university.getId(), major.getId(), Role.PROFESSOR
-    ));
-
-    // --- 관리자 생성 ---
-    Member admin = Member.builder()
-            .email("adminmaster@auni.ac.kr")
-            .password("adminPw") // 암호화 안 되어 있으면 추후 encode 필요
-            .name("관리자")
-            .role(Role.ADMIN)
-            .build();
-    memberRepository.save(admin);
-  }
+        helper.createAdmin("adminmaster@auni.ac.kr", "adminPw", "관리자", passwordEncoder); // 인코딩 생략
+    }
 }
