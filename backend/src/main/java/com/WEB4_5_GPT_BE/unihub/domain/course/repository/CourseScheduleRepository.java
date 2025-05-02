@@ -17,8 +17,8 @@ public interface CourseScheduleRepository extends JpaRepository<CourseSchedule, 
         FROM CourseSchedule cs
         WHERE (cs.professorProfileEmployeeId = :profId OR cs.professorProfileEmployeeId IS NULL)
             AND cs.day = :dayOfWeek
-            AND ((:pStartTime < cs.startTime AND cs.startTime < :pEndTime)
-            OR (:pStartTime < cs.endTime AND cs.endTime < :pEndTime))
+            AND ((:pStartTime <= cs.startTime AND cs.startTime < :pEndTime)
+            OR (:pStartTime < cs.endTime AND cs.endTime <= :pEndTime))
     """)
     Boolean existsByProfEmpIdAndDayOfWeek(
             @Param("profId") String profId,
@@ -33,8 +33,8 @@ public interface CourseScheduleRepository extends JpaRepository<CourseSchedule, 
         WHERE cs.universityId = :univId
             AND cs.location = :location
             AND cs.day = :dayOfWeek
-            AND ((:pStartTime < cs.startTime AND cs.startTime < :pEndTime)
-            OR (:pStartTime < cs.endTime AND cs.endTime < :pEndTime))
+            AND ((:pStartTime <= cs.startTime AND cs.startTime < :pEndTime)
+            OR (:pStartTime < cs.endTime AND cs.endTime <= :pEndTime))
     """)
     Boolean existsByUnivIdAndLocationAndDayOfWeek(
             @Param("univId") Long univId,
