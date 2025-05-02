@@ -1,3 +1,4 @@
+# 배포중인 운영 서버에 대한 설정
 spring:
   data:
     redis:
