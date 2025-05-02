@@ -28,7 +28,6 @@ public record CourseScheduleDto(
                 course.getLocation(),
                 course.getProfessor() != null ? course.getProfessor().getEmployeeId() : null,
                 DayOfWeek.valueOf(day),
-                // TODO
                 LocalTime.parse(startTime),
                 LocalTime.parse(endTime)
         );
