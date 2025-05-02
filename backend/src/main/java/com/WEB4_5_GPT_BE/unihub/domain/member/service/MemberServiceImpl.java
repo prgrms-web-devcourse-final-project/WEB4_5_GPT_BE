@@ -46,8 +46,8 @@ public class MemberServiceImpl implements MemberService {
 
   @Override
   public void signUpStudent(StudentSignUpRequest request) {
-    University university = universityService.getUniversity(request.universityId());
-    Major major = majorService.getMajor(request.universityId(), request.majorId());
+      University university = universityService.findUniversityById(request.universityId());
+      Major major = majorService.getMajor(request.universityId(), request.majorId());
 
     validateStudentSignUp(request);
 
@@ -74,29 +74,29 @@ public class MemberServiceImpl implements MemberService {
     memberRepository.save(member);
   }
 
-  private void validateStudentSignUp(StudentSignUpRequest request) {
-    if (memberRepository.existsByEmail(request.email())) {
-      throw new UnihubException("409", "이메일 또는 학번이 이미 등록되어 있습니다.");
+    private void validateStudentSignUp(StudentSignUpRequest request) {
+        if (memberRepository.existsByEmail(request.email())) {
+            throw new UnihubException("409", "이메일 또는 학번이 이미 등록되어 있습니다.");
+        }
+
+        if (studentProfileRepository.existsByStudentCodeAndUniversityId(
+                request.studentCode(), request.universityId())) {
+            throw new UnihubException("409", "이메일 또는 학번이 이미 등록되어 있습니다.");
+        }
     }
 
-    if (studentProfileRepository.existsByStudentCodeAndUniversityId(
-        request.studentCode(), request.universityId())) {
-      throw new UnihubException("409", "이메일 또는 학번이 이미 등록되어 있습니다.");
-    }
-  }
+    @Override
+    public void signUpProfessor(ProfessorSignupRequest request) {
+        University university = universityService.findUniversityById(request.universityId());
+        Major major = majorService.getMajor(request.universityId(), request.majorId());
 
-  @Override
-  public void signUpProfessor(ProfessorSignupRequest request) {
-    University university = universityService.getUniversity(request.universityId());
-    Major major = majorService.getMajor(request.universityId(), request.majorId());
+        validateProfessorSignUp(request);
 
-    validateProfessorSignUp(request);
-
-    ProfessorProfile profile =
-        ProfessorProfile.builder()
-            .employeeId(request.employeeId())
-            .university(university)
-            .major(major)
+        ProfessorProfile profile =
+                ProfessorProfile.builder()
+                        .employeeId(request.employeeId())
+                        .university(university)
+                        .major(major)
             .build();
 
     Member member =
@@ -114,15 +114,15 @@ public class MemberServiceImpl implements MemberService {
   }
 
     private void validateProfessorSignUp(ProfessorSignupRequest request) {
-    if (memberRepository.existsByEmail(request.email())) {
-      throw new UnihubException("409", "이메일 또는 사번이 이미 등록되어 있습니다.");
-    }
+        if (memberRepository.existsByEmail(request.email())) {
+            throw new UnihubException("409", "이메일 또는 사번이 이미 등록되어 있습니다.");
+        }
 
-    if (professorProfileRepository.existsByEmployeeIdAndUniversityId(
-        request.employeeId(), request.universityId())) {
-      throw new UnihubException("409", "이메일 또는 사번이 이미 등록되어 있습니다.");
+        if (professorProfileRepository.existsByEmployeeIdAndUniversityId(
+                request.employeeId(), request.universityId())) {
+            throw new UnihubException("409", "이메일 또는 사번이 이미 등록되어 있습니다.");
+        }
     }
-  }
 
   @Override
   public void sendVerificationCode(String email) {

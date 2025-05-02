@@ -3,8 +3,9 @@ package com.WEB4_5_GPT_BE.unihub.domain.course.entity;
 import com.WEB4_5_GPT_BE.unihub.domain.common.entity.BaseTimeEntity;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.DayOfWeek;
 import jakarta.persistence.*;
-import java.time.LocalTime;
 import lombok.*;
+
+import java.time.LocalTime;
 
 @Getter
 @Setter
@@ -21,8 +22,8 @@ public class CourseSchedule extends BaseTimeEntity {
   @JoinColumn(name = "course_id", nullable = false)
   private Course course;
 
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false, length = 3)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "`day`", nullable = false, length = 3)
   private DayOfWeek day;
 
   @Column(name = "start_time", nullable = false)

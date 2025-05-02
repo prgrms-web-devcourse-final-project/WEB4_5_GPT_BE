@@ -15,23 +15,24 @@ import java.util.List;
 import java.util.Optional;
 
 public interface MemberService {
-  // 학생 회원가입
-  void signUpStudent(StudentSignUpRequest request);
+    // 학생 회원가입
+    void signUpStudent(StudentSignUpRequest request);
 
-  // 교직원 회원가입
-  void signUpProfessor(ProfessorSignupRequest request);
+    // 교직원 회원가입
+    void signUpProfessor(ProfessorSignupRequest request);
 
-  // 이메일로 인증코드 발송
-  void sendVerificationCode(String email);
 
-  // 이메일 인증 코드 검증
-  void verifyEmailCode(EmailCodeVerificationRequest request);
+    // 이메일로 인증코드 발송
+    void sendVerificationCode(String email);
 
-  // 비밀번호 재설정
-  void resetPassword(PasswordResetConfirmationRequest request);
+    // 이메일 인증 코드 검증
+    void verifyEmailCode(EmailCodeVerificationRequest request);
 
-  // Id를 통한 Member 찾기
-  Optional<Member> findById(Long id);
+    // 비밀번호 재설정
+    void resetPassword(PasswordResetConfirmationRequest request);
+
+    // Id를 통한 Member 찾기
+    Optional<Member> findById(Long id);
 
     MyPageStudentResponse getStudentMyPage(Long memberId);
     MyPageProfessorResponse getProfessorMyPage(Long memberId);

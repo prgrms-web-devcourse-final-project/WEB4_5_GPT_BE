@@ -15,22 +15,23 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorProfileReposit
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.UniversityRepository;
-import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+
 @Service
 @RequiredArgsConstructor
 public class AdminService {
 
-  private final MemberRepository memberRepository;
-  private final StudentProfileRepository studentProfileRepository;
-  private final ProfessorProfileRepository professorProfileRepository;
-  private final CourseRepository courseRepository;
-  private final UniversityRepository universityRepository;
+    private final MemberRepository memberRepository;
+    private final StudentProfileRepository studentProfileRepository;
+    private final ProfessorProfileRepository professorProfileRepository;
+    private final CourseRepository courseRepository;
+    private final UniversityRepository universityRepository;
 
   /** 학생 회원 목록 조회 */
   public Page<StudentResponse> getStudents(StudentSearchRequest searchRequest, Pageable pageable) {
@@ -115,41 +116,63 @@ public class AdminService {
     return periods.map(
         period ->
             new EnrollmentPeriodResponse(
-                period.getId(),
-                period.getUniversity().getName(),
-                period.getGrade(),
-                period.getStartDate(),
-                period.getEndDate()));
+                    period.getId(),
+                    period.getUniversity().getName(),
+                    period.getYear(),
+                    period.getGrade(),
+                    period.getSemester(),
+                    period.getStartDate(),
+                    period.getEndDate()));
   }
 
   /** 수강신청 기간 등록 */
   @Transactional
   public EnrollmentPeriodResponse createEnrollmentPeriod(EnrollmentPeriodRequest request) {
-    // 시작일이 종료일보다 늦은 경우 에러 발생
-    LocalDate startDate = LocalDate.parse(request.startDate());
-    LocalDate endDate = LocalDate.parse(request.endDate());
+      // 시작일이 종료일보다 늦은 경우 에러 발생
+      LocalDate startDate = LocalDate.parse(request.startDate());
+      LocalDate endDate = LocalDate.parse(request.endDate());
 
-    if (startDate.isAfter(endDate)) {
-      throw new IllegalArgumentException("종료일자는 시작일자보다 커야합니다.");
-    }
+      if (startDate.isAfter(endDate)) {
+          throw new IllegalArgumentException("종료일자는 시작일자보다 커야합니다.");
+      }
 
-    University university = universityRepository.getReferenceById(request.universityId());
-    EnrollmentPeriod enrollmentPeriod =
-        EnrollmentPeriod.builder()
-            .university(university)
-            .grade(request.grade())
-            .startDate(startDate)
-            .endDate(endDate)
-            .build();
+      University university = universityRepository.getReferenceById(request.universityId());
+
+      // 해당 대학, 학년, 연도, 학기에 이미 등록된 수강신청 기간이 있는지 확인
+      boolean exists = courseRepository.existsByUniversityIdAndGradeAndYearAndSemester(
+              university.getId(),
+              request.grade(),
+              request.year(),
+              request.semester()
+      );
+
+      if (exists) {
+          throw new IllegalArgumentException(
+                  String.format("%d년 %d학년 %d학기 수강신청 기간이 이미 등록되어 있습니다.",
+                          request.year(), request.grade(), request.semester())
+          );
+      }
+
+      EnrollmentPeriod enrollmentPeriod =
+              EnrollmentPeriod.builder()
+                      .university(university)
+                      .year(request.year())      // 연도 추가
+                      .grade(request.grade())
+                      .semester(request.semester()) // 학기 설정
+                      .startDate(startDate)
+                      .endDate(endDate)
+                      .build();
 
     EnrollmentPeriod savedPeriod = courseRepository.save(enrollmentPeriod);
 
     return new EnrollmentPeriodResponse(
-        savedPeriod.getId(),
-        savedPeriod.getUniversity().getName(),
-        savedPeriod.getGrade(),
-        savedPeriod.getStartDate(),
-        savedPeriod.getEndDate());
+            savedPeriod.getId(),
+            savedPeriod.getUniversity().getName(),
+            savedPeriod.getYear(),         // 연도 추가
+            savedPeriod.getGrade(),
+            savedPeriod.getSemester(),
+            savedPeriod.getStartDate(),
+            savedPeriod.getEndDate());
   }
 
   /** 수강신청 기간 수정 */
@@ -163,25 +186,29 @@ public class AdminService {
 
     // 시작일이 종료일보다 늦은 경우 에러 발생
     LocalDate startDate = LocalDate.parse(request.startDate());
-    LocalDate endDate = LocalDate.parse(request.endDate());
+      LocalDate endDate = LocalDate.parse(request.endDate());
 
-    if (startDate.isAfter(endDate)) {
-      throw new IllegalArgumentException("종료일자는 시작일자보다 커야합니다.");
-    }
+      if (startDate.isAfter(endDate)) {
+          throw new IllegalArgumentException("종료일자는 시작일자보다 커야합니다.");
+      }
 
-    University university = universityRepository.getReferenceById(request.universityId());
+      University university = universityRepository.getReferenceById(request.universityId());
 
-    enrollmentPeriod.setUniversity(university);
-    enrollmentPeriod.setGrade(request.grade());
-    enrollmentPeriod.setStartDate(startDate);
-    enrollmentPeriod.setEndDate(endDate);
+      enrollmentPeriod.setUniversity(university);
+      enrollmentPeriod.setGrade(request.grade());
+      enrollmentPeriod.setYear(request.year());
+      enrollmentPeriod.setSemester(request.semester());
+      enrollmentPeriod.setStartDate(startDate);
+      enrollmentPeriod.setEndDate(endDate);
 
-    return new EnrollmentPeriodResponse(
-        enrollmentPeriod.getId(),
-        enrollmentPeriod.getUniversity().getName(),
-        enrollmentPeriod.getGrade(),
-        enrollmentPeriod.getStartDate(),
-        enrollmentPeriod.getEndDate());
+      return new EnrollmentPeriodResponse(
+              enrollmentPeriod.getId(),
+              enrollmentPeriod.getUniversity().getName(),
+              enrollmentPeriod.getYear(),
+              enrollmentPeriod.getGrade(),
+              enrollmentPeriod.getSemester(),
+              enrollmentPeriod.getStartDate(),
+              enrollmentPeriod.getEndDate());
   }
 
   /** 수강신청 기간 삭제 */
