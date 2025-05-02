@@ -39,20 +39,8 @@ public class EnrollmentEventController {
         Long memberId = securityUser.getId();
         log.info("SSE 연결 요청: {}", memberId);
 
-        // SSE 이미터 생성
-        SseEmitter emitter = sseEmitterService.createEmitter(String.valueOf(memberId));
-
-        // 초기 상태 전송 - 현재는 기본 상태만 전송
-        try {
-            emitter.send(SseEmitter.event()
-                    .name("INITIAL_STATUS")
-                    .data(new QueueStatusDto(false, 0, 0, "연결되었습니다. 대기열 정보를 기다리는 중...")));
-            log.info("초기 상태 전송: {}", memberId);
-        } catch (Exception e) {
-            log.error("초기 상태 전송 실패: {}", memberId, e);
-        }
-
-        return emitter;
+        // 초기 상태를 포함한 SSE 이미터 생성 (서비스로 기능 이동)
+        return sseEmitterService.createEmitterWithInitialStatus(String.valueOf(memberId));
     }
 
     /**

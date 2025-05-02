@@ -1,6 +1,7 @@
 package com.WEB4_5_GPT_BE.unihub.domain.enrollment.service;
 
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.QueueStatusDto;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -11,7 +12,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class SseEmitterService {
+
+    private final EnrollmentQueueService enrollmentQueueService;
 
     // 타임아웃 설정 (3분)
     private static final long TIMEOUT = 180000L;
@@ -80,7 +84,34 @@ public class SseEmitterService {
     }
 
     /**
-     * 연결 유지를 위한 하트비트 전송
+     * 사용자의 현재 대기열 상태를 초기화하는 이미터 생성
+     *
+     * @param memberId 사용자 ID
+     * @return 초기화된 SSE 이미터
+     */
+    public SseEmitter createEmitterWithInitialStatus(String memberId) {
+        // 기본 이미터 생성
+        SseEmitter emitter = createEmitter(memberId);
+
+        // 사용자의 현재 대기열 상태 조회
+        QueueStatusDto currentStatus = enrollmentQueueService.getQueueStatus(memberId);
+
+        // 초기 상태 전송
+        try {
+            emitter.send(SseEmitter.event()
+                    .name("INITIAL_STATUS")
+                    .data(currentStatus));
+            log.info("초기 상태 전송: {}", memberId);
+        } catch (Exception e) {
+            log.error("초기 상태 전송 실패: {}", memberId, e);
+            removeEmitterIfExists(memberId);
+        }
+
+        return emitter;
+    }
+
+    /**
+     * 연결 유지를 위한 하트빃 전송
      */
     private void sendHeartbeat(SseEmitter emitter) {
         try {
