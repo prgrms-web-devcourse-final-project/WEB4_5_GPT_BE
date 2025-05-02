@@ -62,7 +62,7 @@ public class Course extends BaseTimeEntity {
   public String scheduleToString() {
       StringBuilder scheduleString = new StringBuilder();
       for (CourseSchedule s : schedules) {
-          scheduleString.append(s.toString()).append(s.getStartTime().getHour()).append("-").append(s.getEndTime().getHour());
+          scheduleString.append(s.getDay()).append(s.getStartTime().getHour()).append("-").append(s.getEndTime().getHour());
       }
       return scheduleString.toString();
   }
