@@ -10,6 +10,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.exception.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.global.Rq;
+import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -63,6 +64,18 @@ public class AuthServiceImpl implements AuthService {
       recordLoginFailure(email);
       return new InvalidCredentialException();
     });
+      //[복구] 탈퇴 회원 처리
+      if (member.isDeleted()) {
+          if (member.getDeletedAt() != null &&
+                  member.getDeletedAt().plusDays(30).isBefore(java.time.LocalDateTime.now())) {
+              memberRepository.delete(member);
+              throw new UnihubException("404", "30일이 지나 계정이 삭제되었습니다.");
+          }
+
+          member.setDeleted(false);
+          member.setDeletedAt(null);
+          memberRepository.save(member);
+      }
 
     if (!passwordEncoder.matches(password, member.getPassword())) {
       recordLoginFailure(email);
