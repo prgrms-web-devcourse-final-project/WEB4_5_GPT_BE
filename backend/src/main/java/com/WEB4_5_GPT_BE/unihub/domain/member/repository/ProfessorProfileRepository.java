@@ -14,13 +14,15 @@ public interface ProfessorProfileRepository extends JpaRepository<ProfessorProfi
     boolean existsByEmployeeIdAndUniversityId(String employeeId, Long universityId);
 
     @Query(
-        "SELECT pp FROM ProfessorProfile pp "
-        + "JOIN pp.member m "
-        + "WHERE m.role = 'PROFESSOR' "
-        + "AND (:universityId IS NULL OR pp.university.id = :universityId) "
-        + "AND (:professorName IS NULL OR m.name LIKE %:professorName%) "
-        + "AND (:majorId IS NULL OR pp.major.id = :majorId) "
-        + "AND (:status IS NULL OR pp.approvalStatus = :status)")
+            "SELECT pp FROM ProfessorProfile pp "
+                    + "JOIN FETCH pp.member m "
+                    + "JOIN FETCH pp.university "
+                    + "JOIN FETCH pp.major "
+                    + "WHERE m.role = 'PROFESSOR' "
+                    + "AND (:universityId IS NULL OR pp.university.id = :universityId) "
+                    + "AND (:professorName IS NULL OR m.name LIKE %:professorName%) "
+                    + "AND (:majorId IS NULL OR pp.major.id = :majorId) "
+                    + "AND (:status IS NULL OR pp.approvalStatus = :status)")
     Page<ProfessorProfile> findProfessorsWithFilters(
         @Param("universityId") Long universityId,
         @Param("professorName") String professorName,
