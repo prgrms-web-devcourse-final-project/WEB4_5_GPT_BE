@@ -3,7 +3,7 @@ package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.EmailCodeVerificationRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.PasswordResetConfirmationRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignupRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageProfessorResponse;
@@ -26,9 +26,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -77,29 +74,29 @@ public class MemberServiceImpl implements MemberService {
     memberRepository.save(member);
   }
 
-  private void validateStudentSignUp(StudentSignUpRequest request) {
-    if (memberRepository.existsByEmail(request.email())) {
-      throw new UnihubException("409", "이메일 또는 학번이 이미 등록되어 있습니다.");
+    private void validateStudentSignUp(StudentSignUpRequest request) {
+        if (memberRepository.existsByEmail(request.email())) {
+            throw new UnihubException("409", "이메일 또는 학번이 이미 등록되어 있습니다.");
+        }
+
+        if (studentProfileRepository.existsByStudentCodeAndUniversityId(
+                request.studentCode(), request.universityId())) {
+            throw new UnihubException("409", "이메일 또는 학번이 이미 등록되어 있습니다.");
+        }
     }
 
-    if (studentProfileRepository.existsByStudentCodeAndUniversityId(
-        request.studentCode(), request.universityId())) {
-      throw new UnihubException("409", "이메일 또는 학번이 이미 등록되어 있습니다.");
-    }
-  }
+    @Override
+    public void signUpProfessor(ProfessorSignupRequest request) {
+        University university = universityService.findUniversityById(request.universityId());
+        Major major = majorService.getMajor(request.universityId(), request.majorId());
 
-  @Override
-  public void signUpProfessor(ProfessorSignUpRequest request) {
-      University university = universityService.findUniversityById(request.universityId());
-      Major major = majorService.getMajor(request.universityId(), request.majorId());
+        validateProfessorSignUp(request);
 
-    validateProfessorSignUp(request);
-
-    ProfessorProfile profile =
-        ProfessorProfile.builder()
-            .employeeId(request.employeeId())
-            .university(university)
-            .major(major)
+        ProfessorProfile profile =
+                ProfessorProfile.builder()
+                        .employeeId(request.employeeId())
+                        .university(university)
+                        .major(major)
             .build();
 
     Member member =
@@ -116,16 +113,16 @@ public class MemberServiceImpl implements MemberService {
     memberRepository.save(member);
   }
 
-  private void validateProfessorSignUp(ProfessorSignUpRequest request) {
-    if (memberRepository.existsByEmail(request.email())) {
-      throw new UnihubException("409", "이메일 또는 사번이 이미 등록되어 있습니다.");
-    }
+    private void validateProfessorSignUp(ProfessorSignupRequest request) {
+        if (memberRepository.existsByEmail(request.email())) {
+            throw new UnihubException("409", "이메일 또는 사번이 이미 등록되어 있습니다.");
+        }
 
-    if (professorProfileRepository.existsByEmployeeIdAndUniversityId(
-        request.employeeId(), request.universityId())) {
-      throw new UnihubException("409", "이메일 또는 사번이 이미 등록되어 있습니다.");
+        if (professorProfileRepository.existsByEmployeeIdAndUniversityId(
+                request.employeeId(), request.universityId())) {
+            throw new UnihubException("409", "이메일 또는 사번이 이미 등록되어 있습니다.");
+        }
     }
-  }
 
   @Override
   public void sendVerificationCode(String email) {
