@@ -25,4 +25,8 @@ public interface EnrollmentPeriodRepository extends JpaRepository<EnrollmentPeri
             @Param("endDateFrom") LocalDate endDateFrom,
             @Param("endDateTo") LocalDate endDateTo,
             Pageable pageable);
+
+    // 대학, 학년, 연도, 학기로 수강신청 기간 중복 검사
+    boolean existsByUniversityIdAndGradeAndYearAndSemester(
+            Long universityId, Integer grade, Integer year, Integer semester);
 }
