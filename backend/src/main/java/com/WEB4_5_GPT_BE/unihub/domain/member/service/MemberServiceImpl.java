@@ -13,6 +13,8 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.UpdateMajorRes
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
+import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.StudentProfileNotFoundException;
+import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.ProfessorProfileNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorProfileRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
@@ -177,7 +179,7 @@ public class MemberServiceImpl implements MemberService {
   public MyPageStudentResponse getStudentMyPage(Long memberId) {
     Member member = findActiveMemberById(memberId);
     StudentProfile profile = studentProfileRepository.findById(memberId)
-            .orElseThrow(() -> new UnihubException("404", "학생 프로필을 찾을 수 없습니다."));
+            .orElseThrow(StudentProfileNotFoundException::new);
     return MyPageStudentResponse.from(member, profile);
   }
 
@@ -186,7 +188,7 @@ public class MemberServiceImpl implements MemberService {
   public MyPageProfessorResponse getProfessorMyPage(Long memberId) {
     Member member = findActiveMemberById(memberId);
     ProfessorProfile profile = professorProfileRepository.findById(memberId)
-            .orElseThrow(() -> new UnihubException("404", "교수 프로필을 찾을 수 없습니다."));
+            .orElseThrow(ProfessorProfileNotFoundException::new);
     return MyPageProfessorResponse.from(member, profile);
   }
 
@@ -269,9 +271,9 @@ public class MemberServiceImpl implements MemberService {
       if (member.getDeletedAt() != null &&
               member.getDeletedAt().plusDays(30).isBefore(LocalDateTime.now())) {
         memberRepository.delete(member);
-        throw new UnihubException("404", "30일이 경과하여 계정이 삭제되었습니다.");
+          throw new UnihubException("404", "30일이 경과하여 계정이 삭제되었습니다.");
       }
-      throw new UnihubException("401", "탈퇴한 계정입니다. 30일 이내 로그인 시 복구됩니다.");
+        throw new UnihubException("401", "탈퇴한 계정입니다. 30일 이내 로그인 시 복구됩니다.");
     }
 
     return member;
