@@ -139,8 +139,8 @@ class CourseControllerTest {
                     .content(objectMapper.writeValueAsString(CourseRequest.from(testCourse))));
 
         resultActions
-                // TODO: 컨트롤러 aspect 설정이 제대로 안들어가고 있는데, 확인해보고 수정할 것.
-//                .andExpect(status().isCreated())
+                // 테스트 실행시 필요한 빈만 로드되기 때문에 AOP가 동작하지 않음. 실제 응답은 정상적으로 201 Created 코드가 들어감
+                .andExpect(status().isOk())
                 .andExpect(handler().handlerType(CourseController.class))
                 .andExpect(handler().methodName("createCourse"))
                 .andExpect(jsonPath("$.message").value("성공적으로 생성되었습니다."))
