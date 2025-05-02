@@ -14,13 +14,20 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -31,6 +38,18 @@ public class MemberControllerTest {
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
     @Autowired private EmailService emailService;
+
+    @TestConfiguration
+    static class EmailServiceMockConfig {
+        @Bean
+        public EmailService emailService() {
+            EmailService mock = mock(EmailService.class);
+            when(mock.isAlreadyVerified(anyString())).thenReturn(true);
+            doNothing().when(mock).sendVerificationCode(anyString());
+            doNothing().when(mock).markEmailAsVerified(anyString());
+            return mock;
+        }
+    }
 
     @Test
     @DisplayName("학생 회원가입 - 성공")
@@ -141,6 +160,8 @@ public class MemberControllerTest {
     @Test
     @DisplayName("이메일 인증 없이 학생 회원가입 시 실패한다")
     void signUpStudent_withoutEmailVerification_thenFail() throws Exception {
+        when(emailService.isAlreadyVerified("unverified@auni.ac.kr")).thenReturn(false);
+
         StudentSignUpRequest request = new StudentSignUpRequest(
                 "unverified@auni.ac.kr", "password", "학생", "20251234", 1L, 1L, 1, 1, Role.STUDENT);
 
