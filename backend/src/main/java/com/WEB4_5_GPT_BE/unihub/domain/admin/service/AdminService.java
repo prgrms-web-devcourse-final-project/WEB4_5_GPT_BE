@@ -6,7 +6,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.response.ProfessorResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.response.StudentResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.EnrollmentPeriod;
-import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.course.repository.EnrollmentPeriodRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
@@ -139,7 +139,7 @@ public class AdminService {
       University university = universityRepository.getReferenceById(request.universityId());
 
       // 해당 대학, 학년, 연도, 학기에 이미 등록된 수강신청 기간이 있는지 확인
-      boolean exists = courseRepository.existsByUniversityIdAndGradeAndYearAndSemester(
+      boolean exists = enrollmentPeriodRepository.existsByUniversityIdAndGradeAndYearAndSemester(
               university.getId(),
               request.grade(),
               request.year(),
