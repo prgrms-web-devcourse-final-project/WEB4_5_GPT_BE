@@ -92,8 +92,8 @@ public class CourseService {
      * @return 수정된 강의의 {@link CourseWithFullScheduleResponse} DTO
      */
     public CourseWithFullScheduleResponse updateCourse(Long courseId, CourseRequest courseRequest) {
-        if (!courseRepository.existsById(courseId))
-                throw new UnihubException(String.valueOf(HttpStatus.NOT_FOUND.value()), "해당 강의가 존재하지 않습니다.");
+        Course orig = courseRepository.findById(courseId).orElseThrow(
+                () -> new UnihubException(String.valueOf(HttpStatus.NOT_FOUND.value()), "해당 강의가 존재하지 않습니다."));
         University u = universityRepository.findByName(courseRequest.university()).orElseThrow(
                 () -> new UnihubException(String.valueOf(HttpStatus.BAD_REQUEST.value()), "존재하지 않는 대학교입니다.")
         );
@@ -111,8 +111,8 @@ public class CourseService {
         if (p != null && doesProfScheduleConflict(courseRequest.schedule(), p.getEmployeeId())) {
             throw new UnihubException(String.valueOf(HttpStatus.CONFLICT.value()), "강사/교수가 이미 수업 중입니다.");
         }
-        Course res = courseRequest.toEntity(m, 0, p);
-        res.setId(courseId);
+        Course res = courseRequest.toEntity(m, orig.getEnrolled(), p);
+        res.setId(orig.getId());
         courseRequest.schedule().forEach(sc -> res.getSchedules().add(sc.toEntity(res, u.getId())));
         return CourseWithFullScheduleResponse.from(courseRepository.save(res));
     }
@@ -173,7 +173,7 @@ public class CourseService {
      * @param principal 대학 ID를 추출할 인증 유저 정보
      * @return 대학 ID
      */
-    // TODO: 관리자가 강의 목록을 조회했을때 대응
+    // TODO: 관리자가 강의 목록을 조회했을때 대응 추가
     private Long getUnivIdFromPrincipal(SecurityUser principal) {
         GrantedAuthority authRole = principal.getAuthorities().stream().findFirst().orElseThrow(
                 () -> new UnihubException(String.valueOf(HttpStatus.INTERNAL_SERVER_ERROR.value()), "인증정보에서 권한을 불러오지 못했습니다.")
