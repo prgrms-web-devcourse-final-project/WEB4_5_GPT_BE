@@ -3,8 +3,8 @@ package com.WEB4_5_GPT_BE.unihub.domain.member.controller;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.MemberLoginRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.PasswordResetConfirmationRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignupRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignupRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
 import com.WEB4_5_GPT_BE.unihub.global.config.RedisTestContainerConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,8 +40,8 @@ public class MemberControllerTest {
   @Test
   @DisplayName("학생 회원가입 - 성공")
   void signUpStudent_success() throws Exception {
-      StudentSignupRequest request =
-              new StudentSignupRequest(
+      StudentSignUpRequest request =
+              new StudentSignUpRequest(
             "haneulkim@auni.ac.kr", "password", "김하늘", "20250001", 1L, 1L, 1, 1, Role.STUDENT);
 
     mockMvc
@@ -57,8 +57,8 @@ public class MemberControllerTest {
   @Test
   @DisplayName("교직원 회원가입 - 성공")
   void signUpProfessor_success() throws Exception {
-      ProfessorSignupRequest request =
-              new ProfessorSignupRequest(
+      ProfessorSignUpRequest request =
+              new ProfessorSignUpRequest(
             "kim@auni.ac.kr", "password", "김교수", "20250001", 1L, 1L, Role.PROFESSOR);
 
     mockMvc

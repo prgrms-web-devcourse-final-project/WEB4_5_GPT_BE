@@ -31,13 +31,13 @@ public class MemberController {
   private final AuthService authService;
 
   @PostMapping("/signup/student")
-  public RsData<Empty> signUpStudent(@RequestBody @Valid StudentSignupRequest request) {
+  public RsData<Empty> signUpStudent(@RequestBody @Valid StudentSignUpRequest request) {
     memberService.signUpStudent(request);
     return new RsData<>("200", "학생 가입이 완료되었습니다.");
   }
 
   @PostMapping("/signup/professor")
-  public RsData<Empty> signUpProfessor(@RequestBody @Valid ProfessorSignupRequest request) {
+  public RsData<Empty> signUpProfessor(@RequestBody @Valid ProfessorSignUpRequest request) {
     memberService.signUpProfessor(request);
     return new RsData<>("201", "교직원 가입 신청이 완료되었습니다. 관리자의 승인을 기다려 주세요.");
   }

@@ -3,8 +3,8 @@ package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.EmailCodeVerificationRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.PasswordResetConfirmationRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignupRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignupRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageProfessorResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageStudentResponse;
@@ -45,7 +45,7 @@ public class MemberServiceImpl implements MemberService {
   private final EmailService emailService;
 
   @Override
-  public void signUpStudent(StudentSignupRequest request) {
+  public void signUpStudent(StudentSignUpRequest request) {
     University university = universityService.getUniversity(request.universityId());
     Major major = majorService.getMajor(request.universityId(), request.majorId());
 
@@ -74,7 +74,7 @@ public class MemberServiceImpl implements MemberService {
     memberRepository.save(member);
   }
 
-  private void validateStudentSignUp(StudentSignupRequest request) {
+  private void validateStudentSignUp(StudentSignUpRequest request) {
     if (memberRepository.existsByEmail(request.email())) {
       throw new UnihubException("409", "이메일 또는 학번이 이미 등록되어 있습니다.");
     }
@@ -86,7 +86,7 @@ public class MemberServiceImpl implements MemberService {
   }
 
   @Override
-  public void signUpProfessor(ProfessorSignupRequest request) {
+  public void signUpProfessor(ProfessorSignUpRequest request) {
     University university = universityService.getUniversity(request.universityId());
     Major major = majorService.getMajor(request.universityId(), request.majorId());
 
@@ -113,7 +113,7 @@ public class MemberServiceImpl implements MemberService {
     memberRepository.save(member);
   }
 
-    private void validateProfessorSignUp(ProfessorSignupRequest request) {
+  private void validateProfessorSignUp(ProfessorSignUpRequest request) {
     if (memberRepository.existsByEmail(request.email())) {
       throw new UnihubException("409", "이메일 또는 사번이 이미 등록되어 있습니다.");
     }
