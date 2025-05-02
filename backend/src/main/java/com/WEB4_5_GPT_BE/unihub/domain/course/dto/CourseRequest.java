@@ -21,7 +21,7 @@ public record CourseRequest(
         List<CourseScheduleDto> schedule
 ) {
     public Course toEntity(Major major, Integer enrolled, ProfessorProfile professorProfile) {
-        return new Course(
+        Course res = new Course(
                 null,
                 title,
                 major,
@@ -33,6 +33,25 @@ public record CourseRequest(
                 grade,
                 semester,
                 coursePlanAttachment
+        );
+        this.schedule.forEach(
+                csd -> res.getSchedules().add(csd.toEntity(res, major.getUniversity().getId())));
+        return res;
+    }
+
+    public static CourseRequest from(Course course) {
+        return new CourseRequest(
+                course.getTitle(),
+                course.getMajor().getName(),
+                course.getMajor().getUniversity().getName(),
+                course.getLocation(),
+                course.getCapacity(),
+                course.getCredit(),
+                course.getProfessor() != null ? course.getProfessor().getEmployeeId() : null,
+                course.getGrade(),
+                course.getSemester(),
+                course.getCoursePlanAttachment(),
+                course.getSchedules().stream().map(CourseScheduleDto::from).toList()
         );
     }
 }
