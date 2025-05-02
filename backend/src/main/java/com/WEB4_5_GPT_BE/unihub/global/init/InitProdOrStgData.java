@@ -11,9 +11,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
-@Profile({"prod", "dev"}) // 개발, 운영 배포 환경에서만 실행
+@Profile({"stg", "prod"}) // 테스트, 운영 서버 환경에서만 동작하는 테스트 데이터 초기화
 @RequiredArgsConstructor
-public class InitProdData {
+public class InitProdOrStgData {
 
     private final InitDataHelper helper;
     private final PasswordEncoder passwordEncoder;

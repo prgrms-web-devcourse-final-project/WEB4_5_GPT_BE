@@ -1,4 +1,4 @@
-# 실제 배포중인 운영 서버에 대한 설정
+# 운영 서버와 똑같이 운영되는 스테이징 서버 (테스트) 설정
 server:
   shutdown: graceful
 
@@ -36,6 +36,6 @@ logging:
 
 custom:
   site:
-    domain: "${custom.prod.domain}"
-    backUrl: "${custom.prod.backUrl}"
-    frontUrl: "${custom.prod.frontUrl}"
+    domain: "${custom.stg.domain}"
+    backUrl: "${custom.stg.backUrl}"
+    frontUrl: "${custom.stg.frontUrl}"

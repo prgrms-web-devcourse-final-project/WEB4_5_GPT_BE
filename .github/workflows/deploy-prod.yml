@@ -46,7 +46,7 @@ jobs:
 
       - name: image 이름 설정
         id: export_image
-        run: echo "image_name=unihub_backend" >> $GITHUB_OUTPUT
+        run: echo "image_name=unihub_backend_prod" >> $GITHUB_OUTPUT
 
       - name: 빌드 및 푸시 (Dockerfile.prod 운영용)
         uses: docker/build-push-action@v3
@@ -67,8 +67,8 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: ${{ secrets.AWS_REGION }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
 
       - name: EC2 인스턴스 ID 조회 (team08-ec2-main)
         id: get_instance_id
@@ -85,8 +85,8 @@ jobs:
         id: ssm
         with:
           aws-region: ${{ secrets.AWS_REGION }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
           instance-ids: ${{ env.INSTANCE_ID }}
           working-directory: /
           comment: Deploy

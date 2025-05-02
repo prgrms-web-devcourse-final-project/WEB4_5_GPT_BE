@@ -1,38 +1,27 @@
-# 배포중인 개발 서버에 대한 설정
+# 로컬에서 구동하는 개발 환경에 대한 설정
 spring:
-  data:
-    redis:
-      host: redis_1
-      password: "${custom.prod.redis.password}"
-      port: 6379
-
   datasource:
-    url: jdbc:mysql://mysql_1:3306/unihub
-    username: unihublocal
-    password: "${custom.prod.db.password}"
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:h2:./unihub_dev;MODE=MySQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
     hikari:
       auto-commit: false
 
-  jpa:
-    hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        format_sql: false
-        highlight_sql: false
-        use_sql_comments: false
+  data:
+    redis:
+      host: localhost
+      port: 6379
 
 logging:
   level:
-    com.example: INFO
-    org.hibernate.SQL: INFO
-    org.hibernate.orm.jdbc.bind: INFO
-    org.hibernate.orm.jdbc.extract: INFO
-    org.springframework.transaction.interceptor: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+    org.hibernate.orm.jdbc.extract: TRACE
+    org.springframework.transaction.interceptor: TRACE
 
 custom:
   site:
-    domain: "${custom.prod-dev.domain}"
-    backUrl: "${custom.prod-dev.backUrl}"
-    frontUrl: "${custom.prod-dev.frontUrl}"
+    domain: "${custom.dev.domain}"
+    backUrl: "${custom.dev.backUrl}"
+    frontUrl: "${custom.dev.frontUrl}"

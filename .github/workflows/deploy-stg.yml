@@ -1,9 +1,10 @@
-name: deploy-dev
+name: deploy-stg
 
 on:
   push:
     branches:
       - develop
+      - 옥정현/feat-34
 
     paths:
       - '.github/workflows/**'
@@ -46,13 +47,13 @@ jobs:
 
       - name: image 이름 설정
         id: export_image
-        run: echo "image_name=unihub_backend_dev" >> $GITHUB_OUTPUT
+        run: echo "image_name=unihub_backend_stg" >> $GITHUB_OUTPUT
 
-      - name: 빌드 및 푸시 (Dockerfile.dev 개발용)
+      - name: 빌드 및 푸시 (Dockerfile.stg 개발용)
         uses: docker/build-push-action@v3
         with:
           context: backend
-          file: backend/Dockerfile.dev
+          file: backend/Dockerfile.stg
           push: true
           cache-from: type=registry,ref=ghcr.io/${{ steps.export_owner.outputs.owner_lc }}/${{ steps.export_image.outputs.image_name }}:cache
           cache-to: type=registry,ref=ghcr.io/${{ steps.export_owner.outputs.owner_lc }}/${{ steps.export_image.outputs.image_name }}:cache,mode=max
@@ -67,8 +68,8 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: ${{ secrets.AWS_REGION }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEV }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_STG }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_STG }}
 
       - name: EC2 인스턴스 ID 조회 (team08-dev-ec2-main)
         id: get_instance_id
@@ -85,8 +86,8 @@ jobs:
         id: ssm
         with:
           aws-region: ${{ secrets.AWS_REGION }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEV }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_STG }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_STG }}
           instance-ids: ${{ env.INSTANCE_ID }}
           working-directory: /
           comment: Deploy

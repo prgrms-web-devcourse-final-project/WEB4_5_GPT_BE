@@ -7,6 +7,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.EmailService;
+import com.WEB4_5_GPT_BE.unihub.global.config.RedisTestContainerConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
@@ -22,17 +23,16 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ActiveProfiles("test")
 @SpringBootTest
-@AutoConfigureMockMvc
 @Transactional
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+@RedisTestContainerConfig
 public class MemberControllerTest {
 
     @Autowired private MockMvc mockMvc;
