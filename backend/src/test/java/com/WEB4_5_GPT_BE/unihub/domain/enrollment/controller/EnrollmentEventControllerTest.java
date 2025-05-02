@@ -51,7 +51,7 @@ public class EnrollmentEventControllerTest {
 
         // SseEmitter 서비스 설정
         SseEmitter mockEmitter = mock(SseEmitter.class);
-        when(sseEmitterService.createEmitter(anyString())).thenReturn(mockEmitter);
+        when(sseEmitterService.createEmitterWithInitialStatus(anyString())).thenReturn(mockEmitter);
 
         // EnrollmentQueueService 설정
         QueueStatusDto mockStatus = new QueueStatusDto(true, 5, 10, "테스트 메시지");
@@ -74,7 +74,7 @@ public class EnrollmentEventControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(request().asyncStarted());
 
-        verify(sseEmitterService, times(1)).createEmitter("1");
+        verify(sseEmitterService, times(1)).createEmitterWithInitialStatus("1");
     }
 
     @Test
