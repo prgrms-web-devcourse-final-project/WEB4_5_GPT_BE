@@ -30,7 +30,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-//@RedisTestContainerConfig
 class AuthServiceImplTest {
 
   @InjectMocks private AuthServiceImpl authService;
