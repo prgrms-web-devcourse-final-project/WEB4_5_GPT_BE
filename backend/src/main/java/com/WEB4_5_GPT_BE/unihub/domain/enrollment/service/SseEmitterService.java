@@ -15,8 +15,6 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class SseEmitterService {
 
-    private final EnrollmentQueueService enrollmentQueueService;
-
     // 타임아웃 설정 (3분)
     private static final long TIMEOUT = 180000L;
     // 사용자 ID별 SSE 이미터를 관리하는 맵
@@ -86,21 +84,19 @@ public class SseEmitterService {
     /**
      * 사용자의 현재 대기열 상태를 초기화하는 이미터 생성
      *
-     * @param memberId 사용자 ID
+     * @param memberId      사용자 ID
+     * @param initialStatus 초기 상태 정보
      * @return 초기화된 SSE 이미터
      */
-    public SseEmitter createEmitterWithInitialStatus(String memberId) {
+    public SseEmitter createEmitterWithInitialStatus(String memberId, QueueStatusDto initialStatus) {
         // 기본 이미터 생성
         SseEmitter emitter = createEmitter(memberId);
-
-        // 사용자의 현재 대기열 상태 조회
-        QueueStatusDto currentStatus = enrollmentQueueService.getQueueStatus(memberId);
 
         // 초기 상태 전송
         try {
             emitter.send(SseEmitter.event()
                     .name("INITIAL_STATUS")
-                    .data(currentStatus));
+                    .data(initialStatus));
             log.info("초기 상태 전송: {}", memberId);
         } catch (Exception e) {
             log.error("초기 상태 전송 실패: {}", memberId, e);

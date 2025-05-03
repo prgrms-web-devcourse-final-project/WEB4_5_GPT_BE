@@ -36,11 +36,14 @@ public class EnrollmentEventController {
             throw new UnihubException("401", "인증되지 않은 요청입니다.");
         }
 
-        Long memberId = securityUser.getId();
+        String memberId = String.valueOf(securityUser.getId());
         log.info("SSE 연결 요청: {}", memberId);
 
-        // 초기 상태를 포함한 SSE 이미터 생성 (서비스로 기능 이동)
-        return sseEmitterService.createEmitterWithInitialStatus(String.valueOf(memberId));
+        // 초기 상태 가져오기
+        QueueStatusDto initialStatus = enrollmentQueueService.getQueueStatus(memberId);
+
+        // 초기 상태와 함께 SSE 이미터 생성
+        return sseEmitterService.createEmitterWithInitialStatus(memberId, initialStatus);
     }
 
     /**
