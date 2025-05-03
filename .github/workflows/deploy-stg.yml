@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - 옥정현/feat-34
 
     paths:
       - '.github/workflows/**'
