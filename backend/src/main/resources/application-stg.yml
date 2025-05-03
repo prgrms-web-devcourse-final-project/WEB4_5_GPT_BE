@@ -19,7 +19,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: false
@@ -27,7 +27,7 @@ spring:
         use_sql_comments: false
 
 logging:
-  level:
+  level: # 배포환경에서는 INFO 레벨만 기록하여 성능, 보안, 로그 용량 관리를 최적화
     com.example: INFO
     org.hibernate.SQL: INFO
     org.hibernate.orm.jdbc.bind: INFO
@@ -35,7 +35,7 @@ logging:
     org.springframework.transaction.interceptor: INFO
 
 custom:
-  site:
+  site: # un1hub.site 테스트 서버 주소가 설정 됨
     domain: "${custom.stg.domain}"
     backUrl: "${custom.stg.backUrl}"
     frontUrl: "${custom.stg.frontUrl}"
