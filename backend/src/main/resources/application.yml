@@ -81,3 +81,11 @@ custom:
     domain: "${custom.dev.domain}"
     backUrl: "${custom.dev.backUrl}"
     frontUrl: "${custom.dev.frontUrl}"
+
+cors:
+  allowed-origins:
+    - https://www.app4.qwas.shop
+    - https://login.aleph.kr
+    - http://localhost:3000
+    - https://web-4-5-gpt-fe.vercel.app
+    - https://web-4-5-gpt-l4cx985jz-lisarnjs-projects.vercel.app
