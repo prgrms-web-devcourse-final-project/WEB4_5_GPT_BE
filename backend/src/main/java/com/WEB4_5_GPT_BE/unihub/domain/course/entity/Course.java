@@ -54,4 +54,16 @@ public class Course extends BaseTimeEntity {
   /* 시간표 */
   @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
   private final List<CourseSchedule> schedules = new ArrayList<>();
+
+    /**
+     * 강의의 스케줄을 간략화한 문자열을 반환한다.
+     * @return {@code [DDDHH-HH]...} 형식의 문자열
+     */
+  public String scheduleToString() {
+      StringBuilder scheduleString = new StringBuilder();
+      for (CourseSchedule s : schedules) {
+          scheduleString.append(s.getDay()).append(s.getStartTime().getHour()).append("-").append(s.getEndTime().getHour());
+      }
+      return scheduleString.toString();
+  }
 }

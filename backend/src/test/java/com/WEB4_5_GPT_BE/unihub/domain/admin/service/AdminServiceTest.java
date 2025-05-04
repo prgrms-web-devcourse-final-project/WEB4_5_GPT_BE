@@ -6,7 +6,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.request.ProfessorApprovalReques
 import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.response.EnrollmentPeriodResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.EnrollmentPeriod;
-import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.course.repository.EnrollmentPeriodRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
@@ -38,7 +38,7 @@ public class AdminServiceTest {
 
   @Mock private ProfessorProfileRepository professorProfileRepository;
 
-  @Mock private CourseRepository courseRepository;
+  @Mock private EnrollmentPeriodRepository enrollmentPeriodRepository;
 
   @Mock private UniversityRepository universityRepository;
 
@@ -94,7 +94,7 @@ public class AdminServiceTest {
             .startDate(LocalDate.parse("2025-05-01"))
             .endDate(LocalDate.parse("2025-05-10"))
             .build();
-    when(courseRepository.save(any(EnrollmentPeriod.class))).thenReturn(savedPeriod);
+    when(enrollmentPeriodRepository.save(any(EnrollmentPeriod.class))).thenReturn(savedPeriod);
 
     // when
     EnrollmentPeriodResponse response = adminService.createEnrollmentPeriod(request);
@@ -141,8 +141,8 @@ public class AdminServiceTest {
             .endDate(LocalDate.parse("2025-05-10"))
             .build();
 
-      when(courseRepository.findById(periodId)).thenReturn(Optional.of(existingPeriod));
-      when(universityRepository.getReferenceById(2L)).thenReturn(newUniversity);
+    when(enrollmentPeriodRepository.findById(periodId)).thenReturn(Optional.of(existingPeriod));
+    when(universityRepository.getReferenceById(2L)).thenReturn(newUniversity);
 
       // when
       EnrollmentPeriodResponse response = adminService.updateEnrollmentPeriod(periodId, request);
@@ -163,13 +163,13 @@ public class AdminServiceTest {
   void deleteEnrollmentPeriodTest() {
     // given
     Long periodId = 1L;
-    when(courseRepository.existsById(periodId)).thenReturn(true);
+    when(enrollmentPeriodRepository.existsById(periodId)).thenReturn(true);
 
     // when
     adminService.deleteEnrollmentPeriod(periodId);
 
     // then
-    verify(courseRepository).deleteById(periodId);
+    verify(enrollmentPeriodRepository).deleteById(periodId);
   }
 
   @Test
@@ -177,7 +177,7 @@ public class AdminServiceTest {
   void deleteEnrollmentPeriodFailTest() {
     // given
     Long periodId = 1L;
-    when(courseRepository.existsById(periodId)).thenReturn(false);
+    when(enrollmentPeriodRepository.existsById(periodId)).thenReturn(false);
 
     // when & then
     assertThatThrownBy(() -> adminService.deleteEnrollmentPeriod(periodId))

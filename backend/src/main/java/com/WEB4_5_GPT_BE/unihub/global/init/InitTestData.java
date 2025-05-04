@@ -1,6 +1,9 @@
 package com.WEB4_5_GPT_BE.unihub.global.init;
 
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus;
+import com.WEB4_5_GPT_BE.unihub.domain.common.enums.DayOfWeek;
+import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
@@ -10,6 +13,8 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Component
 @Profile("test")
@@ -38,12 +43,19 @@ public class InitTestData {
                 university.getId(), major.getId());
 
         // 승인된 교수 (로그인 성공용)
-        helper.createProfessor("professor@auni.ac.kr", "password", "김교수", "EMP00001",
+        Member authenticatedProfessor = helper.createProfessor("professor@auni.ac.kr", "password", "김교수", "EMP00001",
                 university.getId(), major.getId(), ApprovalStatus.APPROVED);
 
         // 승인 안 된 교수 (로그인 실패용)
         helper.createProfessor("pending@auni.ac.kr", "password", "대기중교수", "EMP00002",
                 university.getId(), major.getId(), ApprovalStatus.PENDING);
+
+        Course course = helper.createCourse("컴파일러", major, "공학관A", 200, 0, 4,
+                authenticatedProfessor.getProfessorProfile(), 4, 1, "/somePath/someAttachment.jpg");
+
+        for(DayOfWeek day : List.of(DayOfWeek.MON, DayOfWeek.TUE, DayOfWeek.WED)) {
+            helper.createCourseScheduleAndAssociateWithCourse(course, day, "12:00", "14:00");
+        }
 
         helper.createAdmin("adminmaster@auni.ac.kr", "adminPw", "관리자", passwordEncoder); // 인코딩 생략
     }

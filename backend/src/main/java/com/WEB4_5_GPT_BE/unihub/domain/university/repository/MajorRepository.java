@@ -18,4 +18,6 @@ public interface MajorRepository extends JpaRepository<Major, Long> {
   boolean existsByUniversityAndName(University university, String name);
 
   Optional<Major> findByIdAndUniversityId(Long majorId, Long universityId);
+
+  Optional<Major> findByUniversityIdAndName(Long universityId, String name);
 }

@@ -6,7 +6,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.response.ProfessorResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.response.StudentResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.EnrollmentPeriod;
-import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.course.repository.EnrollmentPeriodRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
@@ -27,11 +27,11 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 public class AdminService {
 
-    private final MemberRepository memberRepository;
-    private final StudentProfileRepository studentProfileRepository;
-    private final ProfessorProfileRepository professorProfileRepository;
-    private final CourseRepository courseRepository;
-    private final UniversityRepository universityRepository;
+  private final MemberRepository memberRepository;
+  private final StudentProfileRepository studentProfileRepository;
+  private final ProfessorProfileRepository professorProfileRepository;
+  private final EnrollmentPeriodRepository enrollmentPeriodRepository;
+  private final UniversityRepository universityRepository;
 
   /** 학생 회원 목록 조회 */
   public Page<StudentResponse> getStudents(StudentSearchRequest searchRequest, Pageable pageable) {
@@ -105,7 +105,7 @@ public class AdminService {
         searchRequest.endDateTo() != null ? LocalDate.parse(searchRequest.endDateTo()) : null;
 
     Page<EnrollmentPeriod> periods =
-        courseRepository.findWithFilters(
+        enrollmentPeriodRepository.findWithFilters(
             searchRequest.universityName(),
             startDateFrom,
             startDateTo,
@@ -139,7 +139,7 @@ public class AdminService {
       University university = universityRepository.getReferenceById(request.universityId());
 
       // 해당 대학, 학년, 연도, 학기에 이미 등록된 수강신청 기간이 있는지 확인
-      boolean exists = courseRepository.existsByUniversityIdAndGradeAndYearAndSemester(
+      boolean exists = enrollmentPeriodRepository.existsByUniversityIdAndGradeAndYearAndSemester(
               university.getId(),
               request.grade(),
               request.year(),
@@ -163,7 +163,7 @@ public class AdminService {
                       .endDate(endDate)
                       .build();
 
-    EnrollmentPeriod savedPeriod = courseRepository.save(enrollmentPeriod);
+    EnrollmentPeriod savedPeriod = enrollmentPeriodRepository.save(enrollmentPeriod);
 
     return new EnrollmentPeriodResponse(
             savedPeriod.getId(),
@@ -180,7 +180,7 @@ public class AdminService {
   public EnrollmentPeriodResponse updateEnrollmentPeriod(
       Long periodId, EnrollmentPeriodRequest request) {
     EnrollmentPeriod enrollmentPeriod =
-        courseRepository
+            enrollmentPeriodRepository
             .findById(periodId)
             .orElseThrow(() -> new IllegalArgumentException("해당 수강신청 기간이 존재하지 않습니다."));
 
@@ -215,11 +215,11 @@ public class AdminService {
   @Transactional
   public void deleteEnrollmentPeriod(Long periodId) {
     // 존재 여부 확인
-    if (!courseRepository.existsById(periodId)) {
+    if (!enrollmentPeriodRepository.existsById(periodId)) {
       throw new IllegalArgumentException("해당 수강신청 기간이 존재하지 않습니다.");
     }
 
-    courseRepository.deleteById(periodId);
+      enrollmentPeriodRepository.deleteById(periodId);
   }
 
   /** 관리자 초대 */
