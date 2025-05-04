@@ -1,6 +1,7 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
+import com.WEB4_5_GPT_BE.unihub.domain.common.enums.TokenType;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.AdminLoginRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.MemberLoginRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.AdminLoginResponse;
@@ -201,7 +202,7 @@ class AuthServiceImplTest {
 
     // mock 설정
     given(rq.getAccessToken()).willReturn("validAccessToken");
-    given(authTokenService.getMemberIdFromToken("validAccessToken")).willReturn(memberId);
+    given(authTokenService.getMemberIdFromToken("validAccessToken", TokenType.ACCESS)).willReturn(memberId);
     doNothing().when(rq).removeCookie("refreshToken");
 
     // when
@@ -265,7 +266,7 @@ class AuthServiceImplTest {
 
     given(rq.getAccessToken()).willReturn("invalidToken");
 
-    given(authTokenService.getMemberIdFromToken("invalidToken")).willReturn(null);
+    given(authTokenService.getMemberIdFromToken("invalidToken", TokenType.ACCESS)).willReturn(null);
 
     // when / then
     assertThatThrownBy(() -> authService.logout(request, response))
@@ -289,7 +290,7 @@ class AuthServiceImplTest {
     MockHttpServletResponse response = new MockHttpServletResponse();
 
     given(authTokenService.validateRefreshToken(refreshToken)).willReturn(true);
-    given(authTokenService.getMemberIdFromToken(refreshToken)).willReturn(memberId);
+    given(authTokenService.getMemberIdFromToken(refreshToken, TokenType.REFRESH)).willReturn(memberId);
     given(redisTemplate.opsForValue().get("refresh:" + memberId)).willReturn(refreshToken);
     given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
     given(authTokenService.genAccessToken(member)).willReturn(newAccessToken);
@@ -345,7 +346,7 @@ class AuthServiceImplTest {
 
     given(rq.getRefreshToken()).willReturn(refreshToken);
     given(authTokenService.validateRefreshToken(refreshToken)).willReturn(true);
-    given(authTokenService.getMemberIdFromToken(refreshToken)).willReturn(memberId);
+    given(authTokenService.getMemberIdFromToken(refreshToken, TokenType.REFRESH)).willReturn(memberId);
     given(redisTemplate.opsForValue().get("refresh:" + memberId)).willReturn("differentToken");
 
     assertThatThrownBy(() -> authService.refreshAccessToken(request, response))

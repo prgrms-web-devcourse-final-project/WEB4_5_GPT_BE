@@ -1,5 +1,6 @@
 package com.WEB4_5_GPT_BE.unihub.global.exception;
 
+import com.WEB4_5_GPT_BE.unihub.domain.member.exception.auth.AccessTokenExpiredException;
 import com.WEB4_5_GPT_BE.unihub.global.response.RsData;
 import jakarta.persistence.EntityNotFoundException;
 import org.hibernate.LazyInitializationException;
@@ -53,5 +54,11 @@ public class GlobalExceptionHandler {
   public ResponseEntity<RsData<Void>> handleServerError(Exception e) {
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(new RsData<>("500", "서버 오류가 발생했습니다.", null));
+  }
+
+  @ExceptionHandler(AccessTokenExpiredException.class)
+  public ResponseEntity<RsData<Void>> handleAccessTokenExpiredException(AccessTokenExpiredException e) {
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            .body(new RsData<>("401-1", e.getMessage(), null));
   }
 }

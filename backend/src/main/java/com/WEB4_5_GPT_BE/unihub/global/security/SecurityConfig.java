@@ -1,7 +1,5 @@
 package com.WEB4_5_GPT_BE.unihub.global.security;
 
-import com.WEB4_5_GPT_BE.unihub.global.response.RsData;
-import com.WEB4_5_GPT_BE.unihub.global.util.Ut;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,6 +21,8 @@ import static com.WEB4_5_GPT_BE.unihub.global.security.SecurityConstants.AUTH_WH
 public class SecurityConfig {
 
   private final CustomAuthenticationFilter customAuthenticationFilter;
+  private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+  private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
   @Bean
   public PasswordEncoder passwordEncoder() {
@@ -51,23 +51,9 @@ public class SecurityConfig {
         .exceptionHandling(
             exceptionHandling ->
                 exceptionHandling
-                    .authenticationEntryPoint(
-                        (request, response, authException) -> {
-                          response.setContentType("application/json;charset=UTF-8");
-                          response.setStatus(401);
-                          response
-                              .getWriter()
-                              .write(Ut.Json.toString(new RsData<>("401", "로그인이 필요합니다.")));
-                        })
-                    .accessDeniedHandler(
-                        (request, response, authException) -> {
-                          response.setContentType("application/json;charset=UTF-8");
-                          response.setStatus(403);
-                          response
-                              .getWriter()
-                              .write(Ut.Json.toString(new RsData<>("403", "권한이 없습니다.")));
-                        }));
-    ;
+                    .authenticationEntryPoint(customAuthenticationEntryPoint)
+                    .accessDeniedHandler(customAccessDeniedHandler));
+
     return http.build();
   }
 }

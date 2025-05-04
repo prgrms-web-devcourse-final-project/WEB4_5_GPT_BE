@@ -2,6 +2,7 @@ package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
+import com.WEB4_5_GPT_BE.unihub.domain.common.enums.TokenType;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.AdminLoginRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.MemberLoginRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.AdminLoginResponse;
@@ -137,7 +138,7 @@ public class AuthServiceImpl implements AuthService {
     String accessToken = rq.getAccessToken();
     if (accessToken == null) throw new AccessTokenNotFoundException();
 
-    Long memberId = authTokenService.getMemberIdFromToken(accessToken);
+    Long memberId = authTokenService.getMemberIdFromToken(accessToken, TokenType.ACCESS);
     if (memberId == null) throw new InvalidAccessTokenException();
 
     redisTemplate.delete("refresh:" + memberId);
@@ -153,7 +154,7 @@ public class AuthServiceImpl implements AuthService {
       throw new InvalidRefreshTokenException();
     }
 
-    Long memberId = authTokenService.getMemberIdFromToken(refreshToken);
+    Long memberId = authTokenService.getMemberIdFromToken(refreshToken, TokenType.REFRESH);
     if (memberId == null) throw new InvalidRefreshTokenFormatException();
 
     String redisRefreshToken = redisTemplate.opsForValue().get("refresh:" + memberId);
