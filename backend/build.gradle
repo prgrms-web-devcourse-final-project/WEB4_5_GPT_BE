@@ -56,7 +56,9 @@ dependencies {
     // Swagger UI 추가
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.4'
 
-    // implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.3.0' // S3 사용 시 적용
+    // .yml 또는 .properties의 커스텀 설정(CorsProperties 등)에 대해
+    // 자동 완성 및 IDE 인식용 메타데이터를 생성하는 annotation processor
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 }
 
 tasks.named('test') {
