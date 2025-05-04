@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
+
 public interface StudentProfileRepository extends JpaRepository<StudentProfile, Long> {
 
     // 학번 + 대학ID로 중복 체크
@@ -28,4 +30,6 @@ public interface StudentProfileRepository extends JpaRepository<StudentProfile, 
         @Param("grade") Integer grade,
         @Param("semester") Integer semester,
         Pageable pageable);
+
+    Optional<StudentProfile> findByMemberId(Long memberId);
 }

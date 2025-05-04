@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
+
 public interface ProfessorProfileRepository extends JpaRepository<ProfessorProfile, Long> {
 
     // 사번 + 대학ID로 중복 체크
@@ -29,4 +31,8 @@ public interface ProfessorProfileRepository extends JpaRepository<ProfessorProfi
         @Param("majorId") Long majorId,
         @Param("status") ApprovalStatus status,
         Pageable pageable);
+
+    Optional<ProfessorProfile> findByUniversityIdAndEmployeeId(Long universityId, String employeeId);
+
+    Optional<ProfessorProfile> findByMemberId(Long memberId);
 }
