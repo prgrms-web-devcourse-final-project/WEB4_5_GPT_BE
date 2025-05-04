@@ -8,7 +8,6 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.MemberLoginResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.global.Rq;
-import com.WEB4_5_GPT_BE.unihub.global.config.RedisTestContainerConfig;
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
@@ -31,7 +30,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@RedisTestContainerConfig
 class AuthServiceImplTest {
 
   @InjectMocks private AuthServiceImpl authService;

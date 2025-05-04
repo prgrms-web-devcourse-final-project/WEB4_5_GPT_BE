@@ -11,9 +11,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
-@Profile("prod")
+@Profile({"stg", "prod"}) // 테스트, 운영 서버 환경에서만 동작하는 테스트 데이터 초기화
 @RequiredArgsConstructor
-public class InitProdData {
+public class InitProdOrStgData {
 
     private final InitDataHelper helper;
     private final PasswordEncoder passwordEncoder;
@@ -29,7 +29,7 @@ public class InitProdData {
         University university = helper.createUniversity("A대학교");
         Major major = helper.createMajor("소프트웨어전공", university);
 
-        helper.createStudent("haneulkim@auni.ac.kr", "패스워드", "김하늘", "20250001",
+        helper.createStudent("haneulkim@auni.ac.kr", "studentPw", "김하늘", "20250001",
                 university.getId(), major.getId());
 
         helper.createProfessor("professor@auni.ac.kr", "password", "김교수", "EMP20250001",

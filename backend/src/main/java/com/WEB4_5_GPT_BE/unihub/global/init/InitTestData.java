@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Component
-@Profile("test")
+@Profile("test") // 테스트 환경에서만 동작하는 테스트 데이터 초기화
 @RequiredArgsConstructor
 public class InitTestData {
 
