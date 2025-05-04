@@ -21,32 +21,37 @@ public class EmailService {
       Duration.ofHours(1); // 인증 완료 표시 1시간 유지 (원하면 더 길게 설정 가능)
 
   public void sendVerificationCode(String email) {
-    String code = generateRandomCode();
+    String code = generateAndStoreCode(email);
+    sendEmail(email, code);
+  }
 
+  public String generateAndStoreCode(String email) {
+    String code = generateRandomCode();
+    redisTemplate.opsForValue().set(buildVerificationKey(email), code, CODE_EXPIRATION);
+    return code;
+  }
+
+  private void sendEmail(String email, String code) {
     String realEmailAddress = toRealEmailAddress(email);
 
     SimpleMailMessage message = new SimpleMailMessage();
     message.setTo(realEmailAddress);
     message.setFrom("UniHub <awsweb72@gmail.com>");
     message.setSubject("[UniHub] 확인 코드 안내");
-    message.setText(
-        """
-                안녕하세요, UniHub입니다.
+    message.setText("""
+        안녕하세요, UniHub입니다.
 
-                요청하신 이메일 인증번호는 아래와 같습니다:
+        요청하신 이메일 인증번호는 아래와 같습니다:
 
-                인증번호: %s
+        인증번호: %s
 
-                본 인증번호는 5분 동안 유효합니다.
-                인증번호를 입력하여 인증을 완료해 주세요.
+        본 인증번호는 5분 동안 유효합니다.
+        인증번호를 입력하여 인증을 완료해 주세요.
 
-                감사합니다.
-                """
-            .formatted(code));
+        감사합니다.
+        """.formatted(code));
 
     mailSender.send(message);
-
-    redisTemplate.opsForValue().set(buildVerificationKey(email), code, CODE_EXPIRATION);
   }
 
   private String toRealEmailAddress(String schoolEmail) {

@@ -1,10 +1,8 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 
+import com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.EmailCodeVerificationRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.PasswordResetConfirmationRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageProfessorResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageStudentResponse;
@@ -13,6 +11,8 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.UpdateMajorRes
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
+import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.StudentProfileNotFoundException;
+import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.ProfessorProfileNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorProfileRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
@@ -46,9 +46,10 @@ public class MemberServiceImpl implements MemberService {
 
   @Override
   public void signUpStudent(StudentSignUpRequest request) {
-    University university = universityService.getUniversity(request.universityId());
-    Major major = majorService.getMajor(request.universityId(), request.majorId());
 
+    University university = universityService.findUniversityById(request.universityId());
+    Major major = majorService.getMajor(request.universityId(), request.majorId());
+    validateEmailVerification(request.email());
     validateStudentSignUp(request);
 
     StudentProfile profile =
@@ -74,22 +75,28 @@ public class MemberServiceImpl implements MemberService {
     memberRepository.save(member);
   }
 
+  private void validateEmailVerification(String email) {
+    if (!emailService.isAlreadyVerified(email)) {
+      throw new UnihubException("400", "이메일 인증을 완료해주세요.");
+    }
+  }
+
   private void validateStudentSignUp(StudentSignUpRequest request) {
     if (memberRepository.existsByEmail(request.email())) {
-      throw new UnihubException("409", "이메일 또는 학번이 이미 등록되어 있습니다.");
+        throw new UnihubException("409", "이메일 또는 학번이 이미 등록되어 있습니다.");
     }
 
     if (studentProfileRepository.existsByStudentCodeAndUniversityId(
-        request.studentCode(), request.universityId())) {
-      throw new UnihubException("409", "이메일 또는 학번이 이미 등록되어 있습니다.");
+            request.studentCode(), request.universityId())) {
+        throw new UnihubException("409", "이메일 또는 학번이 이미 등록되어 있습니다.");
     }
   }
 
   @Override
   public void signUpProfessor(ProfessorSignUpRequest request) {
-    University university = universityService.getUniversity(request.universityId());
+    University university = universityService.findUniversityById(request.universityId());
     Major major = majorService.getMajor(request.universityId(), request.majorId());
-
+    validateEmailVerification(request.email());
     validateProfessorSignUp(request);
 
     ProfessorProfile profile =
@@ -97,6 +104,7 @@ public class MemberServiceImpl implements MemberService {
             .employeeId(request.employeeId())
             .university(university)
             .major(major)
+            .approvalStatus(ApprovalStatus.PENDING)
             .build();
 
     Member member =
@@ -113,14 +121,15 @@ public class MemberServiceImpl implements MemberService {
     memberRepository.save(member);
   }
 
-    private void validateProfessorSignUp(ProfessorSignUpRequest request) {
+
+  private void validateProfessorSignUp(ProfessorSignUpRequest request) {
     if (memberRepository.existsByEmail(request.email())) {
-      throw new UnihubException("409", "이메일 또는 사번이 이미 등록되어 있습니다.");
+        throw new UnihubException("409", "이메일 또는 사번이 이미 등록되어 있습니다.");
     }
 
     if (professorProfileRepository.existsByEmployeeIdAndUniversityId(
-        request.employeeId(), request.universityId())) {
-      throw new UnihubException("409", "이메일 또는 사번이 이미 등록되어 있습니다.");
+            request.employeeId(), request.universityId())) {
+        throw new UnihubException("409", "이메일 또는 사번이 이미 등록되어 있습니다.");
     }
   }
 
@@ -177,7 +186,7 @@ public class MemberServiceImpl implements MemberService {
   public MyPageStudentResponse getStudentMyPage(Long memberId) {
     Member member = findActiveMemberById(memberId);
     StudentProfile profile = studentProfileRepository.findById(memberId)
-            .orElseThrow(() -> new UnihubException("404", "학생 프로필을 찾을 수 없습니다."));
+            .orElseThrow(StudentProfileNotFoundException::new);
     return MyPageStudentResponse.from(member, profile);
   }
 
@@ -186,7 +195,7 @@ public class MemberServiceImpl implements MemberService {
   public MyPageProfessorResponse getProfessorMyPage(Long memberId) {
     Member member = findActiveMemberById(memberId);
     ProfessorProfile profile = professorProfileRepository.findById(memberId)
-            .orElseThrow(() -> new UnihubException("404", "교수 프로필을 찾을 수 없습니다."));
+            .orElseThrow(ProfessorProfileNotFoundException::new);
     return MyPageProfessorResponse.from(member, profile);
   }
 
@@ -269,9 +278,9 @@ public class MemberServiceImpl implements MemberService {
       if (member.getDeletedAt() != null &&
               member.getDeletedAt().plusDays(30).isBefore(LocalDateTime.now())) {
         memberRepository.delete(member);
-        throw new UnihubException("404", "30일이 경과하여 계정이 삭제되었습니다.");
+          throw new UnihubException("404", "30일이 경과하여 계정이 삭제되었습니다.");
       }
-      throw new UnihubException("401", "탈퇴한 계정입니다. 30일 이내 로그인 시 복구됩니다.");
+        throw new UnihubException("401", "탈퇴한 계정입니다. 30일 이내 로그인 시 복구됩니다.");
     }
 
     return member;

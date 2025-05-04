@@ -1,27 +1,35 @@
 package com.WEB4_5_GPT_BE.unihub.domain.course.repository;
 
-import com.WEB4_5_GPT_BE.unihub.domain.course.entity.EnrollmentPeriod;
-import java.time.LocalDate;
+import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface CourseRepository extends JpaRepository<EnrollmentPeriod, Long> {
 
-  @Query(
-      "SELECT e FROM EnrollmentPeriod e "
-          + "WHERE (:universityName IS NULL OR e.university.name = :universityName) "
-          + "AND (:startDateFrom IS NULL OR e.startDate >= :startDateFrom) "
-          + "AND (:startDateTo IS NULL OR e.startDate <= :startDateTo) "
-          + "AND (:endDateFrom IS NULL OR e.endDate >= :endDateFrom) "
-          + "AND (:endDateTo IS NULL OR e.endDate <= :endDateTo)")
-  Page<EnrollmentPeriod> findWithFilters(
-      @Param("universityName") String universityName,
-      @Param("startDateFrom") LocalDate startDateFrom,
-      @Param("startDateTo") LocalDate startDateTo,
-      @Param("endDateFrom") LocalDate endDateFrom,
-      @Param("endDateTo") LocalDate endDateTo,
-      Pageable pageable);
+public interface CourseRepository extends JpaRepository<Course, Long> {
+    // TODO: 조회 성능을 위해 Course 테이블 또는 ProfessorProfile 테이블 비정규화 고려
+    /*
+    교수명 검색을 위해 ProfessorProfile, Member 테이블 조인
+    대학별 강의 필터링을 위해 Major 테이블 조인
+     */
+    @Query("""
+        SELECT c
+        FROM Course c
+        LEFT JOIN ProfessorProfile p
+            ON c.professor = p
+        INNER JOIN Member me
+            ON p.member = me
+        INNER JOIN Major mj
+            ON c.major = mj
+        WHERE mj.university.id = :univId
+            AND c.title LIKE CONCAT('%', :title, '%')
+            AND COALESCE(me.name, "") LIKE CONCAT('%', :profName, '%')
+    """)
+    Page<Course> findByTitleLikeAndProfessorNameLike(
+            @Param("univId") Long univId,
+            @Param("title") String title,
+            @Param("profName") String profName,
+            Pageable pageable);
 }

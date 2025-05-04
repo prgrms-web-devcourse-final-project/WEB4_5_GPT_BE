@@ -1,11 +1,17 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 
+import com.WEB4_5_GPT_BE.unihub.domain.common.enums.TokenType;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.TokenMemberPayload;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
+import com.WEB4_5_GPT_BE.unihub.domain.member.exception.InvalidAccessTokenException;
+import com.WEB4_5_GPT_BE.unihub.domain.member.exception.InvalidRefreshTokenException;
+import com.WEB4_5_GPT_BE.unihub.domain.member.exception.auth.AccessTokenExpiredException;
 import com.WEB4_5_GPT_BE.unihub.global.util.Ut;
-import java.util.Map;
+import io.jsonwebtoken.ExpiredJwtException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
 
 @Service
 public class AuthTokenService {
@@ -38,9 +44,31 @@ public class AuthTokenService {
     return Ut.Jwt.isValidToken(keyString, token);
   }
 
-  public Long getMemberIdFromToken(String token) {
+  public Long getMemberIdFromToken(String token, TokenType type) {
+    validateTokenOrThrow(token, type);
+
+    // 유효하다면 payload 파싱
     TokenMemberPayload payload = parseMemberPayload(token);
     return payload != null ? payload.id() : null;
+  }
+
+  private void validateTokenOrThrow(String token, TokenType type) {
+    try {
+      // 여기서 예외를 직접 던지도록 분리된 메서드 호출
+      Ut.Jwt.validateToken(keyString, token);
+    } catch (ExpiredJwtException e) {
+      if (type == TokenType.ACCESS) {
+        throw new AccessTokenExpiredException(); // 로그인 중 AccessToken 만료
+      } else {
+        throw new InvalidRefreshTokenException(); // RefreshToken은 만료되어도 Invalid로 처리
+      }
+    } catch (Exception e) {
+      if (type == TokenType.ACCESS) {
+        throw new InvalidAccessTokenException();
+      } else {
+        throw new InvalidRefreshTokenException();
+      }
+    }
   }
 
   public TokenMemberPayload parseMemberPayload(String token) {

@@ -24,37 +24,65 @@ repositories {
 }
 
 dependencies {
-	// JWT 라이브러리 (JJWT)
+    // JWT 라이브러리 (JJWT)
     implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
-    // TestContainer
+    // Spring Data & Validation
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // Web & API
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.4'  // Swagger UI
+
+    // Security
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    testImplementation 'org.springframework.security:spring-security-test'
+
+    // Mail
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+    // Redis & Session 관리
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.session:spring-session-data-redis'
+    implementation 'org.springframework.session:spring-session-jdbc'
+
+    // Actuator
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // 개발 편의 (DevTools)
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    // Database 드라이버
+    runtimeOnly 'com.h2database:h2'
+    runtimeOnly 'com.mysql:mysql-connector-j'
+
+    // Test Containers
     testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.testcontainers:mysql'
 
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-validation'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-security'
-    testImplementation 'org.springframework.security:spring-security-test'
-    implementation 'org.springframework.boot:spring-boot-starter-mail'
-    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-    implementation 'org.springframework.session:spring-session-data-redis'
-    implementation 'org.springframework.session:spring-session-jdbc'
-    compileOnly 'org.projectlombok:lombok'
-    developmentOnly 'org.springframework.boot:spring-boot-devtools'
-    runtimeOnly 'com.h2database:h2'
-    runtimeOnly 'com.mysql:mysql-connector-j'
-    annotationProcessor 'org.projectlombok:lombok'
+    // Spring Boot Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    // implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.3.0' s3 사용 시 적용
 
+    // Swagger UI 추가
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.4'
 
+    // .yml 또는 .properties의 커스텀 설정(CorsProperties 등)에 대해
+    // 자동 완성 및 IDE 인식용 메타데이터를 생성하는 annotation processor
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+    // AWS S3 (필요 시 주석 해제)
+    // implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.3.0'
 }
+
 
 tasks.named('test') {
 	useJUnitPlatform()
