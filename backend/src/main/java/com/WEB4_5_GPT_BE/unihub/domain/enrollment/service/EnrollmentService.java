@@ -1,15 +1,18 @@
 package com.WEB4_5_GPT_BE.unihub.domain.enrollment.service;
 
+import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.EnrollmentPeriod;
+import com.WEB4_5_GPT_BE.unihub.domain.course.exception.CourseNotFoundException;
+import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.EnrollmentPeriodRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response.MyEnrollmentResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.entity.Enrollment;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.EnrollmentNotFoundException;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.EnrollmentPeriodClosedException;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.EnrollmentPeriodNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.repository.EnrollmentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
-import com.WEB4_5_GPT_BE.unihub.global.exception.enrollment.EnrollmentNotFoundException;
-import com.WEB4_5_GPT_BE.unihub.global.exception.enrollment.EnrollmentPeriodClosedException;
-import com.WEB4_5_GPT_BE.unihub.global.exception.enrollment.EnrollmentPeriodNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,6 +26,7 @@ public class EnrollmentService {
 
     private final EnrollmentRepository enrollmentRepository; // 수강신청 Repository
     private final EnrollmentPeriodRepository enrollmentPeriodRepository; // 수강신청 기간 Repository
+    private final CourseRepository courseRepository;
 
     /**
      * 학생의 수강신청 내역을 조회하는 메서드입니다.
@@ -119,5 +123,30 @@ public class EnrollmentService {
         return enrollmentRepository
                 .findByCourseIdAndStudentId(courseId, studentProfileId)
                 .orElseThrow(EnrollmentNotFoundException::new);
+    }
+
+    @Transactional
+    public void enrollment(Member student, Long courseId) {
+        // Member → StudentProfile 추출
+        StudentProfile profile = student.getStudentProfile();
+
+        // TODO: 수강신청 기간 외
+
+        // 신청하려는 강좌 정보 조회
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(CourseNotFoundException::new);
+
+        // TODO: 정원 초과
+        // TODO: 이미 신청한 과목
+        // TODO: 시간표 충돌
+        // TODO: 학점 한도 초과
+
+        // 수강 신청 정보 생성
+        Enrollment enrollment = Enrollment.builder()
+                .student(profile)
+                .course(course)
+                .build();
+
+        enrollmentRepository.save(enrollment);
     }
 }

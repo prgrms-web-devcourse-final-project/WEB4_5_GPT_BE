@@ -2,12 +2,12 @@ package com.WEB4_5_GPT_BE.unihub.domain.enrollment.controller;
 
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.request.EnrollmentRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response.MyEnrollmentResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.EnrollmentNotFoundException;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.EnrollmentPeriodClosedException;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.EnrollmentPeriodNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.EnrollmentService;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.global.Rq;
-import com.WEB4_5_GPT_BE.unihub.global.exception.enrollment.EnrollmentNotFoundException;
-import com.WEB4_5_GPT_BE.unihub.global.exception.enrollment.EnrollmentPeriodClosedException;
-import com.WEB4_5_GPT_BE.unihub.global.exception.enrollment.EnrollmentPeriodNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.global.response.Empty;
 import com.WEB4_5_GPT_BE.unihub.global.response.RsData;
 import lombok.RequiredArgsConstructor;
@@ -69,6 +69,13 @@ public class EnrollmentController {
     // 수강 신청
     @PostMapping
     public RsData<Empty> enrollment(@RequestBody EnrollmentRequest request) {
+
+        Member actor = rq.getActor(); // 인증된 사용자(Actor) 정보 획득
+        Member student = rq.getRealActor(actor); // 실제 학생(Member) 객체 얻기 (StudentProfile 필요)
+
+        // 해당 강좌에 대한 수강 신청 요청
+        enrollmentService.enrollment(student, request.courseId());
+
         return new RsData<>("200", "수강 신청이 완료되었습니다.");
     }
 
