@@ -108,6 +108,6 @@ public class AdminController {
   @PostMapping("/invite")
   public RsData<Void> inviteAdmin(@RequestBody AdminInviteRequest request) {
     adminService.inviteAdmin(request);
-    return new RsData<>("201", "관리자 초대가 완료되었습니다.");
+    return new RsData<>("200", "관리자 초대가 완료되었습니다.");
   }
 }

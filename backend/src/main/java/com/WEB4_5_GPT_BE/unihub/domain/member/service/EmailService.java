@@ -19,6 +19,7 @@ public class EmailService {
   private static final Duration CODE_EXPIRATION = Duration.ofMinutes(5);
   private static final Duration VERIFIED_EXPIRATION =
       Duration.ofHours(1); // 인증 완료 표시 1시간 유지 (원하면 더 길게 설정 가능)
+  private static final String DEFAULT_ADMIN_PASSWORD = "changeme";
 
   public void sendVerificationCode(String email) {
     String code = generateAndStoreCode(email);
@@ -98,5 +99,30 @@ public class EmailService {
 
   private String buildVerifiedKey(String email) {
     return "email:verified:" + email;
+  }
+  
+  /**
+   * 관리자 초대 이메일 전송
+   */
+  public void sendAdminInvitation(String email, String adminName) {
+    SimpleMailMessage message = new SimpleMailMessage();
+    message.setTo(email);
+    message.setFrom("UniHub <awsweb72@gmail.com>");
+    message.setSubject("[UniHub] 관리자 초대");
+    message.setText("""
+        안녕하세요, %s님.
+        
+        UniHub 관리자로 초대되었습니다.
+        아래 정보로 로그인하신 후, 비밀번호를 변경해 주세요.
+        
+        이메일: %s
+        임시 비밀번호: %s
+        
+        UniHub 관리자 페이지에서 다양한 관리 기능을 사용하실 수 있습니다.
+        
+        감사합니다.
+        """.formatted(adminName, email, DEFAULT_ADMIN_PASSWORD));
+        
+    mailSender.send(message);
   }
 }
