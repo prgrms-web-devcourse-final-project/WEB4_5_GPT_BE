@@ -62,20 +62,35 @@ public class EnrollmentService {
         // Member → StudentProfile 조회
         StudentProfile profile = student.getStudentProfile();
 
-        // 오늘 날짜 계산
-        LocalDate today = LocalDate.now();
-
-        // 1) 학생의 (학교·연도·학년·학기) 정보에 맞는 수강신청 기간 조회
-        EnrollmentPeriod period = findEnrollmentPeriod(profile, today);
-
-        // 2) 조회된 수강신청 기간 내에 오늘(요청일자)이 포함되는지 검증
-        validateWithinPeriod(period, today);
+        // 수강 취소 가능 기간인지 검증
+        ensureEnrollmentPeriodActive(profile);
 
         // 3) 취소하려는 강좌에 대한 수강 신청 정보 조회
         Enrollment enrollment = findEnrollment(profile.getId(), courseId);
 
         // 4) 수강 취소 완료
         enrollmentRepository.delete(enrollment);
+    }
+
+    /**
+     * 수강신청, 취소 가능 기간인지 검증한다.
+     * <p>
+     * 1) 해당 학생의 (학교·연도·학년·학기) 수강신청 기간을 조회하고,
+     * 2) 그 기간에 오늘이 포함되는지 검증한다.
+     *
+     * @param profile 학생의 프로필 정보
+     * @throws EnrollmentPeriodNotFoundException 수강신청 기간 정보가 없는 경우
+     * @throws EnrollmentPeriodClosedException   수강신청 기간 외 요청인 경우
+     */
+    private void ensureEnrollmentPeriodActive(StudentProfile profile) {
+        // 오늘 날짜 조회
+        LocalDate today = LocalDate.now();
+
+        // 1) 학생 정보에 해당하는 수강신청 기간 조회
+        EnrollmentPeriod period = findEnrollmentPeriod(profile, today);
+
+        // 2) 조회된 수강신청 기간 내에 오늘(요청일자)이 포함되는지 검증
+        validateWithinPeriod(period, today);
     }
 
     /**
@@ -130,7 +145,8 @@ public class EnrollmentService {
         // Member → StudentProfile 추출
         StudentProfile profile = student.getStudentProfile();
 
-        // TODO: 수강신청 기간 외
+        // 수강 신청 가능 기간인지 검증
+        ensureEnrollmentPeriodActive(profile);
 
         // 신청하려는 강좌 정보 조회
         Course course = courseRepository.findById(courseId)
