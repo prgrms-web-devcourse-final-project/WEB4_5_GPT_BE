@@ -2,8 +2,10 @@ package com.WEB4_5_GPT_BE.unihub.domain.enrollment.controller;
 
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.request.EnrollmentCancelRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.request.EnrollmentRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response.CourseScheduleResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response.MyEnrollmentResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.EnrollmentService;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
+import com.WEB4_5_GPT_BE.unihub.global.Rq;
 import com.WEB4_5_GPT_BE.unihub.global.response.Empty;
 import com.WEB4_5_GPT_BE.unihub.global.response.RsData;
 import lombok.RequiredArgsConstructor;
@@ -11,30 +13,32 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 수강 신청, 취소, 내 수강목록 조회 등의
+ * 수강 신청 관련 API 요청을 처리하는 컨트롤러입니다.
+ */
 @RestController
 @RequestMapping("/api/enrollments")
 @RequiredArgsConstructor
 public class EnrollmentController {
 
+    private final EnrollmentService enrollmentService;
+    private final Rq rq;
+
+    /**
+     * 현재 로그인된 학생의 수강목록을 조회합니다.
+     *
+     * @return 조회된 수강목록에 해당하는 {@link MyEnrollmentResponse} DTO 리스트
+     */
     @GetMapping("/me")
     public RsData<List<MyEnrollmentResponse>> getMyEnrollmentList() {
 
-        var response = List.of(
-                new MyEnrollmentResponse(1L, 101L, "컴퓨터공학과", "자료구조", "김교수", "OO동 401호",
-                        List.of(
-                                new CourseScheduleResponse("MON", "09:00:00", "10:30:00"),
-                                new CourseScheduleResponse("FRI", "14:00:00", "15:30:00")
-                        ),
-                        3, 3, 2, 30, 3
-                ),
-                new MyEnrollmentResponse(2L, 102L, "컴퓨터공학과", "운영체제", "이교수", "OO동 402호",
-                        List.of(
-                                new CourseScheduleResponse("TUE", "09:00:00", "10:30:00"),
-                                new CourseScheduleResponse("THU", "14:00:00", "15:30:00")
-                        ),
-                        2, 3, 2, 30, 3
-                )
-        );
+        Member actor = rq.getActor(); // 인증된 사용자(Actor) 정보 획득
+        Member student = rq.getRealActor(actor); // 실제 학생(Member) 객체 얻기 (StudentProfile 필요)
+
+        // 서비스에서 수강목록을 조회하여 반환
+        List<MyEnrollmentResponse> response = enrollmentService.getMyEnrollmentList(student);
+
         return new RsData<>("200", "내 수강목록 조회가 완료되었습니다.", response);
     }
 
