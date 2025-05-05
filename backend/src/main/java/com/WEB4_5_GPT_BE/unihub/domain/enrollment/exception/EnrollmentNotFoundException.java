@@ -1,4 +1,4 @@
-package com.WEB4_5_GPT_BE.unihub.global.exception.enrollment;
+package com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception;
 
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
 
