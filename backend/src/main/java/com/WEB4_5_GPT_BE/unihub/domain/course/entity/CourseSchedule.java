@@ -22,8 +22,17 @@ public class CourseSchedule extends BaseTimeEntity {
   @JoinColumn(name = "course_id", nullable = false)
   private Course course;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "`day`", nullable = false, length = 3)
+  // 조회 성능을 위한 반정규화
+  @Column(nullable = false)
+  private Long universityId;
+
+  @Column(nullable = false)
+  private String location;
+
+  private String professorProfileEmployeeId;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "`day`", nullable = false, length = 3)
   private DayOfWeek day;
 
   @Column(name = "start_time", nullable = false)

@@ -1,32 +1,17 @@
 server:
   port: 8080
-  shutdown: graceful
-
 
 spring:
   application:
     name: unihub
 
+  profiles:
+    include: secret
+    active: dev
+
   output:
     ansi:
       enabled: always
-
-  profiles:
-    active: dev
-    include: secret
-
-  datasource:
-    url: jdbc:h2:./unihub_dev;MODE=MySQL
-    username: sa
-    password:
-    driver-class-name: org.h2.Driver
-    hikari:
-      auto-commit: false
-
-  data:
-    redis:
-      host: localhost
-      port: 6379
 
   jpa:
     open-in-view: false
@@ -43,6 +28,7 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
+    test-connection: false
     properties:
       mail:
         smtp:
@@ -51,13 +37,12 @@ spring:
             enable: true
             required: true
 
-logging:
-  level:
-    org.hibernate.SQL: DEBUG
-    org.hibernate.orm.jdbc.bind: TRACE
-    org.hibernate.orm.jdbc.extract: TRACE
-    org.springframework.transaction.interceptor: TRACE
+management:
+  health:
+    mail:
+      enabled: false
 
+logging:
   web:
     resources:
       add-mappings: false
@@ -69,11 +54,17 @@ logging:
       fail-on-empty-beans: false
 
 custom:
-  dev:
+  dev: # 로컬 개발 환경 주소
     domain: localhost
     backUrl: "http://${custom.dev.domain}:${server.port}"
     frontUrl: "http://${custom.dev.domain}:3000"
-  prod:
+
+  stg: # 테스트 서버 주소
+    domain: sulee.site
+    backUrl: "https://api.${custom.stg.domain}"
+    frontUrl: "https://www.${custom.stg.domain}"
+
+  prod: # 운영 서버 주소
     domain: un1hub.site
     backUrl: "https://api.${custom.prod.domain}"
     frontUrl: "https://www.${custom.prod.domain}"
@@ -81,3 +72,11 @@ custom:
     domain: "${custom.dev.domain}"
     backUrl: "${custom.dev.backUrl}"
     frontUrl: "${custom.dev.frontUrl}"
+
+cors:
+  allowed-origins:
+    - https://www.app4.qwas.shop
+    - https://login.aleph.kr
+    - http://localhost:3000
+    - https://web-4-5-gpt-fe.vercel.app
+    - https://web-4-5-gpt-l4cx985jz-lisarnjs-projects.vercel.app

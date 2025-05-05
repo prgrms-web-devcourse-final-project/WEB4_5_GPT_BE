@@ -1,6 +1,7 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
+import com.WEB4_5_GPT_BE.unihub.domain.common.enums.TokenType;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.AdminLoginRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.MemberLoginRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.AdminLoginResponse;
@@ -8,7 +9,6 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.MemberLoginResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.global.Rq;
-import com.WEB4_5_GPT_BE.unihub.global.config.RedisTestContainerConfig;
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
@@ -31,7 +31,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@RedisTestContainerConfig
 class AuthServiceImplTest {
 
   @InjectMocks private AuthServiceImpl authService;
@@ -203,7 +202,7 @@ class AuthServiceImplTest {
 
     // mock 설정
     given(rq.getAccessToken()).willReturn("validAccessToken");
-    given(authTokenService.getMemberIdFromToken("validAccessToken")).willReturn(memberId);
+    given(authTokenService.getMemberIdFromToken("validAccessToken", TokenType.ACCESS)).willReturn(memberId);
     doNothing().when(rq).removeCookie("refreshToken");
 
     // when
@@ -228,6 +227,35 @@ class AuthServiceImplTest {
   }
 
   @Test
+  @DisplayName("승인되지 않은 교직원 계정은 로그인할 수 없다")
+  void givenUnapprovedProfessor_whenLogin_thenThrowApprovalException() {
+    // given
+    String email = "pending@auni.ac.kr";
+    String password = "password";
+    MemberLoginRequest request = new MemberLoginRequest(email, password);
+
+    Member pendingProfessor = Member.builder()
+            .email(email)
+            .password("encodedPassword")
+            .role(Role.PROFESSOR)
+            .professorProfile(
+                    com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile.builder()
+                            .approvalStatus(com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus.PENDING)
+                            .build()
+            )
+            .build();
+
+    when(redisTemplate.opsForValue().get("login:fail:" + email)).thenReturn("0");
+    when(memberRepository.findByEmail(email)).thenReturn(Optional.of(pendingProfessor));
+    when(passwordEncoder.matches(password, pendingProfessor.getPassword())).thenReturn(true);
+
+    // when / then
+    assertThatThrownBy(() -> authService.login(request))
+            .isInstanceOf(UnihubException.class)
+            .hasMessageContaining("아직 승인이 완료되지 않은 교직원 계정입니다.");
+  }
+
+  @Test
   @DisplayName("AccessToken이 유효하지 않으면 유효하지 않은 형식 예외를 발생시킨다")
   void givenInvalidAccessToken_whenLogout_thenThrowInvalidTokenException() {
     // given
@@ -238,7 +266,7 @@ class AuthServiceImplTest {
 
     given(rq.getAccessToken()).willReturn("invalidToken");
 
-    given(authTokenService.getMemberIdFromToken("invalidToken")).willReturn(null);
+    given(authTokenService.getMemberIdFromToken("invalidToken", TokenType.ACCESS)).willReturn(null);
 
     // when / then
     assertThatThrownBy(() -> authService.logout(request, response))
@@ -262,7 +290,7 @@ class AuthServiceImplTest {
     MockHttpServletResponse response = new MockHttpServletResponse();
 
     given(authTokenService.validateRefreshToken(refreshToken)).willReturn(true);
-    given(authTokenService.getMemberIdFromToken(refreshToken)).willReturn(memberId);
+    given(authTokenService.getMemberIdFromToken(refreshToken, TokenType.REFRESH)).willReturn(memberId);
     given(redisTemplate.opsForValue().get("refresh:" + memberId)).willReturn(refreshToken);
     given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
     given(authTokenService.genAccessToken(member)).willReturn(newAccessToken);
@@ -318,7 +346,7 @@ class AuthServiceImplTest {
 
     given(rq.getRefreshToken()).willReturn(refreshToken);
     given(authTokenService.validateRefreshToken(refreshToken)).willReturn(true);
-    given(authTokenService.getMemberIdFromToken(refreshToken)).willReturn(memberId);
+    given(authTokenService.getMemberIdFromToken(refreshToken, TokenType.REFRESH)).willReturn(memberId);
     given(redisTemplate.opsForValue().get("refresh:" + memberId)).willReturn("differentToken");
 
     assertThatThrownBy(() -> authService.refreshAccessToken(request, response))

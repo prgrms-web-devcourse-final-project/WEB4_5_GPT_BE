@@ -1,0 +1,41 @@
+# 운영 서버와 똑같이 운영되는 스테이징 서버 (테스트 서버) 설정
+server:
+  shutdown: graceful
+
+spring:
+  data:
+    redis:
+      host: redis_1
+      password: "${custom.prod.redis.password}"
+      port: 6379
+
+  datasource:
+    url: jdbc:mysql://mysql_1:3306/unihub
+    username: unihublocal
+    password: "${custom.prod.db.password}"
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      auto-commit: false
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: false
+        highlight_sql: false
+        use_sql_comments: false
+
+logging:
+  level: # 배포환경에서는 INFO 레벨만 기록하여 성능, 보안, 로그 용량 관리를 최적화
+    com.example: INFO
+    org.hibernate.SQL: INFO
+    org.hibernate.orm.jdbc.bind: INFO
+    org.hibernate.orm.jdbc.extract: INFO
+    org.springframework.transaction.interceptor: INFO
+
+custom:
+  site: # un1hub.site 테스트 서버 주소가 설정 됨
+    domain: "${custom.stg.domain}"
+    backUrl: "${custom.stg.backUrl}"
+    frontUrl: "${custom.stg.frontUrl}"

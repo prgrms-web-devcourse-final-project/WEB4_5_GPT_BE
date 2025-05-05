@@ -37,7 +37,7 @@ public class MemberController {
   }
 
   @PostMapping("/signup/professor")
-  public RsData<Empty> signUpProfessor(@RequestBody @Valid ProfessorSignupRequest request) {
+  public RsData<Empty> signUpProfessor(@RequestBody @Valid ProfessorSignUpRequest request) {
     memberService.signUpProfessor(request);
     return new RsData<>("201", "교직원 가입 신청이 완료되었습니다. 관리자의 승인을 기다려 주세요.");
   }

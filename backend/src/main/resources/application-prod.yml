@@ -1,3 +1,4 @@
+# 실제 배포중인 운영 서버에 대한 설정
 spring:
   data:
     redis:
@@ -23,7 +24,7 @@ spring:
         use_sql_comments: false
 
 logging:
-  level:
+  level: # 배포환경에서는 INFO 레벨만 기록하여 성능, 보안, 로그 용량 관리를 최적화
     com.example: INFO
     org.hibernate.SQL: INFO
     org.hibernate.orm.jdbc.bind: INFO
@@ -31,7 +32,7 @@ logging:
     org.springframework.transaction.interceptor: INFO
 
 custom:
-  site:
+  site: # un1hub.site 운영 서버 주소가 설정 됨
     domain: "${custom.prod.domain}"
     backUrl: "${custom.prod.backUrl}"
     frontUrl: "${custom.prod.frontUrl}"
