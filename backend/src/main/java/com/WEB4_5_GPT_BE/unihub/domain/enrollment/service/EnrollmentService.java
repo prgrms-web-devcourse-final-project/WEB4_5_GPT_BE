@@ -7,10 +7,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.EnrollmentPeriodRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response.MyEnrollmentResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.entity.Enrollment;
-import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.CourseCapacityExceededException;
-import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.EnrollmentNotFoundException;
-import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.EnrollmentPeriodClosedException;
-import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.EnrollmentPeriodNotFoundException;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.*;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.repository.EnrollmentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
@@ -159,8 +156,11 @@ public class EnrollmentService {
             throw new CourseCapacityExceededException();
         }
 
-
         // TODO: 이미 신청한 과목
+        if (enrollmentRepository.existByCourseIdAndStudentId(courseId, profile.getId())) {
+            throw new DuplicateEnrollmentException();
+        }
+
         // TODO: 학점 한도 초과
         // TODO: 시간표 충돌
 

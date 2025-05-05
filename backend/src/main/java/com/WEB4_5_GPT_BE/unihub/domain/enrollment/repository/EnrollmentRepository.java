@@ -25,4 +25,14 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
      * @return Optional<Enrollment>
      */
     Optional<Enrollment> findByCourseIdAndStudentId(Long courseId, Long studentId);
+
+    /**
+     * 주어진 courseId, studentProfileId 조합으로
+     * 수강신청 내역이 존재하는지 확인합니다.
+     *
+     * @param courseId  강좌 ID (course_id)
+     * @param studentId 학생 프로필 ID (student_id)
+     * @return true: 존재, false: 존재하지 않음
+     */
+    boolean existByCourseIdAndStudentId(Long courseId, Long studentId);
 }
