@@ -5,8 +5,10 @@ import com.WEB4_5_GPT_BE.unihub.domain.common.enums.DayOfWeek;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.CourseSchedule;
+import com.WEB4_5_GPT_BE.unihub.domain.course.entity.EnrollmentPeriod;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseScheduleRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.course.repository.EnrollmentPeriodRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.entity.Enrollment;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.repository.EnrollmentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest;
@@ -25,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Optional;
 
@@ -40,6 +43,7 @@ public class InitDataHelper {
     private final CourseRepository courseRepository;
     private final CourseScheduleRepository courseScheduleRepository;
     private final EnrollmentRepository enrollmentRepository;
+    private final EnrollmentPeriodRepository enrollmentPeriodRepository;
 
     public University createUniversity(String name) {
         return universityRepository.save(University.builder().name(name).build());
@@ -147,4 +151,20 @@ public class InitDataHelper {
 
         enrollmentRepository.save(enrollment);
     }
+
+    public void createEnrollmentPeriod(
+            University university, Integer year, Integer grade,
+            Integer semester, LocalDate startDate, LocalDate endDate
+    ) {
+        EnrollmentPeriod period = EnrollmentPeriod.builder()
+                .university(university)
+                .year(year)
+                .grade(grade)
+                .semester(semester)
+                .startDate(startDate)
+                .endDate(endDate)
+                .build();
+        enrollmentPeriodRepository.save(period);
+    }
+
 }

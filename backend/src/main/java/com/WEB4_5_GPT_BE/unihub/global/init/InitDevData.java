@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Component
@@ -42,6 +43,16 @@ public class InitDevData {
                 university.getId(), major.getId(), ApprovalStatus.APPROVED);
 
         helper.createAdmin("adminmaster@auni.ac.kr", "adminPw", "최고관리자", passwordEncoder);
+
+        // 2) 수강신청 기간 테스트 데이터 생성
+        helper.createEnrollmentPeriod(
+                university,
+                LocalDate.now().getYear(),             // 2025
+                1,                                     // 1학년
+                1,                                     // 1학기
+                LocalDate.of(2025, 5, 1),              // 시작일
+                LocalDate.of(2025, 5, 31)              // 종료일
+        );
 
         // 2) 테스트용 강좌 3개 생성
         List<Course> courses = initCourses(major);
