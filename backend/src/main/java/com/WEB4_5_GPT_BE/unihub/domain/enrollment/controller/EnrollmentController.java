@@ -1,6 +1,5 @@
 package com.WEB4_5_GPT_BE.unihub.domain.enrollment.controller;
 
-import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.request.EnrollmentCancelRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.request.EnrollmentRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response.MyEnrollmentResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.EnrollmentService;
@@ -36,7 +35,7 @@ public class EnrollmentController {
         Member actor = rq.getActor(); // 인증된 사용자(Actor) 정보 획득
         Member student = rq.getRealActor(actor); // 실제 학생(Member) 객체 얻기 (StudentProfile 필요)
 
-        // 서비스에서 수강목록을 조회하여 반환
+        // 서비스에서 내 수강목록을 조회하여 반환
         List<MyEnrollmentResponse> response = enrollmentService.getMyEnrollmentList(student);
 
         return new RsData<>("200", "내 수강목록 조회가 완료되었습니다.", response);
@@ -49,8 +48,8 @@ public class EnrollmentController {
     }
 
     // 수강 취소
-    @DeleteMapping("/{courseId}")
-    public RsData<Empty> enrollmentCancel(@RequestBody EnrollmentCancelRequest request) {
+    @DeleteMapping("/{enrollmentId}")
+    public RsData<Empty> enrollmentCancel() {
         return new RsData<>("200", "수강 취소가 완료되었습니다.");
     }
 
