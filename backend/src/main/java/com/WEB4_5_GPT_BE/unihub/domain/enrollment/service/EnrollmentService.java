@@ -7,6 +7,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.EnrollmentPeriodRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response.MyEnrollmentResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.entity.Enrollment;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.CourseCapacityExceededException;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.EnrollmentNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.EnrollmentPeriodClosedException;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.EnrollmentPeriodNotFoundException;
@@ -27,6 +28,7 @@ public class EnrollmentService {
     private final EnrollmentRepository enrollmentRepository; // 수강신청 Repository
     private final EnrollmentPeriodRepository enrollmentPeriodRepository; // 수강신청 기간 Repository
     private final CourseRepository courseRepository;
+    private final int MAXIMUM_CREDIT = 21;
 
     /**
      * 학생의 수강신청 내역을 조회하는 메서드입니다.
@@ -153,9 +155,14 @@ public class EnrollmentService {
                 .orElseThrow(CourseNotFoundException::new);
 
         // TODO: 정원 초과
+        if (course.getAvailableSeats() <= 0) {
+            throw new CourseCapacityExceededException();
+        }
+
+
         // TODO: 이미 신청한 과목
-        // TODO: 시간표 충돌
         // TODO: 학점 한도 초과
+        // TODO: 시간표 충돌
 
         // 수강 신청 정보 생성
         Enrollment enrollment = Enrollment.builder()
