@@ -1,6 +1,6 @@
-package com.WEB4_5_GPT_BE.unihub.domain.member.exception;
+package com.WEB4_5_GPT_BE.unihub.domain.member.exception.auth;
 
-import com.WEB4_5_GPT_BE.unihub.global.exception.AuthException;
+import com.WEB4_5_GPT_BE.unihub.domain.member.exception.AuthException;
 
 public class InvalidCredentialException extends AuthException {
     public InvalidCredentialException() {
