@@ -162,22 +162,21 @@ class EnrollmentServiceTest {
         assertThat(dto.availableSeats()).isEqualTo(3);
     }
 
-    @Test
-    @DisplayName("수강 취소 - 성공")
-    void cancelMyEnrollment_success() {
+    private EnrollmentPeriod createPeriod(int StartDate, int endDate) {
         LocalDate today = LocalDate.now();
 
-        // 1) 수강신청 기간 조회
-        EnrollmentPeriod period = EnrollmentPeriod.builder()
-                .id(5L)
+        return EnrollmentPeriod.builder()
                 .university(profile.getUniversity())
                 .year(today.getYear())
                 .grade(profile.getGrade())
                 .semester(profile.getSemester())
-                .startDate(today.minusDays(1))
-                .endDate(today.plusDays(1))
+                .startDate(today.minusDays(StartDate))
+                .endDate(today.plusDays(endDate))
                 .build();
+    }
 
+    private void stubEnrollmentPeriod(EnrollmentPeriod period) {
+        LocalDate today = LocalDate.now();
         when(enrollmentPeriodRepository
                 .findByUniversityIdAndYearAndGradeAndSemester(
                         eq(profile.getUniversity().getId()),
@@ -186,6 +185,44 @@ class EnrollmentServiceTest {
                         eq(profile.getSemester())
                 ))
                 .thenReturn(Optional.of(period));
+    }
+
+    private Course stubCourse(int capacity, int enrolled, int credit) {
+
+        Major major = Major.builder().id(1L).name("전공").build();
+
+        ProfessorProfile profProfile = ProfessorProfile.builder()
+                .member(Member.builder().name("교수님").build())
+                .build();
+
+        Course course = Course.builder()
+                .id(COURSE_ID)
+                .title("테스트강좌")
+                .major(major)
+                .location("강의실")
+                .capacity(capacity)
+                .enrolled(enrolled)
+                .credit(credit)
+                .professor(profProfile)
+                .grade(profile.getGrade())
+                .semester(profile.getSemester())
+                .build();
+
+        when(courseRepository.findById(COURSE_ID))
+                .thenReturn(Optional.of(course));
+
+        return course;
+    }
+
+    @Test
+    @DisplayName("수강 취소 - 성공")
+    void cancelMyEnrollment_success() {
+
+        // 1) 수강신청 기간 생성
+        EnrollmentPeriod period = createPeriod(1, 1);
+
+        // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
+        stubEnrollmentPeriod(period);
 
         // 2) 기존 수강신청 내역 조회 stub
         Enrollment enrollment = Enrollment.builder()
@@ -240,14 +277,9 @@ class EnrollmentServiceTest {
                 .startDate(today.plusDays(1))   // 시작일이 내일
                 .endDate(today.plusDays(2))     // 종료일이 모레
                 .build();
-        when(enrollmentPeriodRepository
-                .findByUniversityIdAndYearAndGradeAndSemester(
-                        eq(profile.getUniversity().getId()),
-                        eq(today.getYear()),
-                        eq(profile.getGrade()),
-                        eq(profile.getSemester())
-                ))
-                .thenReturn(Optional.of(period));
+
+        // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
+        stubEnrollmentPeriod(period);
 
         // 실행 및 예외 검증
         assertThatThrownBy(() ->
@@ -261,25 +293,11 @@ class EnrollmentServiceTest {
     @Test
     @DisplayName("수강 취소 실패 - 수강신청 내역이 없는 경우")
     void cancelMyEnrollment_throws3() {
-        LocalDate today = LocalDate.now();
+        // 1) 수강신청 기간 생성
+        EnrollmentPeriod period = createPeriod(1, 1);
 
-        // 수강신청 기간은 유효하게 stub
-        EnrollmentPeriod period = EnrollmentPeriod.builder()
-                .university(profile.getUniversity())
-                .year(today.getYear())
-                .grade(profile.getGrade())
-                .semester(profile.getSemester())
-                .startDate(today.minusDays(1))
-                .endDate(today.plusDays(1))
-                .build();
-        when(enrollmentPeriodRepository
-                .findByUniversityIdAndYearAndGradeAndSemester(
-                        eq(profile.getUniversity().getId()),
-                        eq(today.getYear()),
-                        eq(profile.getGrade()),
-                        eq(profile.getSemester())
-                ))
-                .thenReturn(Optional.of(period));
+        // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
+        stubEnrollmentPeriod(period);
 
         // 수강신청 내역이 없도록 stub
         when(enrollmentRepository.findByCourseIdAndStudentId(COURSE_ID, profile.getId()))
@@ -297,52 +315,15 @@ class EnrollmentServiceTest {
     @Test
     @DisplayName("수강 신청 - 성공")
     void enrollment_success() {
-        LocalDate today = LocalDate.now();
 
-        // 1) 수강신청 기간 stub
-        EnrollmentPeriod period = EnrollmentPeriod.builder()
-                .university(profile.getUniversity())
-                .year(today.getYear())
-                .grade(profile.getGrade())
-                .semester(profile.getSemester())
-                .startDate(today.minusDays(1))
-                .endDate(today.plusDays(1))
-                .build();
-        when(enrollmentPeriodRepository
-                .findByUniversityIdAndYearAndGradeAndSemester(
-                        eq(profile.getUniversity().getId()),
-                        eq(today.getYear()),
-                        eq(profile.getGrade()),
-                        eq(profile.getSemester())
-                ))
-                .thenReturn(Optional.of(period));
+        // 1) 수강신청 기간 생성
+        EnrollmentPeriod period = createPeriod(1, 1);
 
-        // 2) 강좌 조회 stub
-        Major major = Major.builder().id(5L).name("전공").build();
-        Member profMem = Member.builder()
-                .email("prof@uni.ac.kr")
-                .password("pw")
-                .name("교수님")
-                .build();
-        ProfessorProfile profProfile = ProfessorProfile.builder()
-                .member(profMem)
-                .build();
+        // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
+        stubEnrollmentPeriod(period);
 
-        Course course = Course.builder()
-                .id(COURSE_ID)
-                .title("테스트강좌")
-                .major(major)
-                .location("강의실")
-                .capacity(10)
-                .enrolled(5)
-                .credit(3)
-                .professor(profProfile)
-                .grade(profile.getGrade())
-                .semester(profile.getSemester())
-                .build();
-        // no existing schedules => no conflict
-        when(courseRepository.findById(COURSE_ID))
-                .thenReturn(Optional.of(course));
+        // 2) 강좌 조회 stub (잔여좌석 5, 학점 3)
+        Course course = stubCourse(10, 5, 3);
 
         // 3) 중복 신청 없음
         when(enrollmentRepository.existsByCourseIdAndStudentId(COURSE_ID, profile.getId()))
@@ -371,23 +352,11 @@ class EnrollmentServiceTest {
     void enrollment_throws1() {
         LocalDate today = LocalDate.now();
 
-        // 1) 수강신청 가능 기간 stub
-        EnrollmentPeriod period = EnrollmentPeriod.builder()
-                .university(profile.getUniversity())
-                .year(today.getYear())
-                .grade(profile.getGrade())
-                .semester(profile.getSemester())
-                .startDate(today.minusDays(1))
-                .endDate(today.plusDays(1))
-                .build();
-        when(enrollmentPeriodRepository
-                .findByUniversityIdAndYearAndGradeAndSemester(
-                        eq(profile.getUniversity().getId()),
-                        eq(today.getYear()),
-                        eq(profile.getGrade()),
-                        eq(profile.getSemester())
-                ))
-                .thenReturn(Optional.of(period));
+        // 1) 수강신청 기간 생성
+        EnrollmentPeriod period = createPeriod(1, 1);
+
+        // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
+        stubEnrollmentPeriod(period);
 
         // 2) 강좌 정보 없음 stub
         when(courseRepository.findById(COURSE_ID))
@@ -429,26 +398,21 @@ class EnrollmentServiceTest {
     @Test
     @DisplayName("수강 신청 실패 – 수강신청 기간 외 요청인 경우")
     void enrollment_throws3() {
+
         LocalDate today = LocalDate.now();
 
-        // 수강신청 기간은 존재하나 오늘이 범위 밖인 경우 stub
+        // enrollmentPeriodRepository에서 today가 기간 밖인 EnrollmentPeriod 반환
         EnrollmentPeriod period = EnrollmentPeriod.builder()
                 .university(profile.getUniversity())
                 .year(today.getYear())
                 .grade(profile.getGrade())
                 .semester(profile.getSemester())
-                .startDate(today.plusDays(1))
-                .endDate(today.plusDays(2))
+                .startDate(today.plusDays(1))   // 시작일이 내일
+                .endDate(today.plusDays(2))     // 종료일이 모레
                 .build();
 
-        when(enrollmentPeriodRepository
-                .findByUniversityIdAndYearAndGradeAndSemester(
-                        eq(profile.getUniversity().getId()),
-                        eq(today.getYear()),
-                        eq(profile.getGrade()),
-                        eq(profile.getSemester())
-                ))
-                .thenReturn(Optional.of(period));
+        // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
+        stubEnrollmentPeriod(period);
 
         // 실행 및 예외 검증
         assertThatThrownBy(() ->
@@ -464,43 +428,14 @@ class EnrollmentServiceTest {
     void enrollment_throws4() {
         LocalDate today = LocalDate.now();
 
-        // 1) 수강신청 기간은 유효하도록 stub
-        EnrollmentPeriod period = EnrollmentPeriod.builder()
-                .university(profile.getUniversity())
-                .year(today.getYear())
-                .grade(profile.getGrade())
-                .semester(profile.getSemester())
-                .startDate(today.minusDays(1))
-                .endDate(today.plusDays(1))
-                .build();
-        when(enrollmentPeriodRepository
-                .findByUniversityIdAndYearAndGradeAndSemester(
-                        eq(profile.getUniversity().getId()),
-                        eq(today.getYear()),
-                        eq(profile.getGrade()),
-                        eq(profile.getSemester())
-                ))
-                .thenReturn(Optional.of(period));
+        // 1) 수강신청 기간 생성
+        EnrollmentPeriod period = createPeriod(1, 1);
 
-        // 2) 강좌 조회 stub: 정원이 다 찬 상태
-        Major major = Major.builder().id(1L).name("전공").build();
-        ProfessorProfile profProfile = ProfessorProfile.builder()
-                .member(Member.builder().name("김교수").build())
-                .build();
-        Course fullCourse = Course.builder()
-                .id(COURSE_ID)
-                .title("가득찬강좌")
-                .major(major)
-                .location("강의실")
-                .capacity(10)
-                .enrolled(10)  // 더 이상 좌석 없음
-                .credit(3)
-                .professor(profProfile)
-                .grade(profile.getGrade())
-                .semester(profile.getSemester())
-                .build();
-        when(courseRepository.findById(COURSE_ID))
-                .thenReturn(Optional.of(fullCourse));
+        // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
+        stubEnrollmentPeriod(period);
+
+        // 2) 강좌 조회 stub (잔여좌석 0, 학점 3) 정원이 다 찬 상태
+        stubCourse(10, 10, 3);
 
         // 실행 및 예외 검증
         assertThatThrownBy(() ->
@@ -516,43 +451,14 @@ class EnrollmentServiceTest {
     void enrollment_throws5() {
         LocalDate today = LocalDate.now();
 
-        // 1) 수강신청 기간은 유효하도록 stub
-        EnrollmentPeriod period = EnrollmentPeriod.builder()
-                .university(profile.getUniversity())
-                .year(today.getYear())
-                .grade(profile.getGrade())
-                .semester(profile.getSemester())
-                .startDate(today.minusDays(1))
-                .endDate(today.plusDays(1))
-                .build();
-        when(enrollmentPeriodRepository
-                .findByUniversityIdAndYearAndGradeAndSemester(
-                        eq(profile.getUniversity().getId()),
-                        eq(today.getYear()),
-                        eq(profile.getGrade()),
-                        eq(profile.getSemester())
-                ))
-                .thenReturn(Optional.of(period));
+        // 1) 수강신청 기간 생성
+        EnrollmentPeriod period = createPeriod(1, 1);
 
-        // 2) 강좌 조회 stub
-        Major major = Major.builder().id(1L).name("전공").build();
-        ProfessorProfile profProfile = ProfessorProfile.builder()
-                .member(Member.builder().name("교수님").build())
-                .build();
-        Course course = Course.builder()
-                .id(COURSE_ID)
-                .title("테스트강좌")
-                .major(major)
-                .location("강의실")
-                .capacity(10)
-                .enrolled(5)
-                .credit(3)
-                .professor(profProfile)
-                .grade(profile.getGrade())
-                .semester(profile.getSemester())
-                .build();
-        when(courseRepository.findById(COURSE_ID))
-                .thenReturn(Optional.of(course));
+        // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
+        stubEnrollmentPeriod(period);
+
+        // 2) 강좌 조회 stub (잔여좌석 5, 학점 3)
+        stubCourse(10, 5, 3);
 
         // 3) 이미 신청한 강좌로 stub
         when(enrollmentRepository.existsByCourseIdAndStudentId(COURSE_ID, profile.getId()))
@@ -572,43 +478,14 @@ class EnrollmentServiceTest {
     void enrollment_throws6() {
         LocalDate today = LocalDate.now();
 
-        // 1) 수강신청 기간은 유효하도록 stub
-        EnrollmentPeriod period = EnrollmentPeriod.builder()
-                .university(profile.getUniversity())
-                .year(today.getYear())
-                .grade(profile.getGrade())
-                .semester(profile.getSemester())
-                .startDate(today.minusDays(1))
-                .endDate(today.plusDays(1))
-                .build();
-        when(enrollmentPeriodRepository
-                .findByUniversityIdAndYearAndGradeAndSemester(
-                        eq(profile.getUniversity().getId()),
-                        eq(today.getYear()),
-                        eq(profile.getGrade()),
-                        eq(profile.getSemester())
-                ))
-                .thenReturn(Optional.of(period));
+        // 1) 수강신청 기간 생성
+        EnrollmentPeriod period = createPeriod(1, 1);
 
-        // 2) 강좌 조회 stub
-        Major major = Major.builder().id(1L).name("전공").build();
-        ProfessorProfile profProfile = ProfessorProfile.builder()
-                .member(Member.builder().name("교수님").build())
-                .build();
-        Course newCourse = Course.builder()
-                .id(COURSE_ID)
-                .title("신규강좌")
-                .major(major)
-                .location("강의실")
-                .capacity(10)
-                .enrolled(5)
-                .credit(3)
-                .professor(profProfile)
-                .grade(profile.getGrade())
-                .semester(profile.getSemester())
-                .build();
-        when(courseRepository.findById(COURSE_ID))
-                .thenReturn(Optional.of(newCourse));
+        // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
+        stubEnrollmentPeriod(period);
+
+        // 2) 강좌 조회 stub (잔여좌석 5, 학점 3)
+        stubCourse(10, 5, 3);
 
         // 3) 중복 신청 없음 stub
         when(enrollmentRepository.existsByCourseIdAndStudentId(COURSE_ID, profile.getId()))
@@ -639,25 +516,12 @@ class EnrollmentServiceTest {
     @Test
     @DisplayName("수강 신청 실패 – 시간표 충돌 시")
     void enrollment_throws7() {
-        LocalDate today = LocalDate.now();
 
-        // 1) 수강신청 기간은 유효하도록 stub
-        EnrollmentPeriod period = EnrollmentPeriod.builder()
-                .university(profile.getUniversity())
-                .year(today.getYear())
-                .grade(profile.getGrade())
-                .semester(profile.getSemester())
-                .startDate(today.minusDays(1))
-                .endDate(today.plusDays(1))
-                .build();
-        when(enrollmentPeriodRepository
-                .findByUniversityIdAndYearAndGradeAndSemester(
-                        eq(profile.getUniversity().getId()),
-                        eq(today.getYear()),
-                        eq(profile.getGrade()),
-                        eq(profile.getSemester())
-                ))
-                .thenReturn(Optional.of(period));
+        // 1) 수강신청 기간 생성
+        EnrollmentPeriod period = createPeriod(1, 1);
+
+        // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
+        stubEnrollmentPeriod(period);
 
         // 2) 신규 강좌 stub (MON 10:00–11:00)
         Major major = Major.builder().id(1L).name("전공").build();
@@ -717,5 +581,4 @@ class EnrollmentServiceTest {
         // save 호출이 일어나지 않아야 함
         verify(enrollmentRepository, never()).save(any());
     }
-
 }
