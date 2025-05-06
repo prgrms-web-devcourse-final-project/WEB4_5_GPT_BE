@@ -34,6 +34,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@DisplayName("수강신청 관련 단위 테스트")
 @ExtendWith(MockitoExtension.class)
 class EnrollmentServiceTest {
 

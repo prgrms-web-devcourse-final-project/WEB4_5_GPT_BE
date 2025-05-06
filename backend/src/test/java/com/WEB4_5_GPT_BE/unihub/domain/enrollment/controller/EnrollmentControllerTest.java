@@ -16,13 +16,13 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
 @SpringBootTest
+@DisplayName("수강 신청 관련 API 테스트")
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @RedisTestContainerConfig
@@ -231,4 +231,72 @@ class EnrollmentControllerTest {
                 .andExpect(jsonPath("$.code").value("409"))
                 .andExpect(jsonPath("$.message").value("기존 신청한 강의와 시간이 겹칩니다."));
     }
+
+    @Test
+    @DisplayName("수강 취소 - 성공")
+    @Transactional
+    void cancelEnrollment_success() throws Exception {
+        // given: 학생 로그인 후 accessToken 발급 및 초기 수강신청 내역(2개) 확인
+        String accessToken = loginAndGetAccessToken("teststudent@auni.ac.kr", "password");
+
+        mockMvc.perform(get("/api/enrollments/me")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(2));
+
+        // 취소할 강좌 ID 조회
+        Long courseId = courseRepository.findAll().stream()
+                .filter(c -> "자료구조".equals(c.getTitle()))
+                .findFirst()
+                .orElseThrow()
+                .getId();
+
+        // when: 해당 강좌 취소 요청
+        mockMvc.perform(delete("/api/enrollments/{courseId}", courseId)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200"))
+                .andExpect(jsonPath("$.message").value("수강 취소가 완료되었습니다."));
+
+        // then: 수강신청 목록이 1개로 감소했는지 검증
+        mockMvc.perform(get("/api/enrollments/me")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1));
+    }
+
+    @Test
+    @DisplayName("수강 취소 실패 – 수강신청 기간 정보 없음")
+    void cancelMyEnrollment_throws1() throws Exception {
+        // given: 2학년학생으로 로그인 (테스트데이터에는 2학년 수강신청 기간이 없음)
+        String accessToken = loginAndGetAccessToken("teststudent3@auni.ac.kr", "password");
+
+        Long courseId = courseRepository.findAll().stream()
+                .filter(c -> "네트워크".equals(c.getTitle()))
+                .findFirst().get().getId();
+
+        // when & then: 400 Bad Request, “수강신청 기간 정보가 없습니다.”
+        mockMvc.perform(delete("/api/enrollments/{courseId}", courseId)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("404"))
+                .andExpect(jsonPath("$.message").value("수강신청 기간 정보가 없습니다."));
+    }
+
+    @Test
+    @DisplayName("수강 취소 실패 – 수강신청 내역이 없는 경우")
+    void cancelMyEnrollment_throws2() throws Exception {
+        // given: 학생 로그인 후 토큰 발급
+        String accessToken = loginAndGetAccessToken("teststudent@auni.ac.kr", "password");
+        Long courseId = 999L;
+
+        // when & then: 400 Bad Request, “수강신청 내역을 찾을 수 없습니다.”
+        mockMvc.perform(delete("/api/enrollments/{courseId}", courseId)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("404"))
+                .andExpect(jsonPath("$.message").value("수강신청 내역이 존재하지 않습니다."));
+    }
+
+
 }
