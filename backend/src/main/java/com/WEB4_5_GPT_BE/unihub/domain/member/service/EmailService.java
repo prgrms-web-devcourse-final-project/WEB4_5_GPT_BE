@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -104,6 +105,7 @@ public class EmailService {
   /**
    * 관리자 초대 이메일 전송
    */
+  @Async
   public void sendAdminInvitation(String email, String adminName) {
     SimpleMailMessage message = new SimpleMailMessage();
     message.setTo(email);
