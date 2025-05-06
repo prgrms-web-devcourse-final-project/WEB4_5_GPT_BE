@@ -34,5 +34,5 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
      * @param studentId 학생 프로필 ID (student_id)
      * @return true: 존재, false: 존재하지 않음
      */
-    boolean existByCourseIdAndStudentId(Long courseId, Long studentId);
+    boolean existsByCourseIdAndStudentId(Long courseId, Long studentId);
 }

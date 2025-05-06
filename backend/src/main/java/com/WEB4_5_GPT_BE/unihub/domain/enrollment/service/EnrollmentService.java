@@ -32,7 +32,7 @@ public class EnrollmentService {
      *
      * @param student 로그인 인증된 학생 정보
      * @return 수강신청 내역에 해당하는 {@link MyEnrollmentResponse} DTO 리스트
-     * */
+     */
     @Transactional
     public List<MyEnrollmentResponse> getMyEnrollmentList(Member student) {
 
@@ -151,17 +151,29 @@ public class EnrollmentService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(CourseNotFoundException::new);
 
-        // TODO: 정원 초과
+        // 신청 강좌의 정원 초과 여부 검증
         if (course.getAvailableSeats() <= 0) {
             throw new CourseCapacityExceededException();
         }
 
-        // TODO: 이미 신청한 과목
-        if (enrollmentRepository.existByCourseIdAndStudentId(courseId, profile.getId())) {
+        // 기존에 신청 완료한 강좌인지 검증하여 중복 신청 방지
+        if (enrollmentRepository.existsByCourseIdAndStudentId(courseId, profile.getId())) {
             throw new DuplicateEnrollmentException();
         }
 
-        // TODO: 학점 한도 초과
+        // 최대 학점 (21)을 초과하여 신청하는지 검증
+        List<Enrollment> enrollmentList = enrollmentRepository.findAllByStudent(profile);
+
+        // 수강 신청한 과목의 총 학점 계산
+        Integer totalCredit = enrollmentList.stream()
+                .mapToInt(e -> e.getCourse().getCredit())
+                .sum();
+
+        // 현재 학생 정보에 학점 관련 칼럼 존재하지 않아 별도의 21학점 상수로 처리
+        if (totalCredit + course.getCredit() > MAXIMUM_CREDIT) {
+            throw new CreditLimitExceededException();
+        }
+
         // TODO: 시간표 충돌
 
         // 수강 신청 정보 생성
@@ -172,4 +184,5 @@ public class EnrollmentService {
 
         enrollmentRepository.save(enrollment);
     }
+
 }
