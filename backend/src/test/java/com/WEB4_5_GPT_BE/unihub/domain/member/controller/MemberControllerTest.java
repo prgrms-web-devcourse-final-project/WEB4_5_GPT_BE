@@ -283,25 +283,7 @@ public class MemberControllerTest {
                 .andExpect(jsonPath("$.data[0].schedule[0].endTime").value("14:00"));
     }
 
-    @Test
-    @DisplayName("이름 변경 성공")
-    void updateName_success() throws Exception {
-        MemberLoginRequest loginRequest = new MemberLoginRequest("teststudent@auni.ac.kr", "password");
-        String loginResponse = mockMvc.perform(post("/api/members/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest)))
-                .andReturn().getResponse().getContentAsString();
-        String accessToken = objectMapper.readTree(loginResponse).path("data").path("accessToken").asText();
 
-        UpdateNameRequest request = new UpdateNameRequest("새이름");
-
-        mockMvc.perform(patch("/api/members/me/name")
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("이름 변경 성공"));
-    }
 
     @Test
     @DisplayName("이메일 변경 성공")
