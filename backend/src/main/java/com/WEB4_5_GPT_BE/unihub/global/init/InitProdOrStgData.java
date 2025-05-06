@@ -28,6 +28,7 @@ public class InitProdOrStgData {
 
         University university = helper.createUniversity("A대학교");
         Major major = helper.createMajor("소프트웨어전공", university);
+        Major major2 = helper.createMajor("컴퓨터공학전공", university);
 
         helper.createStudent("haneulkim@auni.ac.kr", "studentPw", "김하늘", "20250001",
                 university.getId(), major.getId());
