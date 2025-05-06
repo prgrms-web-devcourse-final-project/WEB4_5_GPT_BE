@@ -38,7 +38,7 @@ public class InitDataHelper {
     private final CourseScheduleRepository courseScheduleRepository;
 
     public University createUniversity(String name) {
-        return universityRepository.save(University.builder().name(name).build());
+        return universityRepository.save(University.builder().name(name).emailDomain("unihub.ac.kr").build());
     }
 
     public Major createMajor(String name, University university) {

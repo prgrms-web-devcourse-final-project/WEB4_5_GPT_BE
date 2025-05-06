@@ -9,10 +9,10 @@ import java.util.Optional;
 @Repository
 public interface UniversityRepository extends JpaRepository<University, Long> {
 
-    // ub300ud559uad50 uc774ub984uc774 uc874uc7acud558ub294uc9c0 ud655uc778
+    // 대학교 이름이 존재하는지 확인
     boolean existsByName(String name);
     
-    // uc774uba54uc77c ub3c4uba54uc778uc774 uc874uc7acud558ub294uc9c0 ud655uc778
+    // 이메일 도메인이 존재하는지 확인
     boolean existsByEmailDomain(String emailDomain);
 
     Optional<University> findByName(String name);
