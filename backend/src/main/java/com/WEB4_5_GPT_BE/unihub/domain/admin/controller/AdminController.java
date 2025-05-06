@@ -139,7 +139,7 @@ public class AdminController {
     /**
      * 전공 등록
      */
-    @PostMapping
+    @PostMapping("majors")
     public RsData<MajorResponse> createMajor(@Valid @RequestBody MajorRequest request) {
         MajorResponse major = majorService.createMajor(request);
         return new RsData<>("201", "전공 등록에 성공했습니다.", major);
@@ -148,7 +148,7 @@ public class AdminController {
     /**
      * 전공 정보 수정
      */
-    @PutMapping("/{majorId}")
+    @PutMapping("majors/{majorId}")
     public RsData<MajorResponse> updateMajor(
             @PathVariable Long majorId, @Valid @RequestBody MajorRequest request) {
         MajorResponse major = majorService.updateMajor(majorId, request);
@@ -158,7 +158,7 @@ public class AdminController {
     /**
      * 전공 삭제
      */
-    @DeleteMapping("/{majorId}")
+    @DeleteMapping("majors/{majorId}")
     public RsData<Void> deleteMajor(@PathVariable Long majorId) {
         majorService.deleteMajor(majorId);
         return new RsData<>("200", "전공 삭제에 성공했습니다.");
@@ -167,7 +167,7 @@ public class AdminController {
     /**
      * 대학 등록
      */
-    @PostMapping
+    @PostMapping("universities")
     public RsData<UniversityResponse> createUniversity(
             @Valid @RequestBody UniversityRequest request) {
         UniversityResponse university = universityService.createUniversity(request);
@@ -177,7 +177,7 @@ public class AdminController {
     /**
      * 대학 정보 수정
      */
-    @PutMapping("/{universityId}")
+    @PutMapping("universities/{universityId}")
     public RsData<UniversityResponse> updateUniversity(
             @PathVariable Long universityId, @Valid @RequestBody UniversityRequest request) {
         UniversityResponse university = universityService.updateUniversity(universityId, request);
@@ -187,7 +187,7 @@ public class AdminController {
     /**
      * 대학 삭제
      */
-    @DeleteMapping("/{universityId}")
+    @DeleteMapping("universities/{universityId}")
     public RsData<Void> deleteUniversity(@PathVariable Long universityId) {
         universityService.deleteUniversity(universityId);
         return new RsData<>("200", "대학 삭제에 성공했습니다.");
