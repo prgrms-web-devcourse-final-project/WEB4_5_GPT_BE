@@ -44,6 +44,9 @@ public class InitTestData {
         helper.createStudent("teststudent2@auni.ac.kr", "password", "테스트학생2", "20250003",
                 university.getId(), major.getId());
 
+        helper.create2ndStudent("teststudent3@auni.ac.kr", "password", "테스트2학년학생1", "20250004",
+                university.getId(), major.getId());
+
         // 승인된 교수 (로그인 성공용)
         Member authenticatedProfessor = helper.createProfessor("professor@auni.ac.kr", "password", "김교수", "EMP00001",
                 university.getId(), major.getId(), ApprovalStatus.APPROVED);
@@ -61,7 +64,7 @@ public class InitTestData {
 
         helper.createAdmin("adminmaster@auni.ac.kr", "adminPw", "관리자", passwordEncoder);
 
-        // 2-1) 수강신청 기간 설정 (1학년·1학기)
+        // 수강신청 기간 설정 (1학년·1학기)
         int year = LocalDate.now().getYear();
         helper.createEnrollmentPeriod(
                 university,
