@@ -270,6 +270,26 @@ public class MemberServiceImpl implements MemberService {
     member.markDeleted();
   }
 
+  @Override
+  @Transactional
+  public void updateAllStudentSemesters() {
+    List<StudentProfile> students = studentProfileRepository.findAll();
+    
+    for (StudentProfile student : students) {
+      // 현재 학기가 2학기(2)인 경우, 학년을 올리고 1학기로 변경
+      if (student.getSemester() == 2) {
+        student.setGrade(student.getGrade() + 1);
+        student.setSemester(1);
+      } else {
+        // 현재 학기가 1학기(1)인 경우, 2학기로 변경
+        student.setSemester(2);
+      }
+    }
+    
+    // 변경된 학생 프로필 저장
+    studentProfileRepository.saveAll(students);
+  }
+
   private Member findActiveMemberById(Long id) {
     Member member = memberRepository.findById(id)
             .orElseThrow(() -> new UnihubException("404", "회원 정보를 찾을 수 없습니다."));
