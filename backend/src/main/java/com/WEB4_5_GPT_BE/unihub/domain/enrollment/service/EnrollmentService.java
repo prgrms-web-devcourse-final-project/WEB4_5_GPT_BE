@@ -1,6 +1,7 @@
 package com.WEB4_5_GPT_BE.unihub.domain.enrollment.service;
 
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
+import com.WEB4_5_GPT_BE.unihub.domain.course.entity.CourseSchedule;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.EnrollmentPeriod;
 import com.WEB4_5_GPT_BE.unihub.domain.course.exception.CourseNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
@@ -139,6 +140,20 @@ public class EnrollmentService {
                 .orElseThrow(EnrollmentNotFoundException::new);
     }
 
+    /**
+     * 수강 신청을 처리하는 메서드입니다.
+     * 여러 예외 상황을 검증한 후 수강 신청을 진행합니다.
+     *
+     * @param student  로그인 인증된 학생 정보
+     * @param courseId 신청할 강좌의 ID
+     * @throws CourseNotFoundException           강좌 정보가 없는 경우
+     * @throws EnrollmentPeriodNotFoundException 수강신청 기간 정보가 없는 경우
+     * @throws EnrollmentPeriodClosedException   수강신청 기간 외 요청인 경우
+     * @throws CourseCapacityExceededException   정원 초과 시
+     * @throws DuplicateEnrollmentException      동일 강좌 중복 신청 시
+     * @throws CreditLimitExceededException      최대 학점 초과 시
+     * @throws ScheduleConflictException         기존 신청한 강좌와 시간표가 겹치는 경우
+     */
     @Transactional
     public void enrollment(Member student, Long courseId) {
         // Member → StudentProfile 추출
@@ -151,19 +166,60 @@ public class EnrollmentService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(CourseNotFoundException::new);
 
-        // 신청 강좌의 정원 초과 여부 검증
+        ensureEnrollmentAllowed(profile, course); // 수강 신청이 가능한지 여러 예외상황 검증
+
+        // 수강 신청 정보 생성
+        Enrollment enrollment = Enrollment.builder()
+                .student(profile)
+                .course(course)
+                .build();
+
+        enrollmentRepository.save(enrollment);
+    }
+
+    /**
+     * 수강 신청이 가능한지 여러 예외 상황을 검증합니다.
+     */
+    private void ensureEnrollmentAllowed(StudentProfile profile, Course course) {
+        ensureCapacityAvailable(course); // 정원 초과 시 예외 처리
+        ensureNotAlreadyEnrolled(profile, course); // 동일강좌 중복 신청 방지
+
+        List<Enrollment> enrollmentList = enrollmentRepository.findAllByStudent(profile); // 학생 기존 수강 신청 내역
+
+        ensureCreditLimitNotExceeded(enrollmentList, course); // 최대 학점 (21)을 초과하여 신청하는지 검증
+        ensureNoScheduleConflict(enrollmentList, course); // 기존에 신청했던 강좌들과 새 수업 시간표가 겹치는지 검증
+    }
+
+    /**
+     * 강좌의 남은 좌석이 1개 이상인지 확인한다.
+     *
+     * @throws CourseCapacityExceededException 좌석이 없으면
+     */
+    private void ensureCapacityAvailable(Course course) {
         if (course.getAvailableSeats() <= 0) {
             throw new CourseCapacityExceededException();
         }
+    }
 
-        // 기존에 신청 완료한 강좌인지 검증하여 중복 신청 방지
+    /**
+     * 학생이 동일 강좌를 이미 신청하지 않았는지 확인한다.
+     *
+     * @throws DuplicateEnrollmentException 이미 신청되어 있으면
+     */
+    private void ensureNotAlreadyEnrolled(StudentProfile profile, Course course) {
+        Long courseId = course.getId();
         if (enrollmentRepository.existsByCourseIdAndStudentId(courseId, profile.getId())) {
             throw new DuplicateEnrollmentException();
         }
+    }
 
-        // 최대 학점 (21)을 초과하여 신청하는지 검증
-        List<Enrollment> enrollmentList = enrollmentRepository.findAllByStudent(profile);
-
+    /**
+     * 학생의 기존 신청 학점 + 새 강좌 학점이
+     * 최대 허용 학점(MAXIMUM_CREDIT)을 넘지 않는지 확인한다.
+     *
+     * @throws CreditLimitExceededException 학점 초과 시
+     */
+    private void ensureCreditLimitNotExceeded(List<Enrollment> enrollmentList, Course course) {
         // 수강 신청한 과목의 총 학점 계산
         Integer totalCredit = enrollmentList.stream()
                 .mapToInt(e -> e.getCourse().getCredit())
@@ -173,16 +229,61 @@ public class EnrollmentService {
         if (totalCredit + course.getCredit() > MAXIMUM_CREDIT) {
             throw new CreditLimitExceededException();
         }
+    }
 
-        // TODO: 시간표 충돌
+    /**
+     * 기존에 수강신청한 과목들의 시간표와 새로 신청할 과목의 시간표가 겹치는지 확인합니다.
+     *
+     * @param enrollmentList 수강신청 완료한 과목 목록
+     * @param newCourse      새로 신청할 과목
+     * @throws ScheduleConflictException 시간표가 겹치는 경우
+     */
+    private void ensureNoScheduleConflict(List<Enrollment> enrollmentList, Course newCourse) {
+        // 1) 이미 신청된 강좌의 시간표 정보를 모두 가져온다
+        List<CourseSchedule> enrolledSchedules = collectSchedules(enrollmentList);
 
-        // 수강 신청 정보 생성
-        Enrollment enrollment = Enrollment.builder()
-                .student(profile)
-                .course(course)
-                .build();
+        // 2) 기존 강좌와 새 강좌의 시간표가 겹치는지 확인한다
+        newCourse.getSchedules()
+                .forEach(newSchedule -> checkScheduleConflict(newSchedule, enrolledSchedules));
+    }
 
-        enrollmentRepository.save(enrollment);
+    /**
+     * 내 수강신청 과목들의 시간표 정보를 가져와 List 형태로 반환한다.
+     *
+     * @param enrollments 수강신청 목록
+     * @return 수강신청 과목들의 시간표 정보
+     */
+    private List<CourseSchedule> collectSchedules(List<Enrollment> enrollments) {
+        return enrollments.stream()
+                .map(Enrollment::getCourse)
+                .map(Course::getSchedules)
+                .flatMap(List::stream)
+                .toList();
+    }
+
+    /**
+     * 새 스케줄(newSchedule) 이 기존 스케줄 목록(enrolledSchedules) 중 하나라도 겹치면 예외를 반환합니다.
+     *
+     * @param newSchedule       새로 추가할 강의 스케줄
+     * @param enrolledSchedules 이미 수강신청한 강의 스케줄 목록
+     * @throws ScheduleConflictException 스케줄이 겹치는 경우
+     */
+    private void checkScheduleConflict(CourseSchedule newSchedule, List<CourseSchedule> enrolledSchedules) {
+        enrolledSchedules.stream()
+                .filter(enrolledSchedule -> newSchedule.getDay().equals(enrolledSchedule.getDay()))
+                .filter(enrolledSchedule -> isTimeOverlap(newSchedule, enrolledSchedule))
+                .findAny()
+                .ifPresent(enrolledSchedule -> {
+                    throw new ScheduleConflictException();
+                });
+    }
+
+    /**
+     * 두 스케줄의 강의 시간이 겹치는지 확인하는 메서드입니다
+     */
+    private boolean isTimeOverlap(CourseSchedule a, CourseSchedule b) {
+        return a.getStartTime().isBefore(b.getEndTime())
+                && b.getStartTime().isBefore(a.getEndTime());
     }
 
 }
