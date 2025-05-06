@@ -133,7 +133,7 @@ public class MemberController {
 
   @Operation(
           summary = "AccessToken 재발급",
-          description = "RefreshToken을 사용하여 새로운 AccessToken을 발급받습니다. RefreshToken은 쿠키 또는 헤더에서 자동 추출됩니다."
+          description = "RefreshToken을 사용하여 새로운 AccessToken을 발급받습니다. RefreshToken은 쿠키에서 자동 추출됩니다."
   )
   @ApiResponses(value = {
           @ApiResponse(responseCode = "200", description = "토큰 재발급 성공"),
