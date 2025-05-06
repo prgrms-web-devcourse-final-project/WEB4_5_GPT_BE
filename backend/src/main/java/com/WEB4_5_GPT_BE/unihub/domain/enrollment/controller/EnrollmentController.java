@@ -1,10 +1,9 @@
 package com.WEB4_5_GPT_BE.unihub.domain.enrollment.controller;
 
+import com.WEB4_5_GPT_BE.unihub.domain.course.exception.CourseNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.request.EnrollmentRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response.MyEnrollmentResponse;
-import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.EnrollmentNotFoundException;
-import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.EnrollmentPeriodClosedException;
-import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.EnrollmentPeriodNotFoundException;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.*;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.EnrollmentService;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.global.Rq;
@@ -66,7 +65,20 @@ public class EnrollmentController {
         return new RsData<>("200", "수강 취소가 완료되었습니다.");
     }
 
-    // 수강 신청
+    /**
+     * 수강 신청 요청을 처리합니다.
+     * 로그인된 사용자만 접근 가능합니다.
+     *
+     * @param request 수강 신청할 강좌 정보
+     * @throws EnrollmentPeriodNotFoundException 수강신청 기간 정보가 없는 경우
+     * @throws EnrollmentPeriodClosedException   수강신청 기간 외 요청인 경우
+     * @throws CourseNotFoundException           강좌 정보가 없는 경우
+     * @throws CourseCapacityExceededException   정원 초과 시
+     * @throws DuplicateEnrollmentException      동일 강좌 중복 신청 시
+     * @throws CreditLimitExceededException      최대 학점 초과 시
+     * @throws ScheduleConflictException         기존 신청한 강좌와 시간표가 겹치는 경우
+     * @throws EnrollmentNotFoundException       수강신청 내역이 없는 경우
+     */
     @PostMapping
     public RsData<Empty> enrollment(@RequestBody EnrollmentRequest request) {
 
