@@ -85,7 +85,7 @@ class CourseServiceTest {
     public void setUp() {
         testMember1 = new Member(1L, "testEmail@company.com", "testPassword1",
                 "testMember1", Role.PROFESSOR, false, null, null, null);
-        testUniversity1 = new University(1L, "testUniversity1");
+        testUniversity1 = new University(1L, "testUniversity1", "unihub.ac.kr");
         testMajor1 = new Major(1L, testUniversity1, "testMajor1");
         testMajor2 = new Major(2L, testUniversity1, "testMajor2");
         testUniversity1.getMajors().add(testMajor1);
