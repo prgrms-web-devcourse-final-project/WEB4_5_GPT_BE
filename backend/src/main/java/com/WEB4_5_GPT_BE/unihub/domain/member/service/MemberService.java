@@ -36,7 +36,6 @@ public interface MemberService {
     MyPageStudentResponse getStudentMyPage(Long memberId);
     MyPageProfessorResponse getProfessorMyPage(Long memberId);
     List<ProfessorCourseResponse> getProfessorCourses(Long memberId);
-    void updateName(Long memberId, UpdateNameRequest request);
     void updatePassword(Long memberId, UpdatePasswordRequest request);
     void updateEmail(Long memberId, UpdateEmailRequest request);
     UpdateMajorResponse updateMajor(Long memberId, UpdateMajorRequest request);
@@ -45,7 +44,5 @@ public interface MemberService {
     
     // 모든 학생의 학기와 학년 정보를 업데이트
     void updateAllStudentSemesters();
-    
-    // 개별 학생의 학기와 학년 정보 업데이트
-    void updateStudentSemester(Long memberId, Integer grade, Integer semester);
+
 }

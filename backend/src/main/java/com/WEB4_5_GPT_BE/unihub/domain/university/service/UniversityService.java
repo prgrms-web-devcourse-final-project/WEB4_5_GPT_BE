@@ -45,7 +45,7 @@ public class UniversityService {
         if (universityRepository.existsByName(request.name())) {
             throw new UnihubException("409", "이미 존재하는 대학 이름입니다.");
         }
-        
+
         // 존재하는 이메일 도메인인지 확인
         if (universityRepository.existsByEmailDomain(request.emailDomain())) {
             throw new UnihubException("409", "이미 존재하는 이메일 도메인입니다.");
@@ -70,13 +70,13 @@ public class UniversityService {
         // 이름 중복 확인 (현재 대학과 다른 경우에만 중복 검사)
         if (!university.getName().equals(request.name())
                 && universityRepository.existsByName(request.name())) {
-            throw new UnihubException("409","이미 존재하는 대학 이름입니다.");
+            throw new UnihubException("409", "이미 존재하는 대학 이름입니다.");
         }
-        
+
         // 이메일 도메인 중복 확인 (현재 대학과 다른 경우에만 중복 검사)
         if (!university.getEmailDomain().equals(request.emailDomain())
                 && universityRepository.existsByEmailDomain(request.emailDomain())) {
-            throw new UnihubException("409","이미 존재하는 이메일 도메인입니다.");
+            throw new UnihubException("409", "이미 존재하는 이메일 도메인입니다.");
         }
 
         university.setName(request.name());
