@@ -5,11 +5,18 @@ import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.request.EnrollmentRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response.MyEnrollmentResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.*;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.EnrollmentService;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.springDoc.apiResponse.EnrollmentApiResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.springDoc.apiResponse.EnrollmentCancelApiResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.springDoc.apiResponse.GetMyEnrollmentListApiResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.global.Rq;
 import com.WEB4_5_GPT_BE.unihub.global.response.Empty;
 import com.WEB4_5_GPT_BE.unihub.global.response.RsData;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,9 +25,11 @@ import java.util.List;
  * 수강 신청, 취소, 내 수강목록 조회 등의
  * 수강 신청 관련 API 요청을 처리하는 컨트롤러입니다.
  */
+@Tag(name = "Enrollment", description = "수강신청 관련 API (수강신청, 취소, 내 수강목록 조회)")
+@SecurityRequirement(name = "accessToken을 사용한 bearerAuth 로그인 인증") // 해당 controller의 모든 Api에 accessToken 로그인이 필요하여 전역 적용함
 @RestController
-@RequestMapping("/api/enrollments")
 @RequiredArgsConstructor
+@RequestMapping(value = "/api/enrollments", produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8")
 public class EnrollmentController {
 
     private final EnrollmentService enrollmentService;
@@ -32,7 +41,12 @@ public class EnrollmentController {
      *
      * @return 조회된 수강목록에 해당하는 {@link MyEnrollmentResponse} DTO 리스트
      */
-    @GetMapping("/me")
+    @Operation(
+            summary = "내 수강신청 목록 조회",
+            description = "로그인된 학생 본인의 수강신청 목록을 조회합니다. header에 Bearer accessToken이 없다면 접근할 수 없습니다."
+    )
+    @GetMyEnrollmentListApiResponse
+    @GetMapping(value = "/me")
     public RsData<List<MyEnrollmentResponse>> getMyEnrollmentList() {
 
         Member actor = rq.getActor(); // 인증된 사용자(Actor) 정보 획득
@@ -53,6 +67,11 @@ public class EnrollmentController {
      * @throws EnrollmentPeriodClosedException   수강신청 기간 외 요청인 경우
      * @throws EnrollmentNotFoundException       수강신청 내역이 없는 경우
      */
+    @Operation(
+            summary = "수강 취소",
+            description = "로그인된 학생이 특정 강좌 수강을 취소합니다. header에 Bearer accessToken이 없다면 접근할 수 없습니다."
+    )
+    @EnrollmentCancelApiResponse
     @DeleteMapping("/{courseId}")
     public RsData<Empty> enrollmentCancel(@PathVariable Long courseId) {
 
@@ -77,8 +96,12 @@ public class EnrollmentController {
      * @throws DuplicateEnrollmentException      동일 강좌 중복 신청 시
      * @throws CreditLimitExceededException      최대 학점 초과 시
      * @throws ScheduleConflictException         기존 신청한 강좌와 시간표가 겹치는 경우
-     * @throws EnrollmentNotFoundException       수강신청 내역이 없는 경우
      */
+    @Operation(
+            summary = "수강 신청",
+            description = "로그인된 학생이 특정 강좌에 수강 신청을 합니다. header에 Bearer accessToken이 없다면 접근할 수 없습니다."
+    )
+    @EnrollmentApiResponse
     @PostMapping
     public RsData<Empty> enrollment(@RequestBody EnrollmentRequest request) {
 
