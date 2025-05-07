@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - develop
-      - 옥정현/fix-70
 
     paths:
       - '.github/workflows/**'
