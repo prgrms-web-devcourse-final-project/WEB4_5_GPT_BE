@@ -65,7 +65,7 @@ class CourseControllerTest {
     private AuthTokenService authTokenService;
 
     private University testUniversity = new University(5L,
-            "testUniversity");
+            "testUniversity", "unihub.ac.kr");
 
     private Major testMajor = new Major(3L,
             testUniversity,
