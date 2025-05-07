@@ -1,6 +1,9 @@
 package com.WEB4_5_GPT_BE.unihub.global.init;
 
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus;
+import com.WEB4_5_GPT_BE.unihub.domain.common.enums.DayOfWeek;
+import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import jakarta.annotation.PostConstruct;
@@ -28,13 +31,34 @@ public class InitDevData {
 
         University university = helper.createUniversity("A대학교");
         Major major = helper.createMajor("소프트웨어전공", university);
+        Major major2 = helper.createMajor("컴퓨터공학전공", university);
 
         helper.createStudent("haneulkim@auni.ac.kr", "studentPw", "김하늘", "20250001",
                 university.getId(), major.getId());
 
-        helper.createProfessor("professor@auni.ac.kr", "password", "김교수", "EMP20250001",
+        Member professor = helper.createProfessor("professor@auni.ac.kr", "password", "김교수", "EMP20250001",
                 university.getId(), major.getId(), ApprovalStatus.APPROVED);
 
         helper.createAdmin("adminmaster@auni.ac.kr", "adminPw", "최고관리자", passwordEncoder);
+
+        Course javaCourse = helper.createCourse(
+                "자바 프로그래밍",      // title
+                major,                // 전공
+                "공학관 301호",         // location
+                40, 0, 3,             // capacity, enrolled, credit
+                professor.getProfessorProfile(),
+                1, 1,                 // grade, semester
+                null                  // 첨부 파일 경로
+        );
+
+
+        helper.createCourseScheduleAndAssociateWithCourse(
+                javaCourse,
+                DayOfWeek.MON,
+                "09:00",
+                "11:00"
+        );
+
+
     }
 }
