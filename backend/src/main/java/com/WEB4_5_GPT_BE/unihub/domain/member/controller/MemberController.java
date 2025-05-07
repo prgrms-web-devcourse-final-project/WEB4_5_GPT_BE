@@ -38,7 +38,7 @@ public class MemberController {
   @Operation(summary = "학생 회원가입", description = "학생 계정으로 회원가입을 진행합니다.")
   @ApiResponses(value = {
           @ApiResponse(responseCode = "200", description = "회원가입 성공"),
-          @ApiResponse(responseCode = "400", description = "잘못된 요청 (입력값 누락, 이메일 미인증)"),
+          @ApiResponse(responseCode = "400", description = "잘못된 요청 (입력값 누락, 이메일 미인증, 학교 이메일 도메인 불일치)"),
           @ApiResponse(responseCode = "404", description = "존재하지 않는 대학 또는 전공"),
           @ApiResponse(responseCode = "409", description = "이메일 또는 학번이 이미 등록되어 있습니다.")
   })
@@ -51,7 +51,7 @@ public class MemberController {
   @Operation(summary = "교수 회원가입", description = "교수 계정으로 회원가입을 진행하며, 관리자의 승인을 기다려야 합니다.")
   @ApiResponses(value = {
           @ApiResponse(responseCode = "200", description = "회원가입 성공"),
-          @ApiResponse(responseCode = "400", description = "잘못된 요청 (입력값 누락, 이메일 미인증)"),
+          @ApiResponse(responseCode = "400", description = "잘못된 요청 (입력값 누락, 이메일 미인증, 학교 이메일 도메인 불일치)"),
           @ApiResponse(responseCode = "404", description = "존재하지 않는 대학 또는 전공"),
           @ApiResponse(responseCode = "409", description = "이메일 또는 학번이 이미 등록되어 있습니다.")
   })
