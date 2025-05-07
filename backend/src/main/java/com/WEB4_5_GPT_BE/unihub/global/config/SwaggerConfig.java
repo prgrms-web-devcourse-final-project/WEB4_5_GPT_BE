@@ -45,9 +45,15 @@ public class SwaggerConfig {
                                 {
                                   "code": "401-1",
                                   "message": "AccessToken이 만료되었습니다.",
-                                  "data": null
+                                  "data": {}
                                 }
                                 ```
+                                
+                                ※ 오류 응답 시 `data` 필드는 `null` 또는 `{}`(빈 객체)로 응답됩니다. \s
+                                이는 응답 구조의 일관성을 위한 처리이며, 실제 오류 정보는 `code`와 `message` 필드를 통해 전달됩니다. \s
+                                성공 응답에서만 `data`에 실제 데이터가 포함되며, Swagger에 표시되는 예시는 성공 응답 기준으로 자동 생성된 것입니다. \s
+                                정확한 오류 응답 구조는 위 JSON 예시를 참고해주세요.
+                                
                                 """));
     }
 }
