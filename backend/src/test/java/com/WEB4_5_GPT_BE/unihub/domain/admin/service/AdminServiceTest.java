@@ -15,6 +15,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepositor
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.EmailService;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.UniversityRepository;
+import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -76,7 +77,7 @@ public class AdminServiceTest {
 
     // when & then
     assertThatThrownBy(() -> adminService.changeProfessorStatus(memberId, request))
-        .isInstanceOf(IllegalArgumentException.class)
+        .isInstanceOf(UnihubException.class)
         .hasMessageContaining("해당 교직원이 존재하지 않습니다");
   }
 
@@ -121,7 +122,7 @@ public class AdminServiceTest {
 
     // when & then
     assertThatThrownBy(() -> adminService.createEnrollmentPeriod(request))
-        .isInstanceOf(IllegalArgumentException.class)
+        .isInstanceOf(UnihubException.class)
         .hasMessageContaining("종료일자는 시작일자보다 커야합니다");
   }
 
@@ -185,7 +186,7 @@ public class AdminServiceTest {
 
     // when & then
     assertThatThrownBy(() -> adminService.deleteEnrollmentPeriod(periodId))
-        .isInstanceOf(IllegalArgumentException.class)
+        .isInstanceOf(UnihubException.class)
         .hasMessageContaining("해당 수강신청 기간이 존재하지 않습니다");
   }
 
@@ -222,7 +223,7 @@ public class AdminServiceTest {
 
     // when & then
     assertThatThrownBy(() -> adminService.inviteAdmin(request))
-        .isInstanceOf(IllegalArgumentException.class)
+        .isInstanceOf(UnihubException.class)
         .hasMessageContaining("이미 등록된 이메일입니다");
   }
 }

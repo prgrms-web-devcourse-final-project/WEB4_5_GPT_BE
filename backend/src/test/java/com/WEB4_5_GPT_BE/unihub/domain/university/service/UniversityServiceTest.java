@@ -122,7 +122,7 @@ public class UniversityServiceTest {
 
         // when & then
         assertThatThrownBy(() -> universityService.createUniversity(request))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(UnihubException.class)
                 .hasMessageContaining("이미 존재하는 대학 이름입니다");
 
         verify(universityRepository, times(1)).existsByName(request.name());
@@ -141,7 +141,7 @@ public class UniversityServiceTest {
 
         // when & then
         assertThatThrownBy(() -> universityService.createUniversity(request))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(UnihubException.class)
                 .hasMessageContaining("이미 존재하는 이메일 도메인입니다");
 
         verify(universityRepository, times(1)).existsByName(request.name());
@@ -206,7 +206,7 @@ public class UniversityServiceTest {
 
         // when & then
         assertThatThrownBy(() -> universityService.updateUniversity(universityId, request))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(UnihubException.class)
                 .hasMessageContaining("이미 존재하는 대학 이름입니다");
 
         verify(universityRepository, times(1)).findById(universityId);
@@ -228,7 +228,7 @@ public class UniversityServiceTest {
 
         // when & then
         assertThatThrownBy(() -> universityService.updateUniversity(universityId, request))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(UnihubException.class)
                 .hasMessageContaining("이미 존재하는 이메일 도메인입니다");
 
         verify(universityRepository, times(1)).findById(universityId);
