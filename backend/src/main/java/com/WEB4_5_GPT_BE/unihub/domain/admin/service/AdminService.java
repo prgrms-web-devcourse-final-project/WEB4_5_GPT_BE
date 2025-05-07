@@ -13,12 +13,14 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorProfileRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.member.service.EmailService;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.UniversityRepository;
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +35,7 @@ public class AdminService {
     private final ProfessorProfileRepository professorProfileRepository;
     private final EnrollmentPeriodRepository enrollmentPeriodRepository;
     private final UniversityRepository universityRepository;
+    private final EmailService emailService;
 
     /**
      * 학생 회원 목록 조회
@@ -256,8 +259,18 @@ public class AdminService {
                         .role(Role.ADMIN)
                         .build();
 
-        memberRepository.save(admin);
+    Member savedAdmin = memberRepository.save(admin);
 
-        // TODO 이메일 전송
-    }
+    // 비동기로 이메일 전송
+    sendAdminInvitationEmailAsync(savedAdmin.getEmail(), savedAdmin.getName());
+  }
+
+  /**
+   * 관리자 초대 이메일을 비동기적으로 전송
+   */
+  @Async
+  public void sendAdminInvitationEmailAsync(String email, String adminName) {
+    // 비동기로 이메일 전송 실행
+    emailService.sendAdminInvitation(email, adminName);
+  }
 }

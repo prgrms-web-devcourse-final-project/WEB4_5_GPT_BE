@@ -5,14 +5,9 @@ import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.response.EnrollmentPeriodRespon
 import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.response.ProfessorResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.response.StudentResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.admin.service.AdminService;
-import com.WEB4_5_GPT_BE.unihub.domain.university.dto.request.MajorRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.university.dto.request.UniversityRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.university.dto.response.MajorResponse;
-import com.WEB4_5_GPT_BE.unihub.domain.university.dto.response.UniversityResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.university.service.MajorService;
 import com.WEB4_5_GPT_BE.unihub.domain.university.service.UniversityService;
 import com.WEB4_5_GPT_BE.unihub.global.response.RsData;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -127,69 +122,10 @@ public class AdminController {
         return new RsData<>("200", "수강신청 기간이 삭제되었습니다.");
     }
 
-    /**
-     * 관리자 초대
-     */
-    @PostMapping("/invite")
-    public RsData<Void> inviteAdmin(@RequestBody AdminInviteRequest request) {
-        adminService.inviteAdmin(request);
-        return new RsData<>("201", "관리자 초대가 완료되었습니다.");
-    }
-
-    /**
-     * 전공 등록
-     */
-    @PostMapping("majors")
-    public RsData<MajorResponse> createMajor(@Valid @RequestBody MajorRequest request) {
-        MajorResponse major = majorService.createMajor(request);
-        return new RsData<>("201", "전공 등록에 성공했습니다.", major);
-    }
-
-    /**
-     * 전공 정보 수정
-     */
-    @PutMapping("majors/{majorId}")
-    public RsData<MajorResponse> updateMajor(
-            @PathVariable Long majorId, @Valid @RequestBody MajorRequest request) {
-        MajorResponse major = majorService.updateMajor(majorId, request);
-        return new RsData<>("200", "전공 정보 수정에 성공했습니다.", major);
-    }
-
-    /**
-     * 전공 삭제
-     */
-    @DeleteMapping("majors/{majorId}")
-    public RsData<Void> deleteMajor(@PathVariable Long majorId) {
-        majorService.deleteMajor(majorId);
-        return new RsData<>("200", "전공 삭제에 성공했습니다.");
-    }
-
-    /**
-     * 대학 등록
-     */
-    @PostMapping("universities")
-    public RsData<UniversityResponse> createUniversity(
-            @Valid @RequestBody UniversityRequest request) {
-        UniversityResponse university = universityService.createUniversity(request);
-        return new RsData<>("201", "대학 등록에 성공했습니다.", university);
-    }
-
-    /**
-     * 대학 정보 수정
-     */
-    @PutMapping("universities/{universityId}")
-    public RsData<UniversityResponse> updateUniversity(
-            @PathVariable Long universityId, @Valid @RequestBody UniversityRequest request) {
-        UniversityResponse university = universityService.updateUniversity(universityId, request);
-        return new RsData<>("200", "대학 정보 수정에 성공했습니다.", university);
-    }
-
-    /**
-     * 대학 삭제
-     */
-    @DeleteMapping("universities/{universityId}")
-    public RsData<Void> deleteUniversity(@PathVariable Long universityId) {
-        universityService.deleteUniversity(universityId);
-        return new RsData<>("200", "대학 삭제에 성공했습니다.");
-    }
+  /** 관리자 초대 */
+  @PostMapping("/invite")
+  public RsData<Void> inviteAdmin(@RequestBody AdminInviteRequest request) {
+    adminService.inviteAdmin(request);
+    return new RsData<>("200", "관리자 초대가 완료되었습니다.");
+  }
 }

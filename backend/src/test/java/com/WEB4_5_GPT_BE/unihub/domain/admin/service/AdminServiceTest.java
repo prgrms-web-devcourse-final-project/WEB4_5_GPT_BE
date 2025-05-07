@@ -12,6 +12,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorProfileRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.member.service.EmailService;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.UniversityRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -27,6 +28,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,6 +43,8 @@ public class AdminServiceTest {
   @Mock private EnrollmentPeriodRepository enrollmentPeriodRepository;
 
   @Mock private UniversityRepository universityRepository;
+  
+  @Mock private EmailService emailService;
 
   @InjectMocks private AdminService adminService;
 
@@ -191,12 +195,22 @@ public class AdminServiceTest {
     // given
     AdminInviteRequest request = new AdminInviteRequest("관리자", "admin@example.com");
     when(memberRepository.existsByEmail("admin@example.com")).thenReturn(false);
-
+    
+    Member savedAdmin = Member.builder()
+        .id(1L)
+        .name("관리자")
+        .email("admin@example.com")
+        .password("changeme")
+        .build();
+    when(memberRepository.save(any(Member.class))).thenReturn(savedAdmin);
+    
     // when
     adminService.inviteAdmin(request);
 
     // then
     verify(memberRepository).save(any(Member.class));
+    // 비동기 메소드가 호출되었는지 확인 (실제로는 비동기로 실행되지만 테스트에서는 동기적으로 호출 여부만 확인)
+    verify(emailService).sendAdminInvitation(eq("admin@example.com"), eq("관리자"));
   }
 
   @Test
