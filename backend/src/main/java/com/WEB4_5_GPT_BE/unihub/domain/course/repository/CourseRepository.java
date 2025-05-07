@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 
 public interface CourseRepository extends JpaRepository<Course, Long> {
     // TODO: 조회 성능을 위해 Course 테이블 또는 ProfessorProfile 테이블 비정규화 고려
@@ -32,4 +34,6 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
             @Param("title") String title,
             @Param("profName") String profName,
             Pageable pageable);
+
+    List<Course> findByProfessorId(Long professorId);
 }

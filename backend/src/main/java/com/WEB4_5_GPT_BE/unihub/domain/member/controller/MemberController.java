@@ -164,14 +164,6 @@ public class MemberController {
         return new RsData<>("200", "교수 강의 목록 조회 성공", memberService.getProfessorCourses(user.getId()));
     }
 
-    // ✅ 이름 변경
-    @PatchMapping("/me/name")
-    public RsData<Void> updateName(@AuthenticationPrincipal SecurityUser user,
-                                   @RequestBody @Valid UpdateNameRequest request) {
-        memberService.updateName(user.getId(), request);
-        return new RsData<>("200", "이름 변경 성공");
-    }
-
     // ✅ 비밀번호 변경
     @PatchMapping("/me/password")
     public RsData<Void> updatePassword(@AuthenticationPrincipal SecurityUser user,
