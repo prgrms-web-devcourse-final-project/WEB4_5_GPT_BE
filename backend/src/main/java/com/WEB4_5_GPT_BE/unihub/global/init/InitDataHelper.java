@@ -45,8 +45,8 @@ public class InitDataHelper {
     private final EnrollmentRepository enrollmentRepository;
     private final EnrollmentPeriodRepository enrollmentPeriodRepository;
 
-    public University createUniversity(String name) {
-        return universityRepository.save(University.builder().name(name).emailDomain("unihub.ac.kr").build());
+    public University createUniversity(String name, String emailDomain) {
+        return universityRepository.save(University.builder().name(name).emailDomain(emailDomain).build());
     }
 
     public Major createMajor(String name, University university) {
