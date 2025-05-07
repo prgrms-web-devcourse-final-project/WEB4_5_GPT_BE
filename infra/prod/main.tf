@@ -198,6 +198,8 @@ frontend http_front
     bind *:80
     acl host_unihubApp1 hdr_beg(host) -i api.un1hub.site
 
+    http-request set-header X-Forwarded-Proto https
+
     use_backend http_back_1 if host_unihubApp1
 
 backend http_back_1
