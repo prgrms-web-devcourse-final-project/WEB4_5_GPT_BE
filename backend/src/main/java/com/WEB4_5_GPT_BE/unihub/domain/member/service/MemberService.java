@@ -44,4 +44,5 @@ public interface MemberService {
     
     // 모든 학생의 학기와 학년 정보를 업데이트
     void updateAllStudentSemesters();
+
 }
