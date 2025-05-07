@@ -2,6 +2,7 @@ package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
+import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageProfessorResponse;
@@ -11,8 +12,9 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.UpdateMajorRes
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
-import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.StudentProfileNotFoundException;
+import com.WEB4_5_GPT_BE.unihub.domain.member.exception.member.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.ProfessorProfileNotFoundException;
+import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.StudentProfileNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorProfileRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
@@ -43,20 +45,19 @@ public class MemberServiceImpl implements MemberService {
   private final MajorService majorService;
   private final PasswordEncoder passwordEncoder;
   private final EmailService emailService;
+  private final CourseRepository courseRepository;
 
   @Override
   public void signUpStudent(StudentSignUpRequest request) {
 
-    University university = universityService.findUniversityById(request.universityId());
-    Major major = majorService.getMajor(request.universityId(), request.majorId());
-    validateEmailVerification(request.email());
+    UniversityContext universityContext = validateEmailAndLoadSchoolInfo(request.email(), request.universityId(), request.majorId());
     validateStudentSignUp(request);
 
     StudentProfile profile =
         StudentProfile.builder()
             .studentCode(request.studentCode())
-            .university(university)
-            .major(major)
+            .university(universityContext.university())
+            .major(universityContext.major())
             .grade(request.grade())
             .semester(request.semester())
             .build();
@@ -77,33 +78,31 @@ public class MemberServiceImpl implements MemberService {
 
   private void validateEmailVerification(String email) {
     if (!emailService.isAlreadyVerified(email)) {
-      throw new UnihubException("400", "이메일 인증을 완료해주세요.");
+      throw new EmailNotVerifiedException();
     }
   }
 
   private void validateStudentSignUp(StudentSignUpRequest request) {
-    if (memberRepository.existsByEmail(request.email())) {
-        throw new UnihubException("409", "이메일 또는 학번이 이미 등록되어 있습니다.");
-    }
+    boolean emailExists = memberRepository.existsByEmail(request.email());
+    boolean codeExists = studentProfileRepository.existsByStudentCodeAndUniversityId(
+            request.studentCode(), request.universityId()
+    );
 
-    if (studentProfileRepository.existsByStudentCodeAndUniversityId(
-            request.studentCode(), request.universityId())) {
-        throw new UnihubException("409", "이메일 또는 학번이 이미 등록되어 있습니다.");
+    if (emailExists || codeExists) {
+      throw new EmailOrStudentCodeAlreadyExistsException();
     }
   }
 
   @Override
   public void signUpProfessor(ProfessorSignUpRequest request) {
-    University university = universityService.findUniversityById(request.universityId());
-    Major major = majorService.getMajor(request.universityId(), request.majorId());
-    validateEmailVerification(request.email());
+    UniversityContext universityContext = validateEmailAndLoadSchoolInfo(request.email(), request.universityId(), request.majorId());
     validateProfessorSignUp(request);
 
     ProfessorProfile profile =
         ProfessorProfile.builder()
             .employeeId(request.employeeId())
-            .university(university)
-            .major(major)
+            .university(universityContext.university())
+            .major(universityContext.major())
             .approvalStatus(ApprovalStatus.PENDING)
             .build();
 
@@ -121,28 +120,36 @@ public class MemberServiceImpl implements MemberService {
     memberRepository.save(member);
   }
 
-
   private void validateProfessorSignUp(ProfessorSignUpRequest request) {
-    if (memberRepository.existsByEmail(request.email())) {
-        throw new UnihubException("409", "이메일 또는 사번이 이미 등록되어 있습니다.");
-    }
+    boolean emailExists = memberRepository.existsByEmail(request.email());
+    boolean employeeIdExists = professorProfileRepository.existsByEmployeeIdAndUniversityId(
+            request.employeeId(), request.universityId()
+    );
 
-    if (professorProfileRepository.existsByEmployeeIdAndUniversityId(
-            request.employeeId(), request.universityId())) {
-        throw new UnihubException("409", "이메일 또는 사번이 이미 등록되어 있습니다.");
+    if (emailExists || employeeIdExists) {
+      throw new DuplicateProfessorSignUpInfoException();
     }
   }
+
+  private UniversityContext validateEmailAndLoadSchoolInfo(String email, Long universityId, Long majorId) {
+    University university = universityService.findUniversityById(universityId);
+    Major major = majorService.getMajor(universityId, majorId);
+    validateEmailVerification(email);
+    return new UniversityContext(university, major);
+  }
+
+  private record UniversityContext(University university, Major major) {}
 
   @Override
   public void sendVerificationCode(String email) {
     if (emailService.isAlreadyVerified(email)) {
-      throw new UnihubException("400", "이메일은 이미 인증되었습니다.");
+      throw new EmailAlreadyVerifiedException();
     }
 
     try {
       emailService.sendVerificationCode(email);
     } catch (Exception e) {
-      throw new UnihubException("500", "이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.");
+      throw new EmailSendFailureException();
     }
   }
 
@@ -162,13 +169,12 @@ public class MemberServiceImpl implements MemberService {
     String email = request.email();
     String newPassword = request.password();
 
-    Member member =
-        memberRepository
+    Member member = memberRepository
             .findByEmail(email)
-            .orElseThrow(() -> new UnihubException("404", "등록되지 않은 이메일 주소입니다."));
+            .orElseThrow(EmailNotFoundException::new);
 
     if (passwordEncoder.matches(newPassword, member.getPassword())) {
-      throw new UnihubException("400", "기존 비밀번호와 동일한 비밀번호로는 변경할 수 없습니다.");
+      throw new PasswordSameAsOldException();
     }
 
     member.setPassword(passwordEncoder.encode(newPassword));
@@ -206,14 +212,15 @@ public class MemberServiceImpl implements MemberService {
     if (member.getRole() != Role.PROFESSOR) {
       throw new UnihubException("403", "교수만 접근할 수 있는 기능입니다.");
     }
-    // TODO: 실제 강의 목록 조회 로직 작성 예정
-    return Collections.emptyList(); // TODO: 강의 도메인 연동 필요
 
-  }
+      ProfessorProfile profile = professorProfileRepository
+              .findByMemberId(memberId)
+              .orElseThrow(() -> new UnihubException("404", "교수 프로필을 찾을 수 없습니다."));
 
-  @Override
-  public void updateName(Long memberId, UpdateNameRequest request) {
-    findActiveMemberById(memberId).setName(request.name());
+      return courseRepository.findByProfessorId(profile.getId())
+              .stream()
+              .map(ProfessorCourseResponse::from)
+              .toList();
   }
 
   @Override
@@ -285,6 +292,26 @@ public class MemberServiceImpl implements MemberService {
     profile.setSemester(semester);
   }
   
+  @Override
+  @Transactional
+  public void updateAllStudentSemesters() {
+    List<StudentProfile> students = studentProfileRepository.findAll();
+    
+    for (StudentProfile student : students) {
+      // 현재 학기가 2학기(2)인 경우, 학년을 올리고 1학기로 변경
+      if (student.getSemester() == 2) {
+        student.setGrade(student.getGrade() + 1);
+        student.setSemester(1);
+      } else {
+        // 현재 학기가 1학기(1)인 경우, 2학기로 변경
+        student.setSemester(2);
+      }
+    }
+    
+    // 변경된 학생 프로필 저장
+    studentProfileRepository.saveAll(students);
+  }
+
   @Override
   @Transactional
   public void updateAllStudentSemesters() {

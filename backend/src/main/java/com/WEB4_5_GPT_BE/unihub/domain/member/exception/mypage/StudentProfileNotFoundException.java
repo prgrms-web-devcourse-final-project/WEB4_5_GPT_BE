@@ -1,6 +1,6 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage;
 
-import com.WEB4_5_GPT_BE.unihub.global.exception.AuthException;
+import com.WEB4_5_GPT_BE.unihub.domain.member.exception.AuthException;
 
 public class StudentProfileNotFoundException extends AuthException {
     public StudentProfileNotFoundException() {

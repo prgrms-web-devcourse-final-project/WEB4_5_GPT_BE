@@ -5,12 +5,17 @@ import com.WEB4_5_GPT_BE.unihub.domain.common.enums.DayOfWeek;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.CourseSchedule;
+import com.WEB4_5_GPT_BE.unihub.domain.course.entity.EnrollmentPeriod;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseScheduleRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.course.repository.EnrollmentPeriodRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.entity.Enrollment;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.repository.EnrollmentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.EmailService;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.MemberService;
@@ -22,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Optional;
 
@@ -36,9 +42,11 @@ public class InitDataHelper {
     private final EmailService emailService;
     private final CourseRepository courseRepository;
     private final CourseScheduleRepository courseScheduleRepository;
+    private final EnrollmentRepository enrollmentRepository;
+    private final EnrollmentPeriodRepository enrollmentPeriodRepository;
 
     public University createUniversity(String name) {
-        return universityRepository.save(University.builder().name(name).build());
+        return universityRepository.save(University.builder().name(name).emailDomain("unihub.ac.kr").build());
     }
 
     public Major createMajor(String name, University university) {
@@ -50,35 +58,40 @@ public class InitDataHelper {
         memberService.signUpStudent(new StudentSignUpRequest(email, pw, name, studentCode, univId, majorId, 1, 1, Role.STUDENT));
     }
 
+    public void create2ndStudent(String email, String pw, String name, String studentCode, Long univId, Long majorId) {
+        emailService.markEmailAsVerified(email);
+        memberService.signUpStudent(new StudentSignUpRequest(email, pw, name, studentCode, univId, majorId, 2, 1, Role.STUDENT));
+    }
+
     public Course createCourse(String title, Major major, String location,
-            Integer capacity, Integer enrolled, Integer credit, ProfessorProfile professor,
-            Integer grade, Integer semester, String coursePlanAttachment) {
+                               Integer capacity, Integer enrolled, Integer credit, ProfessorProfile professor,
+                               Integer grade, Integer semester, String coursePlanAttachment) {
         return courseRepository.save(
                 Course.builder()
-                    .title(title)
-                    .major(major)
-                    .location(location)
-                    .capacity(capacity)
-                    .enrolled(enrolled)
-                    .credit(credit)
-                    .professor(professor)
-                    .grade(grade)
-                    .semester(semester)
-                    .coursePlanAttachment(coursePlanAttachment)
-                    .build());
+                        .title(title)
+                        .major(major)
+                        .location(location)
+                        .capacity(capacity)
+                        .enrolled(enrolled)
+                        .credit(credit)
+                        .professor(professor)
+                        .grade(grade)
+                        .semester(semester)
+                        .coursePlanAttachment(coursePlanAttachment)
+                        .build());
     }
 
     public CourseSchedule createCourseScheduleAndAssociateWithCourse(Course course, DayOfWeek day, String startTime, String endTime) {
         CourseSchedule cs = courseScheduleRepository.save(
                 CourseSchedule.builder()
-                    .course(course)
-                    .universityId(course.getMajor().getUniversity().getId())
-                    .location(course.getLocation())
-                    .professorProfileEmployeeId(course.getProfessor().getEmployeeId())
-                    .day(day)
-                    .startTime(LocalTime.parse(startTime))
-                    .endTime(LocalTime.parse(endTime))
-                    .build());
+                        .course(course)
+                        .universityId(course.getMajor().getUniversity().getId())
+                        .location(course.getLocation())
+                        .professorProfileEmployeeId(course.getProfessor().getEmployeeId())
+                        .day(day)
+                        .startTime(LocalTime.parse(startTime))
+                        .endTime(LocalTime.parse(endTime))
+                        .build());
         course.getSchedules().add(cs);
         courseRepository.save(course);
         return cs;
@@ -127,4 +140,36 @@ public class InitDataHelper {
             memberRepository.save(member);
         }
     }
+
+    public Member getMemberByEmail(String email) {
+        return memberRepository.findByEmail(email).get();
+    }
+
+    public void createEnrollment(Member student, Long courseId) {
+        StudentProfile profile = student.getStudentProfile();
+        Course course = courseRepository.findById(courseId).get();
+
+        Enrollment enrollment = Enrollment.builder()
+                .student(profile)
+                .course(course)
+                .build();
+
+        enrollmentRepository.save(enrollment);
+    }
+
+    public void createEnrollmentPeriod(
+            University university, Integer year, Integer grade,
+            Integer semester, LocalDate startDate, LocalDate endDate
+    ) {
+        EnrollmentPeriod period = EnrollmentPeriod.builder()
+                .university(university)
+                .year(year)
+                .grade(grade)
+                .semester(semester)
+                .startDate(startDate)
+                .endDate(endDate)
+                .build();
+        enrollmentPeriodRepository.save(period);
+    }
+
 }
