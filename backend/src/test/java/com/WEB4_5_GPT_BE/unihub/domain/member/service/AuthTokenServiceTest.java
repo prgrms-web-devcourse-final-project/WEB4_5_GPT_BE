@@ -1,13 +1,13 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.TokenMemberPayload;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class AuthTokenServiceTest {
 

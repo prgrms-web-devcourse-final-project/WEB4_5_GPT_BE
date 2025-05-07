@@ -120,12 +120,12 @@ public class AuthServiceImpl implements AuthService {
     String refreshToken = authTokenService.genRefreshToken(member.getId());
     saveRefreshToken(member.getId(), refreshToken);
     rq.addCookie("refreshToken", refreshToken, REFRESH_TOKEN_DURATION);
-    return new MemberLoginResponse(accessToken, refreshToken);
+    return new MemberLoginResponse(accessToken, refreshToken, member.getId(), member.getEmail(), member.getRole());
   }
 
   private AdminLoginResponse toAdminLoginResponse(Member member) {
     MemberLoginResponse base = toMemberLoginResponse(member);
-    return new AdminLoginResponse(base.accessToken(), base.refreshToken());
+    return new AdminLoginResponse(base.accessToken(), base.refreshToken(), member.getId(), member.getEmail(), member.getRole());
   }
 
   private void saveRefreshToken(Long memberId, String refreshToken) {
@@ -166,6 +166,6 @@ public class AuthServiceImpl implements AuthService {
             .orElseThrow(MemberNotFoundException::new);
 
     String newAccessToken = authTokenService.genAccessToken(member);
-    return new MemberLoginResponse(newAccessToken, null);
+    return new MemberLoginResponse(newAccessToken, null, member.getId(), member.getEmail(), member.getRole());
   }
 }
