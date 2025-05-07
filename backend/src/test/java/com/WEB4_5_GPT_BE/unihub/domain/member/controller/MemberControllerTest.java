@@ -174,6 +174,22 @@ public class MemberControllerTest {
     }
 
     @Test
+    @DisplayName("학생 회원가입 실패 - 이메일 도메인이 학교와 일치하지 않음")
+    void signUpStudent_invalidEmailDomain_thenFail() throws Exception {
+        String email = "wrong@notmatched.com";
+        when(emailService.isAlreadyVerified(email)).thenReturn(true);
+
+        StudentSignUpRequest request = new StudentSignUpRequest(
+                email, "password", "학생", "20251234", 1L, 1L, 1, 1, Role.STUDENT);
+
+        mockMvc.perform(post("/api/members/signup/student")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("선택한 학교의 이메일 형식(@auni.ac.kr)과 일치하지 않습니다."));
+    }
+
+    @Test
     @DisplayName("내 정보 조회 - 학생")
     void getMyInfo_student_success() throws Exception {
         MemberLoginRequest request = new MemberLoginRequest("teststudent@auni.ac.kr", "password");

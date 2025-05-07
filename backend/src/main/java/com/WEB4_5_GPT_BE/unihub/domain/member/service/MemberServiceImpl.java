@@ -3,8 +3,14 @@ package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.*;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.EmailCodeVerificationRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.PasswordResetConfirmationRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.UpdateEmailRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.UpdateMajorRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.UpdatePasswordRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.VerifyPasswordRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageProfessorResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageStudentResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.ProfessorCourseResponse;
@@ -29,7 +35,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -134,8 +139,16 @@ public class MemberServiceImpl implements MemberService {
   private UniversityContext validateEmailAndLoadSchoolInfo(String email, Long universityId, Long majorId) {
     University university = universityService.findUniversityById(universityId);
     Major major = majorService.getMajor(universityId, majorId);
+    validateEmailDomainMatchesUniversity(email, university);
     validateEmailVerification(email);
     return new UniversityContext(university, major);
+  }
+
+  private void validateEmailDomainMatchesUniversity(String email, University university) {
+    String[] emailParts = email.split("@");
+    if (emailParts.length != 2 || !emailParts[1].equalsIgnoreCase(university.getEmailDomain())) {
+      throw new InvalidEmailDomainException(university.getEmailDomain());
+    }
   }
 
   private record UniversityContext(University university, Major major) {}
