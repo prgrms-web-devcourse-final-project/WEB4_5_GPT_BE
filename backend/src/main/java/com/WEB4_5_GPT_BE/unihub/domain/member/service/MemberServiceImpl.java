@@ -300,6 +300,9 @@ public class MemberServiceImpl implements MemberService {
         student.setSemester(2);
       }
     }
+    
+    // 변경된 학생 프로필 저장
+    studentProfileRepository.saveAll(students);
   }
 
   private Member findActiveMemberById(Long id) {
