@@ -41,4 +41,7 @@ public interface MemberService {
     UpdateMajorResponse updateMajor(Long memberId, UpdateMajorRequest request);
     void verifyPassword(Long memberId, VerifyPasswordRequest request);
     void deleteMember(Long memberId);
+    
+    // 모든 학생의 학기와 학년 정보를 업데이트
+    void updateAllStudentSemesters();
 }

@@ -4,9 +4,10 @@ import com.WEB4_5_GPT_BE.unihub.domain.common.entity.BaseTimeEntity;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import jakarta.persistence.*;
+import lombok.*;
+
 import java.util.ArrayList;
 import java.util.List;
-import lombok.*;
 
 @Getter
 @Setter
@@ -30,10 +31,10 @@ public class Course extends BaseTimeEntity {
   private String location;
 
   @Column(nullable = false)
-  private Integer capacity;
+  private Integer capacity; // 수강 가능 최대 인원
 
   @Column(nullable = false)
-  private Integer enrolled;
+  private Integer enrolled; // 현재 수강 인원
 
   @Column(nullable = false)
   private Integer credit;
@@ -66,4 +67,13 @@ public class Course extends BaseTimeEntity {
       }
       return scheduleString.toString();
   }
+
+    /**
+     * 현재 수강 신청 가능한 인원 수를 반환한다.
+     *
+     * @return 수강 최대 인원 - 현재 수강 인원
+     */
+    public int getAvailableSeats() {
+        return capacity - enrolled;
+    }
 }
