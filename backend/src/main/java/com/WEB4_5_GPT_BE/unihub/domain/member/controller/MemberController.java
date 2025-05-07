@@ -146,25 +146,58 @@ public class MemberController {
     return new RsData<>("200", "새로운 토큰이 발급되었습니다.", tokenResponse);
   }
 
-    // ✅ 학생 마이페이지 조회
+    @Operation(
+            summary = "학생 마이페이지 조회",
+            description = "현재 로그인한 학생의 프로필 및 전공/학년/학기 정보를 반환합니다."
+
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "학생 마이페이지 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않았거나 권한이 없는 사용자")
+    })
     @GetMapping("/me/student")
     public RsData<MyPageStudentResponse> getStudentMyPage(@AuthenticationPrincipal SecurityUser user) {
         return new RsData<>("200", "학생 마이페이지 조회 성공", memberService.getStudentMyPage(user.getId()));
     }
 
-    // ✅ 교수 마이페이지 조회
+    @Operation(
+            summary = "교수 마이페이지 조회",
+            description = "현재 로그인한 교수의 프로필 및 소속 대학/전공 정보를 반환합니다."
+
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "교수 마이페이지 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않았거나 권한이 없는 사용자")
+    })
     @GetMapping("/me/professor")
     public RsData<MyPageProfessorResponse> getProfessorMyPage(@AuthenticationPrincipal SecurityUser user) {
         return new RsData<>("200", "교수 마이페이지 조회 성공", memberService.getProfessorMyPage(user.getId()));
     }
 
-    // ✅ 교수 강의 목록 조회
+    @Operation(
+            summary = "교수 강의 목록 조회",
+            description = "현재 로그인한 교수의 담당 강의 리스트를 반환합니다."
+
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "강의 목록 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않았거나 권한이 없는 사용자")
+    })
     @GetMapping("/me/courses")
     public RsData<List<ProfessorCourseResponse>> getProfessorCourses(@AuthenticationPrincipal SecurityUser user) {
         return new RsData<>("200", "교수 강의 목록 조회 성공", memberService.getProfessorCourses(user.getId()));
     }
 
-    // ✅ 비밀번호 변경
+    @Operation(
+            summary = "비밀번호 변경",
+            description = "현재 비밀번호를 검증한 후 새 비밀번호로 변경합니다."
+
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "비밀번호 변경 성공"),
+            @ApiResponse(responseCode = "400", description = "현재 비밀번호 불일치 또는 잘못된 요청"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
+    })
     @PatchMapping("/me/password")
     public RsData<Void> updatePassword(@AuthenticationPrincipal SecurityUser user,
                                        @RequestBody @Valid UpdatePasswordRequest request) {
@@ -172,7 +205,17 @@ public class MemberController {
         return new RsData<>("200", "비밀번호 변경 성공");
     }
 
-    // ✅ 이메일 변경
+    @Operation(
+            summary = "이메일 변경",
+            description = "새 이메일로 변경합니다."
+
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "이메일 변경 성공"),
+            @ApiResponse(responseCode = "400", description = "동일 이메일 입력 또는 잘못된 요청"),
+            @ApiResponse(responseCode = "409", description = "이미 사용 중인 이메일"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
+    })
     @PatchMapping("/me/email")
     public RsData<Void> updateEmail(@AuthenticationPrincipal SecurityUser user,
                                     @RequestBody @Valid UpdateEmailRequest request) {
@@ -180,14 +223,34 @@ public class MemberController {
         return new RsData<>("200", "이메일 변경 성공");
     }
 
-    // ✅ 전공 변경
+    @Operation(
+            summary = "전공 변경",
+            description = "학생의 전공을 변경합니다."
+
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "전공 변경 성공"),
+            @ApiResponse(responseCode = "400", description = "동일 전공 입력 또는 잘못된 요청"),
+            @ApiResponse(responseCode = "403", description = "학생만 접근 가능한 기능"),
+            @ApiResponse(responseCode = "404", description = "해당 전공을 찾을 수 없음"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
+    })
     @PatchMapping("/me/major")
     public RsData<UpdateMajorResponse> updateMajor(@AuthenticationPrincipal SecurityUser user,
                                                    @RequestBody @Valid UpdateMajorRequest request) {
         return new RsData<>("200", "전공 변경 성공", memberService.updateMajor(user.getId(), request));
     }
 
-    // ✅ 현재 비밀번호 검증
+    @Operation(
+            summary = "현재 비밀번호 검증",
+            description = "입력된 비밀번호가 현재 비밀번호와 일치하는지 검증합니다.(페이지 접근용)"
+
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "비밀번호 검증 성공"),
+            @ApiResponse(responseCode = "403", description = "비밀번호 불일치"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
+    })
     @PostMapping("/me/verify-password")
     public RsData<Void> verifyPassword(@AuthenticationPrincipal SecurityUser user,
                                        @RequestBody @Valid VerifyPasswordRequest request) {
@@ -195,7 +258,15 @@ public class MemberController {
         return new RsData<>("200", "비밀번호 검증 성공");
     }
 
-    // ✅ 회원 탈퇴
+    @Operation(
+            summary = "회원 탈퇴",
+            description = "현재 로그인된 회원을 탈퇴 처리합니다."
+
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "회원 탈퇴 성공"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
+    })
     @DeleteMapping("/me")
     public RsData<Void> deleteMember(@AuthenticationPrincipal SecurityUser user) {
         memberService.deleteMember(user.getId());
