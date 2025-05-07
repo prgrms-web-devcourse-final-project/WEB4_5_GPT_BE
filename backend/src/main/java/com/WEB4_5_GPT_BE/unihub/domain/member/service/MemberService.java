@@ -36,7 +36,6 @@ public interface MemberService {
     MyPageStudentResponse getStudentMyPage(Long memberId);
     MyPageProfessorResponse getProfessorMyPage(Long memberId);
     List<ProfessorCourseResponse> getProfessorCourses(Long memberId);
-    void updateName(Long memberId, UpdateNameRequest request);
     void updatePassword(Long memberId, UpdatePasswordRequest request);
     void updateEmail(Long memberId, UpdateEmailRequest request);
     UpdateMajorResponse updateMajor(Long memberId, UpdateMajorRequest request);

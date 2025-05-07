@@ -32,14 +32,14 @@ public class InitDevData {
             return;
         }
 
-        // 1) 기본 데이터
         University university = helper.createUniversity("A대학교");
         Major major = helper.createMajor("소프트웨어전공", university);
+        Major major2 = helper.createMajor("컴퓨터공학전공", university);
 
         helper.createStudent("haneulkim@auni.ac.kr", "studentPw", "김하늘", "20250001",
                 university.getId(), major.getId());
 
-        helper.createProfessor("professor@auni.ac.kr", "password", "김교수", "EMP20250001",
+        Member professor = helper.createProfessor("professor@auni.ac.kr", "password", "김교수", "EMP20250001",
                 university.getId(), major.getId(), ApprovalStatus.APPROVED);
 
         helper.createAdmin("adminmaster@auni.ac.kr", "adminPw", "최고관리자", passwordEncoder);
@@ -54,8 +54,8 @@ public class InitDevData {
                 LocalDate.of(2025, 5, 31)              // 종료일
         );
 
-        // 2) 테스트용 강좌 3개 생성
-        List<Course> courses = initCourses(major);
+        // 2) 테스트용 강좌 생성
+        List<Course> courses = initCourses(professor, major);
 
         // 3) “김하늘” 학생에게 두 개 강좌가 수강신청 되어있도록 설정
         Member student = helper.getMemberByEmail("haneulkim@auni.ac.kr");
@@ -67,9 +67,7 @@ public class InitDevData {
     /**
      * Major 하나에 속한 테스트용 강좌 3개를 만들고, 각 스케줄을 붙여서 반환합니다.
      */
-    private List<Course> initCourses(Major major) {
-
-        Member professor = helper.getMemberByEmail("professor@auni.ac.kr");
+    private List<Course> initCourses(Member professor, Major major) {
 
         // 자료구조
         Course dataStructure = helper.createCourse(
@@ -101,6 +99,14 @@ public class InitDevData {
         helper.createCourseScheduleAndAssociateWithCourse(network, DayOfWeek.WED, "10:00:00", "11:30:00");
         helper.createCourseScheduleAndAssociateWithCourse(network, DayOfWeek.FRI, "16:00:00", "17:30:00");
 
-        return List.of(dataStructure, os, network);
+        Course javaCourse = helper.createCourse(
+                "자바 프로그래밍", major, "공학관 301호",
+                40, 0, 3,
+                professor.getProfessorProfile(),
+                1, 1, null
+        );
+        helper.createCourseScheduleAndAssociateWithCourse(javaCourse, DayOfWeek.MON, "09:00", "11:00");
+
+        return List.of(dataStructure, os, network, javaCourse);
     }
 }

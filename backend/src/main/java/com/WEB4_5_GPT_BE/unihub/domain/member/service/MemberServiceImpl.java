@@ -2,6 +2,7 @@ package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
+import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageProfessorResponse;
@@ -43,6 +44,7 @@ public class MemberServiceImpl implements MemberService {
   private final MajorService majorService;
   private final PasswordEncoder passwordEncoder;
   private final EmailService emailService;
+  private final CourseRepository courseRepository;
 
   @Override
   public void signUpStudent(StudentSignUpRequest request) {
@@ -206,14 +208,15 @@ public class MemberServiceImpl implements MemberService {
     if (member.getRole() != Role.PROFESSOR) {
       throw new UnihubException("403", "교수만 접근할 수 있는 기능입니다.");
     }
-    // TODO: 실제 강의 목록 조회 로직 작성 예정
-    return Collections.emptyList(); // TODO: 강의 도메인 연동 필요
 
-  }
+      ProfessorProfile profile = professorProfileRepository
+              .findByMemberId(memberId)
+              .orElseThrow(() -> new UnihubException("404", "교수 프로필을 찾을 수 없습니다."));
 
-  @Override
-  public void updateName(Long memberId, UpdateNameRequest request) {
-    findActiveMemberById(memberId).setName(request.name());
+      return courseRepository.findByProfessorId(profile.getId())
+              .stream()
+              .map(ProfessorCourseResponse::from)
+              .toList();
   }
 
   @Override
