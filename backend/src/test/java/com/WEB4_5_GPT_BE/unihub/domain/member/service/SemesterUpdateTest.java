@@ -2,6 +2,7 @@ package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.member.scheduler.SemesterUpdateScheduler;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -25,8 +27,14 @@ public class SemesterUpdateTest {
     @Mock
     private StudentProfileRepository studentProfileRepository;
 
+    @Mock
+    private Clock clock;
+
     @InjectMocks
     private MemberServiceImpl memberService;
+
+    @Mock
+    private MemberService memberServiceMock;
 
     @Test
     @DisplayName("학기 업데이트 페이징 정상 동작 테스트")
@@ -52,5 +60,39 @@ public class SemesterUpdateTest {
 
         // 2. 기본 기능만 확인 (메소드가 오류 없이 완료되는지)
         // 테스트가 여기까지 오면 성공
+    }
+
+    @Test
+    @DisplayName("봄학기 스케줄러 테스트 - 3월 1일 새학기")
+    void testSchedulerForSpring() {
+        // Given
+        // 3월 1일 날짜로 가정
+        SemesterUpdateScheduler scheduler = new SemesterUpdateScheduler(memberServiceMock);
+
+        // 학기 업데이트 메소드 호출 확인을 위한 Mock 설정
+        doNothing().when(memberServiceMock).updateAllStudentSemesters();
+
+        // When
+        scheduler.updateSemesterForSpring();
+
+        // Then
+        verify(memberServiceMock, times(1)).updateAllStudentSemesters();
+    }
+
+    @Test
+    @DisplayName("가을학기 스케줄러 테스트 - 9월 1일 새학기")
+    void testSchedulerForFall() {
+        // Given
+        // 9월 1일 날짜로 가정
+        SemesterUpdateScheduler scheduler = new SemesterUpdateScheduler(memberServiceMock);
+
+        // 학기 업데이트 메소드 호출 확인을 위한 Mock 설정
+        doNothing().when(memberServiceMock).updateAllStudentSemesters();
+
+        // When
+        scheduler.updateSemesterForFall();
+
+        // Then
+        verify(memberServiceMock, times(1)).updateAllStudentSemesters();
     }
 }
