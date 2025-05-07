@@ -18,78 +18,78 @@ import java.lang.annotation.RetentionPolicy;
 @ApiResponses({
         @ApiResponse(
                 responseCode = "200",
-                description = "수강 취소가 완료되었습니다.",
-                content = @Content(
-                        examples = @ExampleObject(
-                                value = """
-                                        {
-                                          "code": "200",
-                                          "message": "수강 취소가 완료되었습니다.",
-                                          "data": []
-                                        }
-                                        """
-                        )
-                )
+                description = "수강 취소 성공"
+//                ,content = @Content(
+//                        examples = @ExampleObject(
+//                                value = """
+//                                        {
+//                                          "code": "200",
+//                                          "message": "수강 취소가 완료되었습니다.",
+//                                          "data": []
+//                                        }
+//                                        """
+//                        )
+//                )
         ),
         @ApiResponse(
-                responseCode = "401-1",
-                description = "AccessToken이 만료된 경우",
-                content = @Content(
-                        examples = @ExampleObject(
-                                value = """
-                                        {
-                                          "code": "401-1",
-                                          "message": "AccessToken이 만료되었습니다.",
-                                          "data": {}
-                                        }
-                                        """
-                        )
+                responseCode = "401",
+                description = "AccessToken이 만료된 경우"
+                , content = @Content(
+                examples = @ExampleObject(
+                        value = """
+                                {
+                                  "code": "401-1",
+                                  "message": "AccessToken이 만료되었습니다.",
+                                  "data": {}
+                                }
+                                """
                 )
+        )
         ),
         @ApiResponse(
                 responseCode = "404",
-                description = "수강신청 기간 정보가 없는 경우",
-                content = @Content(
-                        examples = @ExampleObject(
-                                value = """
-                                        {
-                                          "code": "404",
-                                          "message": "수강신청 기간 정보가 없습니다.",
-                                          "data": []
-                                        }
-                                        """
-                        )
-                )
+                description = "수강신청 기간 정보가 없는 경우"
+//                ,content = @Content(
+//                        examples = @ExampleObject(
+//                                value = """
+//                                        {
+//                                          "code": "404",
+//                                          "message": "수강신청 기간 정보가 없습니다.",
+//                                          "data": []
+//                                        }
+//                                        """
+//                        )
+//                )
         ),
         @ApiResponse(
                 responseCode = "403",
-                description = "수강신청 기간 외 요청인 경우",
-                content = @Content(
-                        examples = @ExampleObject(
-                                value = """
-                                        {
-                                          "code": "403",
-                                          "message": "현재 수강신청 기간이 아닙니다.",
-                                          "data": []
-                                        }
-                                        """
-                        )
-                )
+                description = "수강신청 기간 외 요청인 경우"
+//                ,content = @Content(
+//                        examples = @ExampleObject(
+//                                value = """
+//                                        {
+//                                          "code": "403",
+//                                          "message": "현재 수강신청 기간이 아닙니다.",
+//                                          "data": []
+//                                        }
+//                                        """
+//                        )
+//                )
         ),
         @ApiResponse(
                 responseCode = "404",
-                description = "수강신청 내역을 찾을 수 없음",
-                content = @Content(
-                        examples = @ExampleObject(
-                                value = """
-                                        {
-                                          "code": "404",
-                                          "message": "수강신청 내역이 존재하지 않습니다.",
-                                          "data": []
-                                        }
-                                        """
-                        )
-                )
+                description = "수강신청 내역을 찾을 수 없음"
+//                ,content = @Content(
+//                        examples = @ExampleObject(
+//                                value = """
+//                                        {
+//                                          "code": "404",
+//                                          "message": "수강신청 내역이 존재하지 않습니다.",
+//                                          "data": []
+//                                        }
+//                                        """
+//                        )
+//                )
         )
 })
 public @interface EnrollmentCancelApiResponse {
