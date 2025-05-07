@@ -48,7 +48,7 @@ public class MajorService {
 
         // 이름 중복 확인
         if (majorRepository.existsByUniversityAndName(university, request.name())) {
-            throw new IllegalArgumentException("이미 존재하는 전공 이름입니다.");
+            throw new UnihubException("409", "이미 존재하는 전공 이름입니다.");
         }
 
         Major major = Major.builder().university(university).name(request.name()).build();
@@ -68,7 +68,7 @@ public class MajorService {
         // 이름 중복 확인 (현재 전공과 다른 경우에만 중복 검사)
         if (!major.getName().equals(request.name())
                 && majorRepository.existsByUniversityAndName(major.getUniversity(), request.name())) {
-            throw new IllegalArgumentException("이미 존재하는 전공 이름입니다.");
+            throw new UnihubException("409", "이미 존재하는 전공 이름입니다.");
         }
 
         major.setUniversity(university);
@@ -91,7 +91,7 @@ public class MajorService {
     private Major findMajorById(Long majorId) {
         return majorRepository
                 .findById(majorId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 전공이 존재하지 않습니다."));
+                .orElseThrow(() -> new UnihubException("409", "해당 전공이 존재하지 않습니다."));
     }
 
     public Major getMajor(Long universityId, Long majorId) {
