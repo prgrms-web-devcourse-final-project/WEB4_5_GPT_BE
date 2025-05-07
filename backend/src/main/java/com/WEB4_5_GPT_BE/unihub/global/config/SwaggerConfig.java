@@ -25,7 +25,7 @@ public class SwaggerConfig {
                                 {
                                   "code": "에러코드 문자열 (예: 401, 401-1)",
                                   "message": "오류 메시지",
-                                  "data": null
+                                  "data": {}
                                 }
                                 ```
 
