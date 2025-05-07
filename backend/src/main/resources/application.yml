@@ -80,3 +80,6 @@ cors:
     - http://localhost:3000
     - https://web-4-5-gpt-fe.vercel.app
     - https://web-4-5-gpt-l4cx985jz-lisarnjs-projects.vercel.app
+    - https://api.sulee.site
+    - https://api.un1hub.site
+    - http://localhost:5173

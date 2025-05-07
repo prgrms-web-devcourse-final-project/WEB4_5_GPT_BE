@@ -36,10 +36,13 @@ public interface MemberService {
     MyPageStudentResponse getStudentMyPage(Long memberId);
     MyPageProfessorResponse getProfessorMyPage(Long memberId);
     List<ProfessorCourseResponse> getProfessorCourses(Long memberId);
-    void updateName(Long memberId, UpdateNameRequest request);
     void updatePassword(Long memberId, UpdatePasswordRequest request);
     void updateEmail(Long memberId, UpdateEmailRequest request);
     UpdateMajorResponse updateMajor(Long memberId, UpdateMajorRequest request);
     void verifyPassword(Long memberId, VerifyPasswordRequest request);
     void deleteMember(Long memberId);
+    
+    // 모든 학생의 학기와 학년 정보를 업데이트
+    void updateAllStudentSemesters();
+
 }

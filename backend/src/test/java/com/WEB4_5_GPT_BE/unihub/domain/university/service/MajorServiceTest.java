@@ -6,6 +6,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.MajorRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.UniversityRepository;
+import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -123,7 +124,7 @@ public class MajorServiceTest {
 
         // when & then
         assertThatThrownBy(() -> majorService.createMajor(request))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(UnihubException.class)
                 .hasMessageContaining("이미 존재하는 전공 이름입니다");
 
         verify(universityRepository, times(1)).getReferenceById(universityId);
@@ -169,7 +170,7 @@ public class MajorServiceTest {
 
         // when & then
         assertThatThrownBy(() -> majorService.updateMajor(majorId, request))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(UnihubException.class)
                 .hasMessageContaining("해당 전공이 존재하지 않습니다");
 
         verify(majorRepository, times(1)).findById(majorId);
@@ -193,7 +194,7 @@ public class MajorServiceTest {
 
         // when & then
         assertThatThrownBy(() -> majorService.updateMajor(majorId, request))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(UnihubException.class)
                 .hasMessageContaining("이미 존재하는 전공 이름입니다");
 
         verify(majorRepository, times(1)).findById(majorId);
@@ -230,7 +231,7 @@ public class MajorServiceTest {
 
         // when & then
         assertThatThrownBy(() -> majorService.deleteMajor(majorId))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(UnihubException.class)
                 .hasMessageContaining("해당 전공이 존재하지 않습니다");
 
         verify(majorRepository, times(1)).findById(majorId);

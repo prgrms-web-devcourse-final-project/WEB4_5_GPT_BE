@@ -18,6 +18,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.service.MajorService;
 import com.WEB4_5_GPT_BE.unihub.domain.university.service.UniversityService;
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,24 +62,39 @@ class MemberServiceImplTest {
     @Mock
     private EmailService emailService;
 
+    private University mockUniversity;
+    private Major mockMajor;
+
+    @BeforeEach
+    void setUpCommonMocks() {
+        mockUniversity = University.builder()
+                .id(1L)
+                .name("A대학교")
+                .emailDomain("auni.ac.kr")
+                .build();
+
+        mockMajor = Major.builder()
+                .id(1L)
+                .name("소프트웨어전공")
+                .university(mockUniversity)
+                .build();
+    }
+
     @DisplayName("학생 회원가입에 성공한다")
     @Test
     void givenValidStudentSignUpRequest_whenSignUpStudent_thenMemberSaved() {
         // given
         StudentSignUpRequest request =
                 new StudentSignUpRequest(
-                        "student@example.com", "password", "홍길동", "20240001", 1L, 1L, 1, 1, Role.STUDENT);
-
-        University university = University.builder().id(1L).name("테스트대학").build();
-        Major major = Major.builder().id(1L).name("컴퓨터공학과").university(university).build();
+                        "student@auni.ac.kr", "password", "홍길동", "20240001", 1L, 1L, 1, 1, Role.STUDENT);
 
         when(emailService.isAlreadyVerified(request.email())).thenReturn(true);
         when(memberRepository.existsByEmail(request.email())).thenReturn(false);
         when(studentProfileRepository.existsByStudentCodeAndUniversityId(
                 request.studentCode(), request.universityId()))
                 .thenReturn(false);
-        when(universityService.findUniversityById(request.universityId())).thenReturn(university);
-        when(majorService.getMajor(request.universityId(), request.majorId())).thenReturn(major);
+        when(universityService.findUniversityById(request.universityId())).thenReturn(mockUniversity);
+        when(majorService.getMajor(request.universityId(), request.majorId())).thenReturn(mockMajor);
         when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
 
         // when
@@ -93,8 +109,10 @@ class MemberServiceImplTest {
     void givenUnverifiedEmail_whenSignUpStudent_thenThrowUnihubException() {
         // given
         StudentSignUpRequest request = new StudentSignUpRequest(
-                "student@example.com", "password", "홍길동", "20240001", 1L, 1L, 1, 1, Role.STUDENT);
+                "student@auni.ac.kr", "password", "홍길동", "20240001", 1L, 1L, 1, 1, Role.STUDENT);
 
+        when(universityService.findUniversityById(1L)).thenReturn(mockUniversity);
+        when(majorService.getMajor(1L, 1L)).thenReturn(mockMajor);
         when(emailService.isAlreadyVerified(request.email())).thenReturn(false); // 인증 안 됨
 
         // when / then
@@ -108,8 +126,10 @@ class MemberServiceImplTest {
     void givenDuplicatedEmail_whenSignUpStudent_thenThrowUnihubException() {
         // given
         StudentSignUpRequest request = new StudentSignUpRequest(
-                "student@example.com", "password", "홍길동", "20240001", 1L, 1L, 1, 1, Role.STUDENT);
+                "student@auni.ac.kr", "password", "홍길동", "20240001", 1L, 1L, 1, 1, Role.STUDENT);
 
+        when(universityService.findUniversityById(1L)).thenReturn(mockUniversity);
+        when(majorService.getMajor(1L, 1L)).thenReturn(mockMajor);
         when(emailService.isAlreadyVerified(request.email())).thenReturn(true); // 인증 됨
         when(memberRepository.existsByEmail(request.email())).thenReturn(true);
 
@@ -125,7 +145,7 @@ class MemberServiceImplTest {
         // given
         long invalidUniversityId = 9999L;
         StudentSignUpRequest request = new StudentSignUpRequest(
-                "student@example.com", "password", "홍길동", "20240001", invalidUniversityId, 1L, 1, 1, Role.STUDENT);
+                "student@auni.ac.kr", "password", "홍길동", "20240001", invalidUniversityId, 1L, 1, 1, Role.STUDENT);
         
         when(universityService.findUniversityById(eq(invalidUniversityId)))
                 .thenThrow(new UnihubException("404", "해당 대학이 존재하지 않습니다."));
@@ -142,7 +162,7 @@ class MemberServiceImplTest {
         // given
         StudentSignUpRequest request =
                 new StudentSignUpRequest(
-                        "student@example.com", "password", "홍길동", "20240001", 1L, 9999L, 1, 1, Role.STUDENT);
+                        "student@auni.ac.kr", "password", "홍길동", "20240001", 1L, 9999L, 1, 1, Role.STUDENT);
 
         University university = University.builder().id(1L).name("테스트대학").build();
 
@@ -162,18 +182,15 @@ class MemberServiceImplTest {
         // given
         ProfessorSignUpRequest request =
                 new ProfessorSignUpRequest(
-                        "professor@example.com", "password", "김교수", "EMP20240001", 1L, 1L, Role.PROFESSOR);
-
-        University university = University.builder().id(1L).name("테스트대학").build();
-        Major major = Major.builder().id(1L).name("소프트웨어학과").university(university).build();
+                        "professor@auni.ac.kr", "password", "김교수", "EMP20240001", 1L, 1L, Role.PROFESSOR);
 
         when(emailService.isAlreadyVerified(request.email())).thenReturn(true);
         when(memberRepository.existsByEmail(request.email())).thenReturn(false);
         when(professorProfileRepository.existsByEmployeeIdAndUniversityId(
                 request.employeeId(), request.universityId()))
                 .thenReturn(false);
-        when(universityService.findUniversityById(request.universityId())).thenReturn(university);
-        when(majorService.getMajor(request.universityId(), request.majorId())).thenReturn(major);
+        when(universityService.findUniversityById(request.universityId())).thenReturn(mockUniversity);
+        when(majorService.getMajor(request.universityId(), request.majorId())).thenReturn(mockMajor);
         when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
 
         // when
@@ -189,17 +206,14 @@ class MemberServiceImplTest {
         // given
         ProfessorSignUpRequest request =
                 new ProfessorSignUpRequest(
-                        "professor@example.com", "password", "김교수", "EMP20240001", 1L, 1L, Role.PROFESSOR);
-
-        University university = University.builder().id(1L).name("테스트대학").build();
-        Major major = Major.builder().id(1L).name("소프트웨어학과").university(university).build();
+                        "professor@auni.ac.kr", "password", "김교수", "EMP20240001", 1L, 1L, Role.PROFESSOR);
 
         when(emailService.isAlreadyVerified(request.email())).thenReturn(true);
         when(memberRepository.existsByEmail(request.email())).thenReturn(false);
         when(professorProfileRepository.existsByEmployeeIdAndUniversityId(
                 request.employeeId(), request.universityId())).thenReturn(false);
-        when(universityService.findUniversityById(request.universityId())).thenReturn(university);
-        when(majorService.getMajor(request.universityId(), request.majorId())).thenReturn(major);
+        when(universityService.findUniversityById(request.universityId())).thenReturn(mockUniversity);
+        when(majorService.getMajor(request.universityId(), request.majorId())).thenReturn(mockMajor);
         when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
 
         // 캡처용 ArgumentCaptor 추가
@@ -221,8 +235,10 @@ class MemberServiceImplTest {
     void givenUnverifiedEmail_whenSignUpProfessor_thenThrowUnihubException() {
         // given
         ProfessorSignUpRequest request = new ProfessorSignUpRequest(
-                "professor@example.com", "password", "김교수", "EMP20240001", 1L, 1L, Role.PROFESSOR);
+                "professor@auni.ac.kr", "password", "김교수", "EMP20240001", 1L, 1L, Role.PROFESSOR);
 
+        when(universityService.findUniversityById(1L)).thenReturn(mockUniversity);
+        when(majorService.getMajor(1L, 1L)).thenReturn(mockMajor);
         when(emailService.isAlreadyVerified(request.email())).thenReturn(false); // 인증 안 됨
 
         // when / then
@@ -236,8 +252,10 @@ class MemberServiceImplTest {
     void givenDuplicatedEmail_whenSignUpProfessor_thenThrowUnihubException() {
         // given
         ProfessorSignUpRequest request = new ProfessorSignUpRequest(
-                "professor@example.com", "password", "김교수", "EMP20240001", 1L, 1L, Role.PROFESSOR);
+                "professor@auni.ac.kr", "password", "김교수", "EMP20240001", 1L, 1L, Role.PROFESSOR);
 
+        when(universityService.findUniversityById(1L)).thenReturn(mockUniversity);
+        when(majorService.getMajor(1L, 1L)).thenReturn(mockMajor);
         when(emailService.isAlreadyVerified(request.email())).thenReturn(true);
         when(memberRepository.existsByEmail(request.email())).thenReturn(true);
 
@@ -251,7 +269,7 @@ class MemberServiceImplTest {
     @DisplayName("이메일 인증 요청 시 sendVerificationCode를 호출한다")
     void givenEmail_whenSendVerificationCode_thenInvokeEmailService() {
         // given
-        String email = "test@example.com";
+        String email = "test@auni.ac.kr";
 
         // when
         memberService.sendVerificationCode(email);
@@ -264,7 +282,7 @@ class MemberServiceImplTest {
     @Test
     void givenValidVerificationCode_whenVerifyEmailCode_thenMarkVerifiedAndDeleteCode() {
         // given
-        String email = "test@example.com";
+        String email = "test@auni.ac.kr";
         String code = "123456";
 
         EmailCodeVerificationRequest request = new EmailCodeVerificationRequest(email, code);
@@ -283,7 +301,7 @@ class MemberServiceImplTest {
     @Test
     void givenInvalidVerificationCode_whenVerifyEmailCode_thenThrowUnihubException() {
         // given
-        String email = "test@example.com";
+        String email = "test@auni.ac.kr";
         String wrongCode = "654321";
 
         EmailCodeVerificationRequest request = new EmailCodeVerificationRequest(email, wrongCode);
@@ -301,7 +319,7 @@ class MemberServiceImplTest {
     @Test
     void givenValidRequest_whenResetPassword_thenPasswordUpdated() {
         // given
-        String email = "test@example.com";
+        String email = "test@auni.ac.kr";
         String newPassword = "newPassword123";
 
         Member member =
@@ -330,7 +348,7 @@ class MemberServiceImplTest {
     @Test
     void givenNonExistentEmail_whenResetPassword_thenThrowUnihubException() {
         // given
-        String email = "nonexistent@example.com";
+        String email = "nonexistent@auni.ac.kr";
         String newPassword = "newPassword123";
 
         when(memberRepository.findByEmail(email)).thenReturn(java.util.Optional.empty());
@@ -348,7 +366,7 @@ class MemberServiceImplTest {
     @Test
     void givenSamePassword_whenResetPassword_thenThrowUnihubException() {
         // given
-        String email = "test@example.com";
+        String email = "test@auni.ac.kr";
         String samePassword = "samePassword123";
 
         Member member =

@@ -22,6 +22,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -173,6 +174,22 @@ public class MemberControllerTest {
     }
 
     @Test
+    @DisplayName("학생 회원가입 실패 - 이메일 도메인이 학교와 일치하지 않음")
+    void signUpStudent_invalidEmailDomain_thenFail() throws Exception {
+        String email = "wrong@notmatched.com";
+        when(emailService.isAlreadyVerified(email)).thenReturn(true);
+
+        StudentSignUpRequest request = new StudentSignUpRequest(
+                email, "password", "학생", "20251234", 1L, 1L, 1, 1, Role.STUDENT);
+
+        mockMvc.perform(post("/api/members/signup/student")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("선택한 학교의 이메일 형식(@auni.ac.kr)과 일치하지 않습니다."));
+    }
+
+    @Test
     @DisplayName("내 정보 조회 - 학생")
     void getMyInfo_student_success() throws Exception {
         MemberLoginRequest request = new MemberLoginRequest("teststudent@auni.ac.kr", "password");
@@ -252,39 +269,37 @@ public class MemberControllerTest {
     @Test
     @DisplayName("내 강의목록 조회 성공")
     void getLectureList_success() throws Exception {
-        MemberLoginRequest loginRequest = new MemberLoginRequest("professor@auni.ac.kr", "password");
+        // 1) 로그인하여 access token 확보
+        MemberLoginRequest loginRequest =
+                new MemberLoginRequest("professor@auni.ac.kr", "password");
+
         String loginResponse = mockMvc.perform(post("/api/members/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andReturn().getResponse().getContentAsString();
 
-        String accessToken = objectMapper.readTree(loginResponse).path("data").path("accessToken").asText();
+        String accessToken = objectMapper.readTree(loginResponse)
+                .path("data").path("accessToken").asText();
 
+        // 2) 강의 목록 조회 + JSON 검증
         mockMvc.perform(get("/api/members/me/courses")
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("교수 강의 목록 조회 성공"));
+                .andExpect(jsonPath("$.message").value("교수 강의 목록 조회 성공"))
+
+                //data 배열 및 첫 원소 필드 검증
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data.length()").value(greaterThan(0)))
+
+                .andExpect(jsonPath("$.data[0].title").value("컴파일러"))
+                .andExpect(jsonPath("$.data[0].location").value("공학관A"))
+                .andExpect(jsonPath("$.data[0].capacity").value(200))
+                .andExpect(jsonPath("$.data[0].schedule[0].day").value("MON"))
+                .andExpect(jsonPath("$.data[0].schedule[0].startTime").value("12:00"))
+                .andExpect(jsonPath("$.data[0].schedule[0].endTime").value("14:00"));
     }
 
-    @Test
-    @DisplayName("이름 변경 성공")
-    void updateName_success() throws Exception {
-        MemberLoginRequest loginRequest = new MemberLoginRequest("teststudent@auni.ac.kr", "password");
-        String loginResponse = mockMvc.perform(post("/api/members/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest)))
-                .andReturn().getResponse().getContentAsString();
-        String accessToken = objectMapper.readTree(loginResponse).path("data").path("accessToken").asText();
 
-        UpdateNameRequest request = new UpdateNameRequest("새이름");
-
-        mockMvc.perform(patch("/api/members/me/name")
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("이름 변경 성공"));
-    }
 
     @Test
     @DisplayName("이메일 변경 성공")
