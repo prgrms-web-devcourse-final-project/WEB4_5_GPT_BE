@@ -144,8 +144,16 @@ public class MemberServiceImpl implements MemberService {
   private UniversityContext validateEmailAndLoadSchoolInfo(String email, Long universityId, Long majorId) {
     University university = universityService.findUniversityById(universityId);
     Major major = majorService.getMajor(universityId, majorId);
+    validateEmailDomainMatchesUniversity(email, university);
     validateEmailVerification(email);
     return new UniversityContext(university, major);
+  }
+
+  private void validateEmailDomainMatchesUniversity(String email, University university) {
+    String[] emailParts = email.split("@");
+    if (emailParts.length != 2 || !emailParts[1].equalsIgnoreCase(university.getEmailDomain())) {
+      throw new InvalidEmailDomainException(university.getEmailDomain());
+    }
   }
 
   private record UniversityContext(University university, Major major) {}

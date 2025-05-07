@@ -29,7 +29,7 @@ public class InitProdOrStgData {
             return;
         }
 
-        University university = helper.createUniversity("A대학교");
+        University university = helper.createUniversity("A대학교", "auni.ac.kr");
         Major major = helper.createMajor("소프트웨어전공", university);
         Major major2 = helper.createMajor("컴퓨터공학전공", university);
 
