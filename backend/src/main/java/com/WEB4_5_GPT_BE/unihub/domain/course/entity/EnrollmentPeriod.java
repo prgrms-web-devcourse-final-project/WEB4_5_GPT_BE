@@ -18,7 +18,7 @@ import java.time.LocalDate;
         uniqueConstraints = {
                 @UniqueConstraint(
                         name = "uk_enrollment_period_university_year_semester",
-                        columnNames = {"university_id", "`year`", "semester"}
+                        columnNames = {"university_id", "`year`", "grade", "semester"}
                 )
         }
 )
