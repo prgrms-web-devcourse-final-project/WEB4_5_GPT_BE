@@ -3,8 +3,14 @@ package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.*;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.EmailCodeVerificationRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.PasswordResetConfirmationRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.UpdateEmailRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.UpdateMajorRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.UpdatePasswordRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.VerifyPasswordRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageProfessorResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageStudentResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.ProfessorCourseResponse;
@@ -24,6 +30,10 @@ import com.WEB4_5_GPT_BE.unihub.domain.university.service.MajorService;
 import com.WEB4_5_GPT_BE.unihub.domain.university.service.UniversityService;
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +43,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 @Transactional
 public class MemberServiceImpl implements MemberService {
@@ -279,21 +290,36 @@ public class MemberServiceImpl implements MemberService {
   @Override
   @Transactional
   public void updateAllStudentSemesters() {
-    List<StudentProfile> students = studentProfileRepository.findAll();
-    
-    for (StudentProfile student : students) {
-      // 현재 학기가 2학기(2)인 경우, 학년을 올리고 1학기로 변경
-      if (student.getSemester() == 2) {
-        student.setGrade(student.getGrade() + 1);
-        student.setSemester(1);
-      } else {
-        // 현재 학기가 1학기(1)인 경우, 2학기로 변경
-        student.setSemester(2);
-      }
-    }
-    
-    // 변경된 학생 프로필 저장
-    studentProfileRepository.saveAll(students);
+      int pageSize = 500; // 적절한 배치 크기
+      int page = 0;
+      Pageable pageable = PageRequest.of(page, pageSize);
+      Page<StudentProfile> studentPage;
+
+      do {
+          // 페이지 단위로 학생 데이터 조회
+          studentPage = studentProfileRepository.findAll(pageable);
+          List<StudentProfile> students = studentPage.getContent();
+
+          log.info("학기 업데이트 배치 처리 중: 페이지 {} (총 {} 명의 학생 처리 중)", page, students.size());
+
+          for (StudentProfile student : students) {
+              // 현재 학기가 2학기(2)인 경우, 학년을 올리고 1학기로 변경
+              if (student.getSemester() == 2) {
+                  student.setGrade(student.getGrade() + 1);
+                  student.setSemester(1);
+              } else {
+                  // 현재 학기가 1학기(1)인 경우, 2학기로 변경
+                  student.setSemester(2);
+              }
+          }
+
+          // 배치 단위로 저장
+          studentProfileRepository.saveAll(students);
+          pageable = PageRequest.of(++page, pageSize);
+
+      } while (studentPage.hasNext());
+
+      log.info("모든 학생 학기 정보 업데이트 완료. 총 {} 페이지 처리됨", page);
   }
 
   private Member findActiveMemberById(Long id) {
