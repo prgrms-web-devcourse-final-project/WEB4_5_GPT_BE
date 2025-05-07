@@ -16,6 +16,7 @@ import com.WEB4_5_GPT_BE.unihub.global.security.SecurityUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -121,6 +122,7 @@ public class MemberController {
   }
 
   @Operation(summary = "로그아웃", description = "현재 로그인된 사용자를 로그아웃 처리합니다. 서버 저장소에서 refreshToken을 제거합니다.")
+  @SecurityRequirement(name = "accessToken을 사용한 bearerAuth 로그인 인증")
   @ApiResponses(value = {
           @ApiResponse(responseCode = "200", description = "로그아웃 성공"),
           @ApiResponse(responseCode = "401", description = "인증 토큰 누락 또는 유효하지 않은 형식")
@@ -151,6 +153,7 @@ public class MemberController {
             description = "현재 로그인한 학생의 프로필 및 전공/학년/학기 정보를 반환합니다."
 
     )
+    @SecurityRequirement(name = "accessToken을 사용한 bearerAuth 로그인 인증")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "학생 마이페이지 조회 성공"),
             @ApiResponse(responseCode = "401", description = "인증되지 않았거나 권한이 없는 사용자")
@@ -165,6 +168,7 @@ public class MemberController {
             description = "현재 로그인한 교수의 프로필 및 소속 대학/전공 정보를 반환합니다."
 
     )
+    @SecurityRequirement(name = "accessToken을 사용한 bearerAuth 로그인 인증")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "교수 마이페이지 조회 성공"),
             @ApiResponse(responseCode = "401", description = "인증되지 않았거나 권한이 없는 사용자")
@@ -179,6 +183,7 @@ public class MemberController {
             description = "현재 로그인한 교수의 담당 강의 리스트를 반환합니다."
 
     )
+    @SecurityRequirement(name = "accessToken을 사용한 bearerAuth 로그인 인증")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "강의 목록 조회 성공"),
             @ApiResponse(responseCode = "401", description = "인증되지 않았거나 권한이 없는 사용자")
@@ -193,6 +198,7 @@ public class MemberController {
             description = "현재 비밀번호를 검증한 후 새 비밀번호로 변경합니다."
 
     )
+    @SecurityRequirement(name = "accessToken을 사용한 bearerAuth 로그인 인증")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "비밀번호 변경 성공"),
             @ApiResponse(responseCode = "400", description = "현재 비밀번호 불일치 또는 잘못된 요청"),
@@ -210,6 +216,7 @@ public class MemberController {
             description = "새 이메일로 변경합니다."
 
     )
+    @SecurityRequirement(name = "accessToken을 사용한 bearerAuth 로그인 인증")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "이메일 변경 성공"),
             @ApiResponse(responseCode = "400", description = "동일 이메일 입력 또는 잘못된 요청"),
@@ -228,6 +235,7 @@ public class MemberController {
             description = "학생의 전공을 변경합니다."
 
     )
+    @SecurityRequirement(name = "accessToken을 사용한 bearerAuth 로그인 인증")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "전공 변경 성공"),
             @ApiResponse(responseCode = "400", description = "동일 전공 입력 또는 잘못된 요청"),
@@ -246,6 +254,7 @@ public class MemberController {
             description = "입력된 비밀번호가 현재 비밀번호와 일치하는지 검증합니다.(페이지 접근용)"
 
     )
+    @SecurityRequirement(name = "accessToken을 사용한 bearerAuth 로그인 인증")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "비밀번호 검증 성공"),
             @ApiResponse(responseCode = "403", description = "비밀번호 불일치"),
@@ -263,6 +272,7 @@ public class MemberController {
             description = "현재 로그인된 회원을 탈퇴 처리합니다."
 
     )
+    @SecurityRequirement(name = "accessToken을 사용한 bearerAuth 로그인 인증")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "회원 탈퇴 성공"),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
