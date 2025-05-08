@@ -137,7 +137,7 @@ class EnrollmentServiceTest {
         // --- 실행 ---
         List<MyEnrollmentResponse> result = enrollmentService.getMyEnrollmentList(studentMember);
 
-// --- 검증 ---
+        // --- 검증 ---
         assertThat(result).hasSize(1);
         MyEnrollmentResponse dto = result.get(0);
 
@@ -226,9 +226,16 @@ class EnrollmentServiceTest {
         stubEnrollmentPeriod(period);
 
         // 2) 기존 수강신청 내역 조회 stub
+        Course course = Course.builder()
+                .id(COURSE_ID)
+                .title("테스트강좌")
+                .capacity(30)
+                .enrolled(10)  // 취소 전 인원
+                .build();
         Enrollment enrollment = Enrollment.builder()
                 .id(42L)
                 .student(profile)
+                .course(course)
                 .build();
         when(enrollmentRepository.findByCourseIdAndStudentId(COURSE_ID, profile.getId()))
                 .thenReturn(Optional.of(enrollment));
@@ -238,6 +245,12 @@ class EnrollmentServiceTest {
 
         // 4) delete 호출 검증
         verify(enrollmentRepository).delete(enrollment);
+
+        // 5) Course.enrolled가 9로 감소했는지 검증
+        ArgumentCaptor<Course> captor = ArgumentCaptor.forClass(Course.class);
+        verify(courseRepository).save(captor.capture());
+        Course saved = captor.getValue();
+        assertThat(saved.getEnrolled()).isEqualTo(9);
     }
 
     @Test
@@ -323,7 +336,7 @@ class EnrollmentServiceTest {
         // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
         stubEnrollmentPeriod(period);
 
-        // 2) 강좌 조회 stub (잔여좌석 5, 학점 3)
+        // 2) 강좌 조회 stub (최대인원 10, 현재수강인원 5, 학점 3)
         Course course = stubCourse(10, 5, 3);
 
         // 3) 중복 신청 없음
@@ -340,12 +353,17 @@ class EnrollmentServiceTest {
         ).doesNotThrowAnyException();
 
         // 6) save 호출 검증
-        ArgumentCaptor<Enrollment> captor = ArgumentCaptor.forClass(Enrollment.class);
-        verify(enrollmentRepository).save(captor.capture());
+        ArgumentCaptor<Enrollment> enrollCaptor = ArgumentCaptor.forClass(Enrollment.class);
+        verify(enrollmentRepository).save(enrollCaptor.capture());
 
-        Enrollment saved = captor.getValue();
-        assertThat(saved.getStudent()).isEqualTo(profile);
-        assertThat(saved.getCourse()).isEqualTo(course);
+        Enrollment savedEnroll = enrollCaptor.getValue();
+        assertThat(savedEnroll.getStudent()).isEqualTo(profile);
+        assertThat(savedEnroll.getCourse()).isEqualTo(course);
+
+        ArgumentCaptor<Course> courseCaptor = ArgumentCaptor.forClass(Course.class);
+        verify(courseRepository).save(courseCaptor.capture());
+        Course savedCourse = courseCaptor.getValue();
+        assertThat(savedCourse.getEnrolled()).isEqualTo(6);
     }
 
     @Test
@@ -435,7 +453,7 @@ class EnrollmentServiceTest {
         // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
         stubEnrollmentPeriod(period);
 
-        // 2) 강좌 조회 stub (잔여좌석 0, 학점 3) 정원이 다 찬 상태
+        // 2) 강좌 조회 stub (최대인원 10, 현재수강인원 10, 학점 3) 정원이 다 찬 상태
         stubCourse(10, 10, 3);
 
         // 실행 및 예외 검증
@@ -458,7 +476,7 @@ class EnrollmentServiceTest {
         // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
         stubEnrollmentPeriod(period);
 
-        // 2) 강좌 조회 stub (잔여좌석 5, 학점 3)
+        // 2) 강좌 조회 stub (최대인원 10, 현재수강인원 5, 학점 3)
         stubCourse(10, 5, 3);
 
         // 3) 이미 신청한 강좌로 stub
@@ -485,7 +503,7 @@ class EnrollmentServiceTest {
         // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
         stubEnrollmentPeriod(period);
 
-        // 2) 강좌 조회 stub (잔여좌석 5, 학점 3)
+        // 2) 강좌 조회 stub (최대인원 10, 현재수강인원 5, 학점 3)
         stubCourse(10, 5, 3);
 
         // 3) 중복 신청 없음 stub

@@ -148,6 +148,7 @@ public class InitDataHelper {
     public void createEnrollment(Member student, Long courseId) {
         StudentProfile profile = student.getStudentProfile();
         Course course = courseRepository.findById(courseId).get();
+        course.incrementEnrolled();
 
         Enrollment enrollment = Enrollment.builder()
                 .student(profile)
@@ -155,6 +156,7 @@ public class InitDataHelper {
                 .build();
 
         enrollmentRepository.save(enrollment);
+        courseRepository.save(course);
     }
 
     public void createEnrollmentPeriod(

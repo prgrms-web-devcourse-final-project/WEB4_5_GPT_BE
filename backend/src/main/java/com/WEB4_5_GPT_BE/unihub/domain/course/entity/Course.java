@@ -76,4 +76,24 @@ public class Course extends BaseTimeEntity {
     public int getAvailableSeats() {
         return capacity - enrolled;
     }
+
+    /**
+     * 현재 강좌 수강 인원을 감소시킨다. (수강취소 완료)
+     * 현재 수강 인원이 0보다 큰 경우에만 작동한다.
+     */
+    public void decrementEnrolled() {
+        if (enrolled > 0) {
+            enrolled--;
+        }
+    }
+
+    /**
+     * 현재 강좌 수강 인원을 증가시킨다. (수강신청 완료)
+     * 현재 수강 인원이 최대 수강 가능 인원보다 작은 경우에만 작동한다.
+     */
+    public void incrementEnrolled() {
+        if (enrolled < capacity) {
+            enrolled++;
+        }
+    }
 }
