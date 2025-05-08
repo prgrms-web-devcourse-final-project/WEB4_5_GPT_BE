@@ -69,8 +69,7 @@ public class EnrollmentController {
      */
     @Operation(
             summary = "수강 취소",
-            description = "로그인된 학생이 특정 강좌 수강을 취소합니다. header에 Bearer accessToken이 없다면 접근할 수 없습니다.",
-            security = @SecurityRequirement(name = "accessToken을 사용한 bearerAuth 로그인 인증")
+            description = "로그인된 학생이 특정 강좌 수강을 취소합니다. header에 Bearer accessToken이 없다면 접근할 수 없습니다."
     )
     @EnrollmentCancelApiResponse // api 요청에 대한 성공,예외 response 예시를 정의합니다.
     @DeleteMapping("/{courseId}")
