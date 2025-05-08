@@ -24,7 +24,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @Tag(name = "Enrollment", description = "수강신청 관련 API (대기열 관리, 이벤트 스트림 등)")
 @Slf4j
 @RestController
-@RequestMapping("/api/enrollment")
+@RequestMapping("/api/enrollments")
 @RequiredArgsConstructor
 public class EnrollmentEventController {
 
