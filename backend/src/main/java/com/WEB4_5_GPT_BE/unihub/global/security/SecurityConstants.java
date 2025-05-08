@@ -13,6 +13,8 @@ public class SecurityConstants {
           "/api/members/login/admin",
           "/api/members/refresh",
           "/api/members/password-reset/confirm",
+          "/api/majors/**",
+          "/api/universities/**",
           "/swagger-ui/**",
           "/v3/api-docs/**",
           "/h2-console/**",
