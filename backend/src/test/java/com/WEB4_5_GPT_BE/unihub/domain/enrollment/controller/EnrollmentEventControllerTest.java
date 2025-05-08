@@ -74,7 +74,7 @@ public class EnrollmentEventControllerTest {
         QueueStatusDto initialStatus = new QueueStatusDto(true, 0, 0);
         when(enrollmentQueueService.getQueueStatus("1")).thenReturn(initialStatus);
 
-        mockMvc.perform(get("/api/enrollment/events")
+        mockMvc.perform(get("/api/enrollments/events")
                         .accept(MediaType.TEXT_EVENT_STREAM_VALUE))
                 .andExpect(status().isOk())
                 .andExpect(request().asyncStarted());
@@ -86,7 +86,7 @@ public class EnrollmentEventControllerTest {
     @Test
     @DisplayName("대기열 추가 요청 테스트")
     public void testJoinQueue() throws Exception {
-        mockMvc.perform(post("/api/enrollment/queue/join")
+        mockMvc.perform(post("/api/enrollments/queue/join")
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -103,7 +103,7 @@ public class EnrollmentEventControllerTest {
     @Test
     @DisplayName("대기열 상태 조회 요청 테스트")
     public void testGetQueueStatus() throws Exception {
-        mockMvc.perform(get("/api/enrollment/queue/status")
+        mockMvc.perform(get("/api/enrollments/queue/status")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200"))
@@ -119,7 +119,7 @@ public class EnrollmentEventControllerTest {
     @Test
     @DisplayName("세션 해제 요청 테스트")
     public void testReleaseSession() throws Exception {
-        mockMvc.perform(post("/api/enrollment/queue/release")
+        mockMvc.perform(post("/api/enrollments/queue/release")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200"))
