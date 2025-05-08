@@ -19,14 +19,18 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * 수강 신청, 취소, 내 수강목록 조회 등의
+ * 비즈니스 로직을 처리하는 서비스입니다.
+ */
 @Service
 @RequiredArgsConstructor
 public class EnrollmentService {
 
     private final EnrollmentRepository enrollmentRepository; // 수강신청 Repository
     private final EnrollmentPeriodRepository enrollmentPeriodRepository; // 수강신청 기간 Repository
-    private final CourseRepository courseRepository;
-    private final int MAXIMUM_CREDIT = 21;
+    private final CourseRepository courseRepository; // 강좌 Repository
+    private final int MAXIMUM_CREDIT = 21; // 최대 학점 상수 (21학점)
 
     /**
      * 학생의 수강신청 내역을 조회하는 메서드입니다.
@@ -65,11 +69,14 @@ public class EnrollmentService {
         // 수강 취소 가능 기간인지 검증
         ensureEnrollmentPeriodActive(profile);
 
-        // 3) 취소하려는 강좌에 대한 수강 신청 정보 조회
+        // 취소하려는 강좌에 대한 수강 신청 정보 조회
         Enrollment enrollment = findEnrollment(profile.getId(), courseId);
 
-        // 4) 수강 취소 완료
+        // 수강 취소 완료
         enrollmentRepository.delete(enrollment);
+
+        // 수강 취소 후 해당 강좌의 현재 수강인원 감소
+        decrementEnrolled(enrollment.getCourse());
     }
 
     /**
@@ -141,8 +148,29 @@ public class EnrollmentService {
     }
 
     /**
+     * 수강 취소 후 해당 강좌의 현재 수강인원을 감소시킵니다.
+     *
+     * @param course 수강 취소된 강좌
+     */
+    private void decrementEnrolled(Course course) {
+        course.decrementEnrolled();
+        courseRepository.save(course);
+    }
+
+    /**
+     * 수강 신청 후 해당 강좌의 현재 수강인원을 증가시킵니다.
+     *
+     * @param course 수강 취소된 강좌
+     */
+    private void incrementEnrolled(Course course) {
+        course.incrementEnrolled();
+        courseRepository.save(course);
+    }
+
+    /**
      * 수강 신청을 처리하는 메서드입니다.
      * 여러 예외 상황을 검증한 후 수강 신청을 진행합니다.
+     * 수강 신청 완료 후 해당 강좌의 현재 수강인원을 증가시킵니다.
      *
      * @param student  로그인 인증된 학생 정보
      * @param courseId 신청할 강좌의 ID
@@ -168,13 +196,15 @@ public class EnrollmentService {
 
         ensureEnrollmentAllowed(profile, course); // 수강 신청이 가능한지 여러 예외상황 검증
 
-        // 수강 신청 정보 생성
+        // 수강 신청 정보 생성 및 저장
         Enrollment enrollment = Enrollment.builder()
                 .student(profile)
                 .course(course)
                 .build();
-
         enrollmentRepository.save(enrollment);
+
+        // 수강 신청 후 해당 강좌의 현재 수강인원 증가
+        incrementEnrolled(enrollment.getCourse());
     }
 
     /**
