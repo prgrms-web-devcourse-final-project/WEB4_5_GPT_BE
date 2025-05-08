@@ -19,14 +19,18 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * 수강 신청, 취소, 내 수강목록 조회 등의
+ * 비즈니스 로직을 처리하는 서비스입니다.
+ */
 @Service
 @RequiredArgsConstructor
 public class EnrollmentService {
 
     private final EnrollmentRepository enrollmentRepository; // 수강신청 Repository
     private final EnrollmentPeriodRepository enrollmentPeriodRepository; // 수강신청 기간 Repository
-    private final CourseRepository courseRepository;
-    private final int MAXIMUM_CREDIT = 21;
+    private final CourseRepository courseRepository; // 강좌 Repository
+    private final int MAXIMUM_CREDIT = 21; // 최대 학점 상수 (21학점)
 
     /**
      * 학생의 수강신청 내역을 조회하는 메서드입니다.
