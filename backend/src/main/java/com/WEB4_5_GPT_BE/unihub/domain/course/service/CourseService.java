@@ -45,6 +45,7 @@ public class CourseService {
 
     /**
      * 주어진 ID에 해당하는 강의 정보를 반환한다.
+     *
      * @param courseId 조회하고자 하는 강의의 ID
      * @return 조회된 강의의 {@link CourseWithFullScheduleResponse} DTO
      */
@@ -58,6 +59,7 @@ public class CourseService {
 
     /**
      * 주어진 강의 정보를 바탕으로 스케줄을 검증한 뒤 새 강의를 생성, 영속한다.
+     *
      * @param courseRequest 강의 정보
      * @return 생성된 강의의 {@link CourseWithFullScheduleResponse} DTO
      */
@@ -86,7 +88,8 @@ public class CourseService {
 
     /**
      * 주어진 강의 정보를 주어진 ID에 해당하는 강의 위에 덮어쓴다.
-     * @param courseId 덮어쓰고자 하는 강의의 ID
+     *
+     * @param courseId      덮어쓰고자 하는 강의의 ID
      * @param courseRequest 덮어쓸 정보
      * @return 수정된 강의의 {@link CourseWithFullScheduleResponse} DTO
      */
@@ -99,7 +102,7 @@ public class CourseService {
         Major m = majorRepository.findByUniversityIdAndName(u.getId(), courseRequest.major()).orElseThrow(
                 () -> new UnihubException(String.valueOf(HttpStatus.BAD_REQUEST.value()), "존재하지 않는 전공입니다.")
         );
-        if (doesLocationScheduleConflict(courseRequest.schedule(), u.getId(), courseRequest.location())) {
+        if (doesLocationScheduleConflictExcludingCourse(courseRequest.schedule(), u.getId(), courseRequest.location(), courseId)) {
             throw new UnihubException(String.valueOf(HttpStatus.CONFLICT.value()), "강의 장소가 이미 사용 중입니다.");
         }
         ProfessorProfile p = courseRequest.employeeId() == null ?
@@ -107,7 +110,7 @@ public class CourseService {
                 professorProfileRepository.findByUniversityIdAndEmployeeId(u.getId(), courseRequest.employeeId()).orElseThrow(
                         () -> new UnihubException(String.valueOf(HttpStatus.BAD_REQUEST.value()), "존재하지 않는 교수입니다.")
                 );
-        if (p != null && doesProfScheduleConflict(courseRequest.schedule(), p.getEmployeeId())) {
+        if (p != null && doesProfScheduleConflictExcludingCourse(courseRequest.schedule(), p.getEmployeeId(), courseId)) {
             throw new UnihubException(String.valueOf(HttpStatus.CONFLICT.value()), "강사/교수가 이미 수업 중입니다.");
         }
         Course res = courseRequest.toEntity(m, orig.getEnrolled(), p);
@@ -117,6 +120,7 @@ public class CourseService {
 
     /**
      * 주어진 ID에 해당하는 강의를 삭제한다.
+     *
      * @param courseId 삭제하고자 하는 강의의 ID
      */
     public void deleteCourse(Long courseId) {
@@ -128,10 +132,11 @@ public class CourseService {
 
     /**
      * 주어진 필터링/페이지네이션 정보를 바탕으로, 인증되어 있는 유저의 소속 대학에서 제공되고 있는 강의 목록을 반환한다.
-     * @param title 강의 이름 필터링 문자열
-     * @param profName 교수 이름 필터링 문자열
+     *
+     * @param title     강의 이름 필터링 문자열
+     * @param profName  교수 이름 필터링 문자열
      * @param principal 인증되어있는 유저
-     * @param pageable 페이지네이션 정보
+     * @param pageable  페이지네이션 정보
      * @return 조회된 강의에 해당하는 {@link CourseWithFullScheduleResponse} DTO가 담긴 {@link Page} 오브젝트
      */
     // TODO: 응답 DTO가 레코드로 구현되어 있어 조회 타입마다 메소드를 구현했는데, 구현체를 일반 클래스로 바꿔 공통 필드를 상속받게 변경할지를 고려해 볼 것.
@@ -142,10 +147,11 @@ public class CourseService {
 
     /**
      * 주어진 필터링/페이지네이션 정보를 바탕으로, 인증되어 있는 유저의 소속 대학에서 제공되고 있는 강의 목록을 반환한다(수강 신청시).
-     * @param title 강의 이름 필터링 문자열
-     * @param profName 교수 이름 필터링 문자열
+     *
+     * @param title     강의 이름 필터링 문자열
+     * @param profName  교수 이름 필터링 문자열
      * @param principal 인증되어있는 유저
-     * @param pageable 페이지네이션 정보
+     * @param pageable  페이지네이션 정보
      * @return 조회된 강의에 해당하는 {@link CourseEnrollmentResponse} DTO가 담긴 {@link Page} 오브젝트
      */
     public Page<CourseEnrollmentResponse> findAllCoursesModeEnroll(String title, String profName, SecurityUser principal, Pageable pageable) {
@@ -155,10 +161,11 @@ public class CourseService {
 
     /**
      * 주어진 필터링/페이지네이션 정보를 바탕으로, 인증되어 있는 유저의 소속 대학에서 제공되고 있는 강의 목록을 반환한다(강의 목록 조회시).
-     * @param title 강의 이름 필터링 문자열
-     * @param profName 교수 이름 필터링 문자열
+     *
+     * @param title     강의 이름 필터링 문자열
+     * @param profName  교수 이름 필터링 문자열
      * @param principal 인증되어있는 유저
-     * @param pageable 페이지네이션 정보
+     * @param pageable  페이지네이션 정보
      * @return 조회된 강의에 해당하는 {@link CourseResponse} DTO가 담긴 {@link Page} 오브젝트
      */
     public Page<CourseResponse> findAllCoursesModeCatalog(String title, String profName, SecurityUser principal, Pageable pageable) {
@@ -168,6 +175,7 @@ public class CourseService {
 
     /**
      * 주어진 {@link SecurityUser}로부터 소속 대학 ID를 추출한다.
+     *
      * @param principal 대학 ID를 추출할 인증 유저 정보
      * @return 대학 ID
      */
@@ -192,7 +200,8 @@ public class CourseService {
 
     /**
      * 주어진 사번에 해당하는 교수의 스케줄이 주어진 스케줄과 겹치는지 검증.
-     * @param cs 검증할 스케줄
+     *
+     * @param cs     검증할 스케줄
      * @param profId 검증할 교수의 사번
      * @return 스케줄이 겹치면 {@code true}, 아닐시 {@code false}
      */
@@ -207,9 +216,27 @@ public class CourseService {
     }
 
     /**
+     * 강의의 스케줄을 제외하고, 주어진 사번에 해당하는 교수의 스케줄이 주어진 스케줄과 겹치는지 검증.
+     *
+     * @param cs     검증할 스케줄
+     * @param profId 검증할 교수의 사번
+     * @return 스케줄이 겹치면 {@code true}, 아닐시 {@code false}
+     */
+    private boolean doesProfScheduleConflictExcludingCourse(List<CourseScheduleDto> cs, String profId, Long courseId) {
+        return cs.stream().anyMatch(csd -> courseScheduleRepository.existsByProfEmpIdAndDayOfWeekExcludingCourse(
+                profId,
+                csd.day(),
+                LocalTime.parse(csd.startTime()),
+                LocalTime.parse(csd.endTime()),
+                courseId
+        ));
+    }
+
+    /**
      * 주어진 장소의 스케줄이 주어진 스케줄과 겹치는지 검증.
-     * @param cs 검증할 스케줄
-     * @param univId 검증할 장소의 대학 ID
+     *
+     * @param cs       검증할 스케줄
+     * @param univId   검증할 장소의 대학 ID
      * @param location 검증할 장소
      * @return 스케줄이 겹치면 {@code true}, 아닐시 {@code false}
      */
@@ -220,6 +247,25 @@ public class CourseService {
                 csd.day(),
                 LocalTime.parse(csd.startTime()),
                 LocalTime.parse(csd.endTime())
+        ));
+    }
+
+    /**
+     * 주어진 장소의 스케줄이 주어진 스케줄과 겹치는지 검증.
+     *
+     * @param cs       검증할 스케줄
+     * @param univId   검증할 장소의 대학 ID
+     * @param location 검증할 장소
+     * @return 스케줄이 겹치면 {@code true}, 아닐시 {@code false}
+     */
+    private boolean doesLocationScheduleConflictExcludingCourse(List<CourseScheduleDto> cs, Long univId, String location, Long courseId) {
+        return cs.stream().anyMatch(csd -> courseScheduleRepository.existsByUnivIdAndLocationAndDayOfWeekExcludingCourse(
+                univId,
+                location,
+                csd.day(),
+                LocalTime.parse(csd.startTime()),
+                LocalTime.parse(csd.endTime()),
+                courseId
         ));
     }
 }
