@@ -266,8 +266,8 @@ public class MemberServiceImpl implements MemberService {
             throw new UnihubException("409", "이미 사용 중인 이메일입니다.");
         }
 
-        // 이메일 인증 후 이메일 변경
-        validateEmailVerification(member.getEmail(), VerificationPurpose.EMAIL_CHANGE);
+        // 새 이메일 인증 후 이메일 변경
+        validateEmailVerification(request.newEmail(), VerificationPurpose.EMAIL_CHANGE);
 
         member.setEmail(request.newEmail());
         memberRepository.save(member);
