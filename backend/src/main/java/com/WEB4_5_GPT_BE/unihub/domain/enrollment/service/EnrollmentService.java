@@ -19,6 +19,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.global.security.SecurityUser;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,7 @@ import java.util.Optional;
  * 비즈니스 로직을 처리하는 서비스입니다.
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class EnrollmentService {
 
@@ -240,9 +242,14 @@ public class EnrollmentService {
                 .course(course)
                 .build();
         enrollmentRepository.save(enrollment);
+        log.info("수강 신청이 완료되었습니다. 학생: {}, 강좌: {}",
+                profile.getStudentCode(), course.getEnrolled());
 
         // 수강 신청 후 해당 강좌의 현재 수강인원 증가
         incrementEnrolled(enrollment.getCourse());
+
+        log.info("현재 수강인원 변경이 완료되었습니다. 학생: {}, 강좌: {}",
+                profile.getStudentCode(), course.getEnrolled());
     }
 
     /**
