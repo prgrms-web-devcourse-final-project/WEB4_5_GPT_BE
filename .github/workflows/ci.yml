@@ -67,6 +67,13 @@ jobs:
         run: chmod +x gradlew
         working-directory: backend
 
+      - name: Create .env file
+        if: steps.check_changes.outputs.backend-changed == 'true'
+        env:
+          ENV: ${{ secrets.ENV }}
+        run: |
+          echo "$ENV" > backend/.env
+
       - name: Create application-secret.yml for test
         if: steps.check_changes.outputs.backend-changed == 'true'
         env:
@@ -82,7 +89,6 @@ jobs:
         working-directory: backend
         env:
           SPRING_PROFILES_ACTIVE: test
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
       - name: Publish Unit Test Results
         if: steps.check_changes.outputs.backend-changed == 'true' || failure()
