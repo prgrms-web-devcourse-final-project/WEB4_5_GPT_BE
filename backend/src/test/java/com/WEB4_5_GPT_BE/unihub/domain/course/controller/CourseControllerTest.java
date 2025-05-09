@@ -10,6 +10,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.service.AuthTokenService;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.global.Rq;
+import com.WEB4_5_GPT_BE.unihub.global.alert.AlertNotifier;
 import com.WEB4_5_GPT_BE.unihub.global.security.CustomAuthenticationFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,6 +55,9 @@ class CourseControllerTest {
 
     @MockitoBean
     private CourseService courseService;
+
+    @MockitoBean
+    private AlertNotifier alertNotifier;
 
     @MockitoBean
     private Rq rq;
