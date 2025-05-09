@@ -68,6 +68,7 @@ jobs:
         working-directory: backend
 
       - name: Create .env file
+        if: steps.check_changes.outputs.backend-changed == 'true'
         env:
           ENV: ${{ secrets.ENV }}
         run: |
