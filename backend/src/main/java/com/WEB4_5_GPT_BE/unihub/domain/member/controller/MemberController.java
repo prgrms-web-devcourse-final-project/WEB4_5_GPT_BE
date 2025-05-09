@@ -8,6 +8,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageProfesso
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageStudentResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.ProfessorCourseResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.UpdateMajorResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.AuthService;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.MemberService;
 import com.WEB4_5_GPT_BE.unihub.global.response.Empty;
@@ -68,9 +69,9 @@ public class MemberController {
           @ApiResponse(responseCode = "400", description = "잘못된 이메일 형식 또는 이미 인증된 이메일"),
           @ApiResponse(responseCode = "500", description = "이메일 발송 실패")
   })
-  @PostMapping("/email/code")
-  public RsData<Empty> sendEmail(@RequestBody @Valid EmailCodeRequest request) {
-    memberService.sendVerificationCode(request.email());
+  @PostMapping("/email/{purpose}/code")
+  public RsData<Empty> sendEmail(@PathVariable VerificationPurpose purpose, @RequestBody @Valid EmailCodeRequest request) {
+    memberService.sendVerificationCode(request.email(),purpose);
     return new RsData<>("200", "이메일 인증번호가 전송되었습니다. 확인 후 인증번호를 입력해 주세요.");
   }
 
@@ -79,9 +80,9 @@ public class MemberController {
           @ApiResponse(responseCode = "200", description = "이메일 인증 성공"),
           @ApiResponse(responseCode = "400", description = "잘못된 인증번호이거나 인증되지 않은 이메일입니다.")
   })
-  @PostMapping("/email/verify")
-  public RsData<Empty> verifyEmail(@RequestBody @Valid EmailCodeVerificationRequest request) {
-    memberService.verifyEmailCode(request);
+  @PostMapping("/email/{purpose}/verify")
+  public RsData<Empty> verifyEmail(@PathVariable VerificationPurpose purpose,@RequestBody @Valid EmailCodeVerificationRequest request) {
+    memberService.verifyEmailCode(request.email(), request.emailCode(),purpose);
     return new RsData<>("200", "이메일 인증이 완료되었습니다.");
   }
 

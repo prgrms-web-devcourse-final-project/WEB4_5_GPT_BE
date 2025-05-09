@@ -10,6 +10,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.UpdateMajorRequ
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.VerifyPasswordRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
+import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorProfileRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
@@ -87,8 +88,9 @@ class MemberServiceImplTest {
         StudentSignUpRequest request =
                 new StudentSignUpRequest(
                         "student@auni.ac.kr", "password", "홍길동", "20240001", 1L, 1L, 1, 1, Role.STUDENT);
+        VerificationPurpose purpose = VerificationPurpose.SIGNUP;
 
-        when(emailService.isAlreadyVerified(request.email())).thenReturn(true);
+        when(emailService.isAlreadyVerified(request.email(),purpose)).thenReturn(true);
         when(memberRepository.existsByEmail(request.email())).thenReturn(false);
         when(studentProfileRepository.existsByStudentCodeAndUniversityId(
                 request.studentCode(), request.universityId()))
@@ -110,10 +112,10 @@ class MemberServiceImplTest {
         // given
         StudentSignUpRequest request = new StudentSignUpRequest(
                 "student@auni.ac.kr", "password", "홍길동", "20240001", 1L, 1L, 1, 1, Role.STUDENT);
-
+        VerificationPurpose purpose = VerificationPurpose.SIGNUP;
         when(universityService.findUniversityById(1L)).thenReturn(mockUniversity);
         when(majorService.getMajor(1L, 1L)).thenReturn(mockMajor);
-        when(emailService.isAlreadyVerified(request.email())).thenReturn(false); // 인증 안 됨
+        when(emailService.isAlreadyVerified(request.email(),purpose)).thenReturn(false); // 인증 안 됨
 
         // when / then
         assertThatThrownBy(() -> memberService.signUpStudent(request))
@@ -127,10 +129,10 @@ class MemberServiceImplTest {
         // given
         StudentSignUpRequest request = new StudentSignUpRequest(
                 "student@auni.ac.kr", "password", "홍길동", "20240001", 1L, 1L, 1, 1, Role.STUDENT);
-
+        VerificationPurpose purpose = VerificationPurpose.SIGNUP;
         when(universityService.findUniversityById(1L)).thenReturn(mockUniversity);
         when(majorService.getMajor(1L, 1L)).thenReturn(mockMajor);
-        when(emailService.isAlreadyVerified(request.email())).thenReturn(true); // 인증 됨
+        when(emailService.isAlreadyVerified(request.email(),purpose)).thenReturn(true); // 인증 됨
         when(memberRepository.existsByEmail(request.email())).thenReturn(true);
 
         // when / then
@@ -183,8 +185,8 @@ class MemberServiceImplTest {
         ProfessorSignUpRequest request =
                 new ProfessorSignUpRequest(
                         "professor@auni.ac.kr", "password", "김교수", "EMP20240001", 1L, 1L, Role.PROFESSOR);
-
-        when(emailService.isAlreadyVerified(request.email())).thenReturn(true);
+        VerificationPurpose purpose = VerificationPurpose.SIGNUP;
+        when(emailService.isAlreadyVerified(request.email(),purpose)).thenReturn(true);
         when(memberRepository.existsByEmail(request.email())).thenReturn(false);
         when(professorProfileRepository.existsByEmployeeIdAndUniversityId(
                 request.employeeId(), request.universityId()))
@@ -207,8 +209,8 @@ class MemberServiceImplTest {
         ProfessorSignUpRequest request =
                 new ProfessorSignUpRequest(
                         "professor@auni.ac.kr", "password", "김교수", "EMP20240001", 1L, 1L, Role.PROFESSOR);
-
-        when(emailService.isAlreadyVerified(request.email())).thenReturn(true);
+        VerificationPurpose purpose = VerificationPurpose.SIGNUP;
+        when(emailService.isAlreadyVerified(request.email(),purpose)).thenReturn(true);
         when(memberRepository.existsByEmail(request.email())).thenReturn(false);
         when(professorProfileRepository.existsByEmployeeIdAndUniversityId(
                 request.employeeId(), request.universityId())).thenReturn(false);
@@ -236,10 +238,10 @@ class MemberServiceImplTest {
         // given
         ProfessorSignUpRequest request = new ProfessorSignUpRequest(
                 "professor@auni.ac.kr", "password", "김교수", "EMP20240001", 1L, 1L, Role.PROFESSOR);
-
+        VerificationPurpose purpose = VerificationPurpose.SIGNUP;
         when(universityService.findUniversityById(1L)).thenReturn(mockUniversity);
         when(majorService.getMajor(1L, 1L)).thenReturn(mockMajor);
-        when(emailService.isAlreadyVerified(request.email())).thenReturn(false); // 인증 안 됨
+        when(emailService.isAlreadyVerified(request.email(),purpose)).thenReturn(false); // 인증 안 됨
 
         // when / then
         assertThatThrownBy(() -> memberService.signUpProfessor(request))
@@ -253,10 +255,10 @@ class MemberServiceImplTest {
         // given
         ProfessorSignUpRequest request = new ProfessorSignUpRequest(
                 "professor@auni.ac.kr", "password", "김교수", "EMP20240001", 1L, 1L, Role.PROFESSOR);
-
+        VerificationPurpose purpose = VerificationPurpose.SIGNUP;
         when(universityService.findUniversityById(1L)).thenReturn(mockUniversity);
         when(majorService.getMajor(1L, 1L)).thenReturn(mockMajor);
-        when(emailService.isAlreadyVerified(request.email())).thenReturn(true);
+        when(emailService.isAlreadyVerified(request.email(),purpose)).thenReturn(true);
         when(memberRepository.existsByEmail(request.email())).thenReturn(true);
 
         // when / then
@@ -270,12 +272,12 @@ class MemberServiceImplTest {
     void givenEmail_whenSendVerificationCode_thenInvokeEmailService() {
         // given
         String email = "test@auni.ac.kr";
-
+        VerificationPurpose purpose = VerificationPurpose.SIGNUP;
         // when
-        memberService.sendVerificationCode(email);
+        memberService.sendVerificationCode(email,purpose);
 
         // then
-        verify(emailService).sendVerificationCode(email);
+        verify(emailService).sendVerificationCode(email,purpose);
     }
 
     @DisplayName("이메일 인증에 성공하면 이메일을 인증 완료로 표시하고 인증코드를 삭제한다")
@@ -284,17 +286,17 @@ class MemberServiceImplTest {
         // given
         String email = "test@auni.ac.kr";
         String code = "123456";
-
+        VerificationPurpose purpose = VerificationPurpose.SIGNUP;
         EmailCodeVerificationRequest request = new EmailCodeVerificationRequest(email, code);
 
-        when(emailService.verifyCode(email, code)).thenReturn(true);
+        doNothing().when(emailService).verifyCode(email, code, purpose);
 
         // when
-        memberService.verifyEmailCode(request);
+        memberService.verifyEmailCode(request.email(), request.emailCode(), purpose);
 
         // then
-        verify(emailService).markEmailAsVerified(email);
-        verify(emailService).deleteVerificationCode(email);
+        verify(emailService).markEmailAsVerified(email,purpose);
+        verify(emailService).deleteVerificationCode(email,purpose);
     }
 
     @DisplayName("이메일 인증에 실패하면 예외를 던진다")
@@ -303,14 +305,14 @@ class MemberServiceImplTest {
         // given
         String email = "test@auni.ac.kr";
         String wrongCode = "654321";
-
+        VerificationPurpose purpose = VerificationPurpose.SIGNUP;
         EmailCodeVerificationRequest request = new EmailCodeVerificationRequest(email, wrongCode);
 
         doThrow(new UnihubException("400", "이메일 인증 코드가 잘못되었습니다."))
-                .when(emailService).verifyCode(email, wrongCode);
+                .when(emailService).verifyCode(email, wrongCode,purpose);
 
         // when / then
-        assertThatThrownBy(() -> memberService.verifyEmailCode(request))
+        assertThatThrownBy(() -> memberService.verifyEmailCode(request.email(), request.emailCode(), purpose))
                 .isInstanceOf(UnihubException.class)
                 .hasMessageContaining("이메일 인증 코드가 잘못되었습니다.");
     }
