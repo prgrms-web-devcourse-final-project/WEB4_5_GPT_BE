@@ -101,9 +101,6 @@ if (envFile.exists()) {
     println "[WARN] .env 파일이 없습니다. SENTRY_AUTH_TOKEN 로딩 실패 가능성 있음."
 }
 
-println "✅ SENTRY_AUTH_TOKEN 길이: ${dotenv['SENTRY_AUTH_TOKEN']?.length() ?: 'null'}"
-println "✅ SENTRY_AUTH_TOKEN 값 일부: ${dotenv['SENTRY_AUTH_TOKEN']?.take(6) ?: 'null'}..."
-
 sentry {
     includeSourceContext = true
     org = "unihub"
