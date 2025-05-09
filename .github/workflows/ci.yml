@@ -68,11 +68,10 @@ jobs:
         working-directory: backend
 
       - name: Create .env file
-        if: steps.check_changes.outputs.backend-changed == 'true'
         env:
           ENV: ${{ secrets.ENV }}
         run: |
-          echo "$ENV" > backend/.env
+          echo "$ENV" > .env
 
       - name: Create application-secret.yml for test
         if: steps.check_changes.outputs.backend-changed == 'true'
