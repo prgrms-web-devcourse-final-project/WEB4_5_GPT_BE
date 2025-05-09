@@ -23,6 +23,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Duration;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,8 +48,8 @@ class AuthServiceImplTest {
   private StringRedisTemplate redisTemplate;
 
   @Test
-  @DisplayName("로그인 성공 시 accessToken과 refreshToken을 발급하고 반환한다")
-  void givenValidLoginRequest_whenLogin_thenReturnTokens() {
+  @DisplayName("로그인에 성공하면 accessToken은 응답 본문으로 반환되고, refreshToken은 쿠키에 저장된다.")
+  void givenValidLoginRequest_whenLogin_thenReturnAccessTokenAndSetRefreshTokenInCookie() {
     // given
     String email = "test@example.com";
     String password = "password";
@@ -68,12 +69,12 @@ class AuthServiceImplTest {
     // then
     verify(redisTemplate).delete("login:fail:" + email);
     verify(redisTemplate.opsForValue())
-        .set(eq("refresh:" + member.getId()), eq("refreshToken"), eq(java.time.Duration.ofDays(7)));
+        .set(eq("refresh:" + member.getId()), eq("refreshToken"), eq(java.time.Duration.ofDays(1)));
     verify(authTokenService).genAccessToken(member);
     verify(authTokenService).genRefreshToken(member.getId());
 
+    verify(rq).addCookie(eq("refreshToken"), eq("refreshToken"), eq(Duration.ofDays(1))); // 쿠키 시간
     assertThat(response.accessToken()).isEqualTo("accessToken");
-    assertThat(response.refreshToken()).isEqualTo("refreshToken");
   }
 
   @Test
@@ -128,7 +129,7 @@ class AuthServiceImplTest {
   }
 
   @Test
-  @DisplayName("관리자 로그인 성공 시 accessToken과 refreshToken을 발급하고 반환한다")
+  @DisplayName("관리자 로그인 성공 시 accessToken는 응답 본문으로 반환하고, refreshToken은 쿠키에 저장된다.")
   void givenValidAdminLoginRequest_whenAdminLogin_thenReturnTokens() {
     // given
     String email = "admin@example.com";
@@ -157,12 +158,12 @@ class AuthServiceImplTest {
         .set(
             eq("refresh:" + adminMember.getId()),
             eq("adminRefreshToken"),
-            eq(java.time.Duration.ofDays(7)));
+            eq(java.time.Duration.ofDays(1)));
     verify(authTokenService).genAccessToken(adminMember);
     verify(authTokenService).genRefreshToken(adminMember.getId());
 
+    verify(rq).addCookie(eq("refreshToken"), eq("adminRefreshToken"), eq(Duration.ofDays(1))); // 쿠키 시간
     assertThat(response.accessToken()).isEqualTo("adminAccessToken");
-    assertThat(response.refreshToken()).isEqualTo("adminRefreshToken");
   }
 
   @Test
@@ -301,7 +302,6 @@ class AuthServiceImplTest {
 
     // then
     assertThat(loginResponse.accessToken()).isEqualTo(newAccessToken);
-    assertThat(loginResponse.refreshToken()).isNull(); // 재발급 안 하는 경우
   }
 
   @Test
