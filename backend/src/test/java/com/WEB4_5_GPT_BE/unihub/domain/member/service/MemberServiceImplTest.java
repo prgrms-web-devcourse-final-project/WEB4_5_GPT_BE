@@ -11,6 +11,8 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.VerifyPasswordR
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
 import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
+import com.WEB4_5_GPT_BE.unihub.domain.member.exception.member.EmailNotFoundException;
+import com.WEB4_5_GPT_BE.unihub.domain.member.exception.member.EmailNotVerifiedException;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorProfileRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
@@ -332,6 +334,9 @@ class MemberServiceImplTest {
                         .role(Role.STUDENT)
                         .build();
 
+        // 이메일 인증을 완료한 것으로 시뮬레이션
+        when(emailService.isAlreadyVerified(email, VerificationPurpose.PASSWORD_RESET)).thenReturn(true);
+
         when(memberRepository.findByEmail(email)).thenReturn(java.util.Optional.of(member));
         when(passwordEncoder.matches(newPassword, member.getPassword())).thenReturn(false);
         when(passwordEncoder.encode(newPassword)).thenReturn("encodedNewPassword");
@@ -353,14 +358,14 @@ class MemberServiceImplTest {
         String email = "nonexistent@auni.ac.kr";
         String newPassword = "newPassword123";
 
-        when(memberRepository.findByEmail(email)).thenReturn(java.util.Optional.empty());
+        when(memberRepository.findByEmail(email)).thenReturn(java.util.Optional.empty()); // 이메일이 등록되지 않음
 
         PasswordResetConfirmationRequest request =
                 new PasswordResetConfirmationRequest(email, newPassword);
 
         // when / then
         assertThatThrownBy(() -> memberService.resetPassword(request))
-                .isInstanceOf(UnihubException.class)
+                .isInstanceOf(EmailNotFoundException.class)  // EmailNotFoundException을 기대
                 .hasMessageContaining("등록되지 않은 이메일 주소입니다.");
     }
 
@@ -379,6 +384,9 @@ class MemberServiceImplTest {
                         .role(Role.STUDENT)
                         .build();
 
+        // 이메일 인증 상태 설정 (인증 완료된 상태로 가정)
+        when(emailService.isAlreadyVerified(email, VerificationPurpose.PASSWORD_RESET)).thenReturn(true);
+
         when(memberRepository.findByEmail(email)).thenReturn(java.util.Optional.of(member));
         when(passwordEncoder.matches(samePassword, member.getPassword())).thenReturn(true);
 
@@ -391,11 +399,41 @@ class MemberServiceImplTest {
                 .hasMessageContaining("기존 비밀번호와 동일한 비밀번호로는 변경할 수 없습니다.");
     }
 
+    @DisplayName("이메일 인증이 안 되었을 때 비밀번호 재설정 실패")
+    @Test
+    void givenUnverifiedEmail_whenResetPassword_thenThrowEmailNotVerifiedException() {
+        // given
+        String email = "unverified@auni.ac.kr";
+        String newPassword = "newPassword123";
+
+        Member member = Member.builder()
+                .email(email)
+                .password("encodedOldPassword")
+                .name("홍길동")
+                .role(Role.STUDENT)
+                .build();
+
+        // 이메일 인증 안된 상태로 설정
+        when(emailService.isAlreadyVerified(email, VerificationPurpose.PASSWORD_RESET)).thenReturn(false);  // 인증 안됨
+        when(memberRepository.findByEmail(email)).thenReturn(Optional.of(member));
+
+        PasswordResetConfirmationRequest request = new PasswordResetConfirmationRequest(email, newPassword);
+
+        // when / then
+        assertThatThrownBy(() -> memberService.resetPassword(request))
+                .isInstanceOf(EmailNotVerifiedException.class)
+                .hasMessageContaining("이메일 인증을 완료해주세요.");
+    }
+
     @DisplayName("이메일 변경에 성공한다")
     @Test
     void givenUniqueEmail_whenUpdateEmail_thenEmailUpdated() {
         // given
         Member member = Member.builder().id(1L).email("old@email.com").build();
+
+        // 이메일 인증 완료된 상태로 설정
+        given(emailService.isAlreadyVerified("old@email.com", VerificationPurpose.EMAIL_CHANGE)).willReturn(true);
+
         given(memberRepository.findById(1L)).willReturn(Optional.of(member));
         given(memberRepository.existsByEmail("new@email.com")).willReturn(false);
 
@@ -404,6 +442,23 @@ class MemberServiceImplTest {
 
         // then
         assertThat(member.getEmail()).isEqualTo("new@email.com");
+    }
+
+    @DisplayName("이메일이 이미 등록되어 있을 경우 이메일 변경 실패")
+    @Test
+    void givenExistingEmail_whenUpdateEmail_thenThrowEmailAlreadyExistsException() {
+        // given
+        Member member = Member.builder().id(1L).email("old@email.com").build();
+        String newEmail = "existing@auni.ac.kr";
+
+        // 기존 이메일이 이미 등록되어 있다고 가정
+        when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+        when(memberRepository.existsByEmail(newEmail)).thenReturn(true);  // 이미 존재하는 이메일
+
+        // when / then
+        assertThatThrownBy(() -> memberService.updateEmail(1L, new UpdateEmailRequest(newEmail)))
+                .isInstanceOf(UnihubException.class)  // UnihubException을 기대
+                .hasMessageContaining("이미 사용 중인 이메일입니다.");  // 해당 메시지를 포함해야 함
     }
 
     @DisplayName("전공 변경에 성공한다")
@@ -456,4 +511,21 @@ class MemberServiceImplTest {
                 .hasMessageContaining("비밀번호가 일치하지 않습니다.");
 
     }
+    @DisplayName("비밀번호 검증에 성공한다")
+    @Test
+    void givenCorrectPassword_whenVerifyPassword_thenSuccess() {
+        // given
+        Member member = Member.builder().id(1L).password("encodedPass").build();
+        given(memberRepository.findById(1L)).willReturn(Optional.of(member));
+        given(passwordEncoder.matches("correct", "encodedPass")).willReturn(true);  // 비밀번호 일치
+
+        // when
+        memberService.verifyPassword(1L, new VerifyPasswordRequest("correct"));
+
+        // then
+        // 비밀번호가 일치하면 예외가 발생하지 않고 정상적으로 처리되므로, 별도의 검증 없이 끝납니다.
+    }
+
+
+
 }

@@ -184,12 +184,13 @@ public class MemberServiceImpl implements MemberService {
   public void resetPassword(PasswordResetConfirmationRequest request) {
     String email = request.email();
     String newPassword = request.password();
-    // 이메일 인증 확인
-    validateEmailVerification(email,VerificationPurpose.PASSWORD_RESET);
+
     // 이메일로 등록된 사용자 조회
     Member member = memberRepository
             .findByEmail(email)
             .orElseThrow(EmailNotFoundException::new);
+      // 이메일 인증 확인
+      validateEmailVerification(email,VerificationPurpose.PASSWORD_RESET);
     // 새로운 비밀번호가 기존 비밀번호와 같은지 확인
     if (passwordEncoder.matches(newPassword, member.getPassword())) {
       throw new PasswordSameAsOldException();
@@ -251,20 +252,26 @@ public class MemberServiceImpl implements MemberService {
   }
 
 
-  @Override
-  public void updateEmail(Long memberId, UpdateEmailRequest request) {
-    Member member = findActiveMemberById(memberId);
-    // 이메일 인증 후 이메일 변경
-    validateEmailVerification(member.getEmail(), VerificationPurpose.EMAIL_CHANGE);
-    if (member.getEmail().equals(request.newEmail())) {
-      throw new UnihubException("400", "현재 사용 중인 이메일과 동일합니다.");
+    @Override
+    public void updateEmail(Long memberId, UpdateEmailRequest request) {
+        Member member = findActiveMemberById(memberId);
+
+        // 이메일이 현재와 동일한 경우
+        if (member.getEmail().equals(request.newEmail())) {
+            throw new UnihubException("400", "현재 사용 중인 이메일과 동일합니다.");
+        }
+
+        // 이미 사용 중인 이메일인지 확인
+        if (memberRepository.existsByEmail(request.newEmail())) {
+            throw new UnihubException("409", "이미 사용 중인 이메일입니다.");
+        }
+
+        // 이메일 인증 후 이메일 변경
+        validateEmailVerification(member.getEmail(), VerificationPurpose.EMAIL_CHANGE);
+
+        member.setEmail(request.newEmail());
+        memberRepository.save(member);
     }
-    if (memberRepository.existsByEmail(request.newEmail())) {
-      throw new UnihubException("409", "이미 사용 중인 이메일입니다.");
-    }
-    member.setEmail(request.newEmail());
-    memberRepository.save(member);
-  }
 
   @Override
   public UpdateMajorResponse updateMajor(Long memberId, UpdateMajorRequest request) {
