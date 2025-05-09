@@ -37,7 +37,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
 
-import static java.lang.Thread.sleep;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
@@ -166,8 +165,6 @@ class EnrollmentConcurrencyTest {
         }
         latch.await();
         exec.shutdown();
-
-        sleep(1000);
 
         Course savedCourse = courseRepository.findById(course.getId()).orElseThrow();
         assertThat(savedCourse.getEnrolled()).isEqualTo(30);
