@@ -28,6 +28,10 @@ public class AlertNotifier {
     private final ConcurrentHashMap<String, Long> recentExceptions = new ConcurrentHashMap<>();
 
     public void notifyError(String title, Exception e) {
+        if (!activeProfile.equalsIgnoreCase("prod") && !activeProfile.equalsIgnoreCase("stg")) {
+            return; // dev, test, local 등에서는 Slack 알림 전송 안 함
+        }
+
         Sentry.captureException(e);
         String exceptionType = e.getClass().getSimpleName();
         long now = System.currentTimeMillis();
