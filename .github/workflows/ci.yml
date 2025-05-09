@@ -82,6 +82,7 @@ jobs:
         working-directory: backend
         env:
           SPRING_PROFILES_ACTIVE: test
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
       - name: Publish Unit Test Results
         if: steps.check_changes.outputs.backend-changed == 'true' || failure()
