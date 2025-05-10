@@ -15,12 +15,14 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
 import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.StudentProfileNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 수강 신청, 취소, 내 수강목록 조회 등의
@@ -339,6 +341,22 @@ public class EnrollmentService {
         StudentProfile profile = studentProfileRepository.findByMemberId(student.getId())
                 .orElseThrow(StudentProfileNotFoundException::new); // 학생 프로필 정보
 
-        return null;
+        University university = profile.getUniversity(); // 학생 소속 대학교 정보
+        LocalDate today = LocalDate.now(); // 오늘 날짜
+
+        // 1) 학생 정보에 해당하는 수강신청 기간 조회
+        Optional<EnrollmentPeriod> opEnrollmentPeriod = enrollmentPeriodRepository
+                .findByUniversityIdAndYearAndGradeAndSemester(
+                        university.getId(), today.getYear(), profile.getGrade(), profile.getSemester()
+                );
+
+        // 2) 조회된 수강신청 기간 내에 오늘(요청일자)이 포함되는지 검증
+        // 3) 수강신청 기간이 없거나 오늘 날짜가 포함되지 않으면 isEnrollmentOpen=false가 포함된 DTO 반환
+        return opEnrollmentPeriod
+                .map(period -> {
+                    boolean isOpen = isWithinPeriod(period, today);
+                    return StudentEnrollmentPeriodResponse.from(period, profile, isOpen);
+                })
+                .orElse(StudentEnrollmentPeriodResponse.notOpen());
     }
 }
