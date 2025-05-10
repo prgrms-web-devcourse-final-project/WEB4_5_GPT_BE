@@ -133,6 +133,12 @@ public class CourseController {
         @RequestParam(name = "title", defaultValue = "") String title,
         @Parameter(description = "강사/교수 이름 검색 키워드")
         @RequestParam(name = "profName", defaultValue = "") String profName,
+
+        // 추가된 필터링 파라미터
+        @Parameter(description = "전공 ID") @RequestParam(required = false) Long majorId,
+        @Parameter(description = "학년") @RequestParam(required = false) Integer grade,
+        @Parameter(description = "학기") @RequestParam(required = false) Integer semester,
+
         @AuthenticationPrincipal SecurityUser principal,
         @Parameter(hidden = true)
         @PageableDefault @ParameterObject Pageable pageable) {
@@ -143,13 +149,13 @@ public class CourseController {
         return switch (mode) {
             case FULL -> new RsData<>(String.valueOf(HttpStatus.OK.value()),
                     "조회에 성공했습니다.",
-                    courseService.findAllCoursesModeFull(title, profName, principal, pageable));
+                    courseService.findAllCoursesModeFull(title, profName, majorId, grade, semester, principal, pageable));
             case ENROLL -> new RsData<>(String.valueOf(HttpStatus.OK.value()),
                     "조회에 성공했습니다.",
-                    courseService.findAllCoursesModeEnroll(title, profName, principal, pageable));
+                    courseService.findAllCoursesModeEnroll(title, profName, majorId, grade, semester, principal, pageable));
             case CATALOG -> new RsData<>(String.valueOf(HttpStatus.OK.value()),
                     "조회에 성공했습니다.",
-                    courseService.findAllCoursesModeCatalog(title, profName, principal, pageable));
+                    courseService.findAllCoursesModeCatalog(title, profName, majorId, grade, semester, principal, pageable));
         };
     }
 }
