@@ -431,8 +431,8 @@ class MemberServiceImplTest {
         // given
         Member member = Member.builder().id(1L).email("old@email.com").build();
 
-        // 이메일 인증 완료된 상태로 설정
-        given(emailService.isAlreadyVerified("old@email.com", VerificationPurpose.EMAIL_CHANGE)).willReturn(true);
+        // 새 이메일 인증 완료된 상태로 설정
+        given(emailService.isAlreadyVerified("new@email.com", VerificationPurpose.EMAIL_CHANGE)).willReturn(true); // 새 이메일 인증 완료 설정
 
         given(memberRepository.findById(1L)).willReturn(Optional.of(member));
         given(memberRepository.existsByEmail("new@email.com")).willReturn(false);

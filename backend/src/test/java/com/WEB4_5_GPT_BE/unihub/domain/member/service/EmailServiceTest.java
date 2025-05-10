@@ -42,7 +42,7 @@ public class EmailServiceTest {
     // then
     verify(mailSender).send(any(SimpleMailMessage.class));
     verify(redisTemplate.opsForValue())
-        .set(eq("email:verification:" + email), anyString(), eq(Duration.ofMinutes(5)));
+        .set(eq("email:SIGNUP:verification:" + email), anyString(), eq(Duration.ofMinutes(5)));
   }
 
   @Test
@@ -53,7 +53,7 @@ public class EmailServiceTest {
     String code = "123456";
     VerificationPurpose purpose = VerificationPurpose.SIGNUP;
 
-    when(redisTemplate.opsForValue().get("email:verification:" + email)).thenReturn(code);
+    when(redisTemplate.opsForValue().get("email:SIGNUP:verification:" + email)).thenReturn(code);
 
     // when & then
     emailService.verifyCode(email, code,purpose);
@@ -67,11 +67,11 @@ public class EmailServiceTest {
     String savedCode = "123456";
     String wrongCode = "654321";
     VerificationPurpose purpose = VerificationPurpose.SIGNUP;
-    when(redisTemplate.opsForValue().get("email:verification:" + email)).thenReturn(savedCode);
+    when(redisTemplate.opsForValue().get("email:SIGNUP:verification:" + email)).thenReturn(savedCode);
 
     // when & then
     assertThatThrownBy(() -> emailService.verifyCode(email, wrongCode,purpose))
             .isInstanceOf(UnihubException.class)
-            .hasMessage("이메일 인증 코드가 잘못되었습니다.");
+            .hasMessage("인증 코드가 일치하지 않습니다.");
   }
 }
