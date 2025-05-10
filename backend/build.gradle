@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.4.5'
 	id 'io.spring.dependency-management' version '1.1.7'
+    id 'io.sentry.jvm.gradle' version '5.5.0'
 }
 
 group = 'com.WEB4_5_GPT_BE'
@@ -79,6 +80,9 @@ dependencies {
     // 자동 완성 및 IDE 인식용 메타데이터를 생성하는 annotation processor
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
+    // sentry 실행시 예외 전송용
+    implementation 'io.sentry:sentry-spring-boot-starter:6.30.0'
+
     // AWS S3 (필요 시 주석 해제)
     // implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.3.0'
 }
@@ -86,4 +90,20 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+def dotenv = new Properties()
+def envFile = file(".env")
+
+if (envFile.exists()) {
+    envFile.withInputStream { stream -> dotenv.load(stream) }
+} else {
+    println "[WARN] .env 파일이 없습니다. SENTRY_AUTH_TOKEN 로딩 실패 가능성 있음."
+}
+
+sentry {
+    includeSourceContext = true
+    org = "unihub"
+    projectName = "unihub"
+    authToken = dotenv["SENTRY_AUTH_TOKEN"]
 }
