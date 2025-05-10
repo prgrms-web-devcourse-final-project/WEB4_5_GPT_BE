@@ -16,6 +16,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
+import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.EmailService;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.MemberService;
@@ -54,12 +55,12 @@ public class InitDataHelper {
     }
 
     public void createStudent(String email, String pw, String name, String studentCode, Long univId, Long majorId) {
-        emailService.markEmailAsVerified(email);
+        emailService.markEmailAsVerified(email, VerificationPurpose.SIGNUP);
         memberService.signUpStudent(new StudentSignUpRequest(email, pw, name, studentCode, univId, majorId, 1, 1, Role.STUDENT));
     }
 
     public void create2ndStudent(String email, String pw, String name, String studentCode, Long univId, Long majorId) {
-        emailService.markEmailAsVerified(email);
+        emailService.markEmailAsVerified(email,VerificationPurpose.SIGNUP);
         memberService.signUpStudent(new StudentSignUpRequest(email, pw, name, studentCode, univId, majorId, 2, 1, Role.STUDENT));
     }
 
@@ -98,7 +99,7 @@ public class InitDataHelper {
     }
 
     public Member createProfessor(String email, String pw, String name, String empCode, Long univId, Long majorId, ApprovalStatus status) {
-        emailService.markEmailAsVerified(email);
+        emailService.markEmailAsVerified(email,VerificationPurpose.SIGNUP);
         memberService.signUpProfessor(new ProfessorSignUpRequest(email, pw, name, empCode, univId, majorId, Role.PROFESSOR));
         Member professor = memberRepository.findByEmail(email).orElseThrow();
         professor.getProfessorProfile().setApprovalStatus(status);

@@ -10,6 +10,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageStudentR
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.ProfessorCourseResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.UpdateMajorResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
+import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
 
 import java.util.List;
 import java.util.Optional;
@@ -22,10 +23,10 @@ public interface MemberService {
     void signUpProfessor(ProfessorSignUpRequest request);
 
     // 이메일로 인증코드 발송
-    void sendVerificationCode(String email);
+    void sendVerificationCode(String email, VerificationPurpose purpose);
 
     // 이메일 인증 코드 검증
-    void verifyEmailCode(EmailCodeVerificationRequest request);
+    void verifyEmailCode(String email, String code, VerificationPurpose purpose);
 
     // 비밀번호 재설정
     void resetPassword(PasswordResetConfirmationRequest request);
