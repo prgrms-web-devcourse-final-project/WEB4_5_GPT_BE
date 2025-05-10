@@ -411,27 +411,61 @@ class CourseServiceTest {
 
     // 나머지 2가지 검색 타입에 대한 테스트 생략
     @Test
-    @DisplayName("검색어(제목, 교수명)와 페이지네이션 정보로 강의를 목록 조회한다.")
-    void givenSearchKeywordsAndPaginationObject_whenRequestingCourseList_thenReturnCourseList() {
+    @DisplayName("검색어(제목, 교수명, 전공, 학년, 학기)와 페이지네이션 정보로 강의 목록을 조회한다.")
+    void givenSearchConditionsAndPagination_whenRequestingCourseList_thenReturnFilteredCourseList() {
+        // given
         PageRequest pageable = PageRequest.of(0, 5, Sort.by("credit").descending());
         Page<Course> page = new PageImpl<>(
-                List.of(testCourse1, testCourse2, testCourse3),
+                List.of(testCourse1, testCourse2),
                 pageable,
-                12
+                2
         );
+
         SecurityUser authUser = new SecurityUser(testMember1, List.of(new SimpleGrantedAuthority("ROLE_PROFESSOR")));
-        ArgumentCaptor<Long> longCaptor = ArgumentCaptor.forClass(Long.class);
-        given(professorProfileRepository.findByMemberId(testMember1.getId())).willReturn(Optional.of(testProfessorProfile1));
-        given(courseRepository.findWithFilters(longCaptor.capture(), anyString(), anyString(), any(Pageable.class)))
-                .willReturn(page);
 
-        Page<CourseWithFullScheduleResponse> result = courseService.findAllCoursesModeFull("", "", authUser, pageable);
-        Long captured = longCaptor.getValue();
+        Long majorId = 1L;
+        Integer grade = 2;
+        Integer semester = 1;
 
-        assertThat(result).isInstanceOf(Page.class);
-        assertThat(result.getNumberOfElements()).isEqualTo(3);
-        assertThat(captured).isEqualTo(testProfessorProfile1.getUniversity().getId());
+        ArgumentCaptor<Long> universityIdCaptor = ArgumentCaptor.forClass(Long.class);
+        ArgumentCaptor<String> titleCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> profNameCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<Long> majorIdCaptor = ArgumentCaptor.forClass(Long.class);
+        ArgumentCaptor<Integer> gradeCaptor = ArgumentCaptor.forClass(Integer.class);
+        ArgumentCaptor<Integer> semesterCaptor = ArgumentCaptor.forClass(Integer.class);
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+
+        given(professorProfileRepository.findByMemberId(testMember1.getId()))
+                .willReturn(Optional.of(testProfessorProfile1));
+        given(courseRepository.findWithFilters(
+                universityIdCaptor.capture(),
+                titleCaptor.capture(),
+                profNameCaptor.capture(),
+                majorIdCaptor.capture(),
+                gradeCaptor.capture(),
+                semesterCaptor.capture(),
+                pageableCaptor.capture()
+        )).willReturn(page);
+
+        // when
+        Page<CourseWithFullScheduleResponse> result = courseService.findAllCoursesModeFull(
+                "검색제목", "교수이름", majorId, grade, semester, authUser, pageable
+        );
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getNumberOfElements()).isEqualTo(2);
+        assertThat(universityIdCaptor.getValue()).isEqualTo(testProfessorProfile1.getUniversity().getId());
+        assertThat(titleCaptor.getValue()).isEqualTo("검색제목");
+        assertThat(profNameCaptor.getValue()).isEqualTo("교수이름");
+        assertThat(majorIdCaptor.getValue()).isEqualTo(majorId);
+        assertThat(gradeCaptor.getValue()).isEqualTo(grade);
+        assertThat(semesterCaptor.getValue()).isEqualTo(semester);
+        assertThat(pageableCaptor.getValue()).isEqualTo(pageable);
+
         then(professorProfileRepository).should().findByMemberId(testMember1.getId());
-        then(courseRepository).should().findWithFilters(anyLong(), anyString(), anyString(), any(Pageable.class));
+        then(courseRepository).should().findWithFilters(
+                anyLong(), anyString(), anyString(), any(), any(), any(), any(Pageable.class)
+        );
     }
 }
