@@ -422,7 +422,7 @@ class CourseServiceTest {
         SecurityUser authUser = new SecurityUser(testMember1, List.of(new SimpleGrantedAuthority("ROLE_PROFESSOR")));
         ArgumentCaptor<Long> longCaptor = ArgumentCaptor.forClass(Long.class);
         given(professorProfileRepository.findByMemberId(testMember1.getId())).willReturn(Optional.of(testProfessorProfile1));
-        given(courseRepository.findByTitleLikeAndProfessorNameLike(longCaptor.capture(), anyString(), anyString(), any(Pageable.class)))
+        given(courseRepository.findWithFilters(longCaptor.capture(), anyString(), anyString(), any(Pageable.class)))
                 .willReturn(page);
 
         Page<CourseWithFullScheduleResponse> result = courseService.findAllCoursesModeFull("", "", authUser, pageable);
@@ -432,6 +432,6 @@ class CourseServiceTest {
         assertThat(result.getNumberOfElements()).isEqualTo(3);
         assertThat(captured).isEqualTo(testProfessorProfile1.getUniversity().getId());
         then(professorProfileRepository).should().findByMemberId(testMember1.getId());
-        then(courseRepository).should().findByTitleLikeAndProfessorNameLike(anyLong(), anyString(), anyString(), any(Pageable.class));
+        then(courseRepository).should().findWithFilters(anyLong(), anyString(), anyString(), any(Pageable.class));
     }
 }

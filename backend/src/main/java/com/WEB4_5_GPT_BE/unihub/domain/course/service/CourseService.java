@@ -135,9 +135,13 @@ public class CourseService {
      * @return 조회된 강의에 해당하는 {@link CourseWithFullScheduleResponse} DTO가 담긴 {@link Page} 오브젝트
      */
     // TODO: 응답 DTO가 레코드로 구현되어 있어 조회 타입마다 메소드를 구현했는데, 구현체를 일반 클래스로 바꿔 공통 필드를 상속받게 변경할지를 고려해 볼 것.
-    public Page<CourseWithFullScheduleResponse> findAllCoursesModeFull(String title, String profName, SecurityUser principal, Pageable pageable) {
-        Long authUserUnivId = getUnivIdFromPrincipal(principal);
-        return courseRepository.findByTitleLikeAndProfessorNameLike(authUserUnivId, title, profName, pageable).map(CourseWithFullScheduleResponse::from);
+    public Page<CourseWithFullScheduleResponse> findAllCoursesModeFull(
+            String title, String profName, Long majorId, Integer grade, Integer semester,
+            SecurityUser principal, Pageable pageable) {
+        Long universityId = getUnivIdFromPrincipal(principal);
+        return courseRepository
+                .findWithFilters(universityId, title, profName, majorId, grade, semester, pageable)
+                .map(CourseWithFullScheduleResponse::from);
     }
 
     /**
@@ -148,9 +152,14 @@ public class CourseService {
      * @param pageable 페이지네이션 정보
      * @return 조회된 강의에 해당하는 {@link CourseEnrollmentResponse} DTO가 담긴 {@link Page} 오브젝트
      */
-    public Page<CourseEnrollmentResponse> findAllCoursesModeEnroll(String title, String profName, SecurityUser principal, Pageable pageable) {
+    public Page<CourseEnrollmentResponse> findAllCoursesModeEnroll(
+            String title, String profName, Long majorId, Integer grade, Integer semester,
+            SecurityUser principal, Pageable pageable) {
+
         Long authUserUnivId = getUnivIdFromPrincipal(principal);
-        return courseRepository.findByTitleLikeAndProfessorNameLike(authUserUnivId, title, profName, pageable).map(CourseEnrollmentResponse::from);
+        return courseRepository
+                .findWithFilters(authUserUnivId, title, profName, majorId, grade, semester, pageable)
+                .map(CourseEnrollmentResponse::from);
     }
 
     /**
@@ -161,9 +170,14 @@ public class CourseService {
      * @param pageable 페이지네이션 정보
      * @return 조회된 강의에 해당하는 {@link CourseResponse} DTO가 담긴 {@link Page} 오브젝트
      */
-    public Page<CourseResponse> findAllCoursesModeCatalog(String title, String profName, SecurityUser principal, Pageable pageable) {
+    public Page<CourseResponse> findAllCoursesModeCatalog(
+            String title, String profName, Long majorId, Integer grade, Integer semester,
+            SecurityUser principal, Pageable pageable) {
+
         Long authUserUnivId = getUnivIdFromPrincipal(principal);
-        return courseRepository.findByTitleLikeAndProfessorNameLike(authUserUnivId, title, profName, pageable).map(CourseResponse::from);
+        return courseRepository
+                .findWithFilters(authUserUnivId, title, profName, majorId, grade, semester, pageable)
+                .map(CourseResponse::from);
     }
 
     /**
