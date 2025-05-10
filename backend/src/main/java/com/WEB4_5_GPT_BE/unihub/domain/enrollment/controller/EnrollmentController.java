@@ -9,6 +9,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.EnrollmentService;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.springDoc.apiResponse.EnrollmentApiResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.springDoc.apiResponse.EnrollmentCancelApiResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.springDoc.apiResponse.GetMyEnrollmentListApiResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.springDoc.apiResponse.getMyEnrollmentPeriodApiResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.global.Rq;
 import com.WEB4_5_GPT_BE.unihub.global.response.Empty;
@@ -57,7 +58,8 @@ public class EnrollmentController {
     }
 
     @Operation(summary = "내 수강신청 기간 조회",
-            description = "현재 날짜 기준으로 내 수강신청 기간 정보와 해당 기간에 포함되는지 여부를 조회합니다.")
+            description = "로그인된 학생의 수강신청 기간 정보를 조회합니다. header에 Bearer accessToken이 없다면 접근할 수 없습니다.")
+    @getMyEnrollmentPeriodApiResponse // api 요청에 대한 성공,예외 response 예시를 정의합니다.
     @GetMapping("/periods/me")
     public RsData<StudentEnrollmentPeriodResponse> getMyEnrollmentPeriod() {
 
