@@ -28,12 +28,19 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
         WHERE mj.university.id = :univId
             AND c.title LIKE CONCAT('%', :title, '%')
             AND COALESCE(me.name, "") LIKE CONCAT('%', :profName, '%')
+            AND (:majorId IS NULL OR mj.id = :majorId)
+            AND (:grade IS NULL OR c.grade = :grade)
+            AND (:semester IS NULL OR c.semester = :semester)
     """)
-    Page<Course> findByTitleLikeAndProfessorNameLike(
+    Page<Course> findWithFilters(
             @Param("univId") Long univId,
             @Param("title") String title,
             @Param("profName") String profName,
-            Pageable pageable);
+            @Param("majorId") Long majorId,
+            @Param("grade") Integer grade,
+            @Param("semester") Integer semester,
+            Pageable pageable
+    );
 
     List<Course> findByProfessorId(Long professorId);
 }

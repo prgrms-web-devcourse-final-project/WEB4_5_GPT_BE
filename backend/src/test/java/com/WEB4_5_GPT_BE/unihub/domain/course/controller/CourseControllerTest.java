@@ -11,6 +11,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.global.Rq;
 import com.WEB4_5_GPT_BE.unihub.global.security.CustomAuthenticationFilter;
+import com.WEB4_5_GPT_BE.unihub.global.security.SecurityUser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,6 +25,10 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -199,18 +204,52 @@ class CourseControllerTest {
     @DisplayName("강의 목록 조회 요청시 성공.")
     void givenQueryParams_whenRequestingCourseList_thenReturnCourseList() throws Exception {
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-        given(courseService.findAllCoursesModeFull(anyString(), anyString(), any(), pageableCaptor.capture()))
-                .willReturn(new PageImpl<>(List.of()));
-        // TODO: Enum 대소문자 구분
-        ResultActions resultActions = mockMvc.perform(get("/api/courses?mode=FULL&sort=credit,desc"));
+
+        //SecurityUser 목 생성
+        SecurityUser mockUser = mock(SecurityUser.class);
+
+        //Spring Security 인증 컨텍스트에 설정
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(new UsernamePasswordAuthenticationToken(mockUser, null, List.of(new SimpleGrantedAuthority("ROLE_STUDENT"))));
+        SecurityContextHolder.setContext(context);
+
+        //Service stub
+        given(courseService.findAllCoursesModeFull(
+                anyString(),    // title
+                anyString(),    // profName
+                any(),          // majorId
+                any(),          // grade
+                any(),          // semester
+                any(SecurityUser.class), // principal
+                pageableCaptor.capture()
+        )).willReturn(new PageImpl<>(List.of()));
+
+        //요청 수행
+        ResultActions resultActions = mockMvc.perform(
+                get("/api/courses?mode=FULL&title=프로그래밍&profName=김교수&majorId=1&grade=2&semester=1&sort=credit,desc")
+        );
+
         Pageable captured = pageableCaptor.getValue();
 
+        //응답 검증
         resultActions
                 .andExpect(status().isOk())
                 .andExpect(handler().handlerType(CourseController.class))
                 .andExpect(handler().methodName("getAllCourses"))
                 .andExpect(jsonPath("$.message").value("조회에 성공했습니다."));
-        assertThat(captured.getSort()).isEqualTo(Sort.by("credit").descending());
-        then(courseService).should().findAllCoursesModeFull(anyString(), anyString(), any(), any(Pageable.class));
+
+        //메서드 호출 검증
+        then(courseService).should().findAllCoursesModeFull(
+                eq("프로그래밍"),
+                eq("김교수"),
+                eq(1L),
+                eq(2),
+                eq(1),
+                any(SecurityUser.class),
+                any(Pageable.class)
+        );
     }
+
+
+
 }
