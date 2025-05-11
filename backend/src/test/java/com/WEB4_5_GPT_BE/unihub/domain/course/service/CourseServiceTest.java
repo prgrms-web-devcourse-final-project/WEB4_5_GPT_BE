@@ -13,7 +13,6 @@ import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseScheduleRepositor
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorProfileRepository;
-import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.MajorRepository;
@@ -56,9 +55,6 @@ class CourseServiceTest {
 
     @Mock
     private UniversityRepository universityRepository;
-
-    @Mock
-    private StudentProfileRepository studentProfileRepository;
 
     @Mock
     private ProfessorProfileRepository professorProfileRepository;
@@ -178,20 +174,21 @@ class CourseServiceTest {
         given(universityRepository.findByName(testUniversity1.getName())).willReturn(Optional.of(testUniversity1));
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest3.major()))
                 .willReturn(Optional.of(testCourse2.getMajor()));
-        CourseScheduleDto csd = testCourseRequest3.schedule().getFirst();given(professorProfileRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
+        CourseScheduleDto csd = testCourseRequest3.schedule().getFirst();
+        given(professorProfileRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
                 .willReturn(Optional.of(testProfessorProfile1));
         given(courseScheduleRepository.existsByUnivIdAndLocationAndDayOfWeek(
-                    testUniversity1.getId(),
-                    testCourseRequest3.location(),
-                    csd.day(),
-                    LocalTime.parse(csd.startTime()),
-                    LocalTime.parse(csd.endTime())))
+                testUniversity1.getId(),
+                testCourseRequest3.location(),
+                csd.day(),
+                LocalTime.parse(csd.startTime()),
+                LocalTime.parse(csd.endTime())))
                 .willReturn(false);
         given(courseScheduleRepository.existsByProfEmpIdAndDayOfWeek(
-                    testProfessorProfile1.getEmployeeId(),
-                    csd.day(),
-                    LocalTime.parse(csd.startTime()),
-                    LocalTime.parse(csd.endTime())))
+                testProfessorProfile1.getEmployeeId(),
+                csd.day(),
+                LocalTime.parse(csd.startTime()),
+                LocalTime.parse(csd.endTime())))
                 .willReturn(false);
         given(courseRepository.save(any(Course.class))).willReturn(testCourseRequest3.toEntity(testMajor2, 0, testProfessorProfile1));
 
@@ -246,7 +243,8 @@ class CourseServiceTest {
         given(universityRepository.findByName(testUniversity1.getName())).willReturn(Optional.of(testUniversity1));
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest2.major()))
                 .willReturn(Optional.of(testCourse2.getMajor()));
-        CourseScheduleDto csd = testCourseRequest2.schedule().getFirst();given(professorProfileRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
+        CourseScheduleDto csd = testCourseRequest2.schedule().getFirst();
+        given(professorProfileRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
                 .willReturn(Optional.of(testProfessorProfile1));
         given(courseScheduleRepository.existsByProfEmpIdAndDayOfWeek(
                 testCourseRequest2.employeeId(),
@@ -316,18 +314,20 @@ class CourseServiceTest {
         given(professorProfileRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
                 .willReturn(Optional.of(testProfessorProfile1));
         CourseScheduleDto csd = testCourseRequest3.schedule().getFirst();
-        given(courseScheduleRepository.existsByUnivIdAndLocationAndDayOfWeek(
+        given(courseScheduleRepository.existsByUnivIdAndLocationAndDayOfWeekExcludingCourse(
                 testUniversity1.getId(),
                 testCourseRequest3.location(),
                 csd.day(),
                 LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime())))
+                LocalTime.parse(csd.endTime()),
+                1L))
                 .willReturn(false);
-        given(courseScheduleRepository.existsByProfEmpIdAndDayOfWeek(
+        given(courseScheduleRepository.existsByProfEmpIdAndDayOfWeekExcludingCourse(
                 testProfessorProfile1.getEmployeeId(),
                 csd.day(),
                 LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime())))
+                LocalTime.parse(csd.endTime()),
+                1L))
                 .willReturn(false);
         given(courseRepository.save(any(Course.class))).willReturn(testCourseRequest3.toEntity(testMajor2, 0, testProfessorProfile1));
 
@@ -339,12 +339,21 @@ class CourseServiceTest {
         then(courseRepository).should().findById(1L);
         then(universityRepository).should().findByName(testUniversity1.getName());
         then(majorRepository).should().findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest3.major());
-        then(courseScheduleRepository).should().existsByUnivIdAndLocationAndDayOfWeek(
+        then(professorProfileRepository).should().findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId());
+        then(courseScheduleRepository).should().existsByUnivIdAndLocationAndDayOfWeekExcludingCourse(
                 testUniversity1.getId(),
                 testCourseRequest3.location(),
                 csd.day(),
                 LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime()));
+                LocalTime.parse(csd.endTime()),
+                1L);
+        then(courseScheduleRepository).should().existsByProfEmpIdAndDayOfWeekExcludingCourse(
+                testProfessorProfile1.getEmployeeId(),
+                csd.day(),
+                LocalTime.parse(csd.startTime()),
+                LocalTime.parse(csd.endTime()),
+                1L);
+        then(courseRepository).should().save(any(Course.class));
     }
 
     @Test
@@ -355,12 +364,13 @@ class CourseServiceTest {
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest1.major()))
                 .willReturn(Optional.of(testCourse2.getMajor()));
         CourseScheduleDto csd = testCourseRequest1.schedule().getFirst();
-        given(courseScheduleRepository.existsByUnivIdAndLocationAndDayOfWeek(
+        given(courseScheduleRepository.existsByUnivIdAndLocationAndDayOfWeekExcludingCourse(
                 testUniversity1.getId(),
                 testCourseRequest1.location(),
                 csd.day(),
                 LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime())))
+                LocalTime.parse(csd.endTime()),
+                testCourse1.getId()))
                 .willReturn(true);
 
         Throwable result = catchThrowable(() -> courseService.updateCourse(testCourse1.getId(), testCourseRequest1));
@@ -368,14 +378,16 @@ class CourseServiceTest {
         assertThat(result)
                 .isInstanceOf(UnihubException.class)
                 .hasMessage("강의 장소가 이미 사용 중입니다.");
+        then(courseRepository).should().findById(testCourse1.getId());
         then(universityRepository).should().findByName(testUniversity1.getName());
         then(majorRepository).should().findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest1.major());
-        then(courseScheduleRepository).should().existsByUnivIdAndLocationAndDayOfWeek(
+        then(courseScheduleRepository).should().existsByUnivIdAndLocationAndDayOfWeekExcludingCourse(
                 testUniversity1.getId(),
                 testCourseRequest1.location(),
                 csd.day(),
                 LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime()));
+                LocalTime.parse(csd.endTime()),
+                testCourse1.getId());
     }
 
     @Test
@@ -385,28 +397,31 @@ class CourseServiceTest {
         given(universityRepository.findByName(testUniversity1.getName())).willReturn(Optional.of(testUniversity1));
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest2.major()))
                 .willReturn(Optional.of(testCourse2.getMajor()));
-        CourseScheduleDto csd = testCourseRequest2.schedule().getFirst();given(professorProfileRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
+        CourseScheduleDto csd = testCourseRequest2.schedule().getFirst();
+        given(professorProfileRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
                 .willReturn(Optional.of(testProfessorProfile1));
-        given(courseScheduleRepository.existsByProfEmpIdAndDayOfWeek(
+        given(courseScheduleRepository.existsByProfEmpIdAndDayOfWeekExcludingCourse(
                 testCourseRequest2.employeeId(),
                 csd.day(),
                 LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime())))
+                LocalTime.parse(csd.endTime()),
+                testCourse1.getId()))
                 .willReturn(true);
-
 
         Throwable result = catchThrowable(() -> courseService.updateCourse(testCourse1.getId(), testCourseRequest2));
 
         assertThat(result)
                 .isInstanceOf(UnihubException.class)
                 .hasMessage("강사/교수가 이미 수업 중입니다.");
+        then(courseRepository).should().findById(testCourse1.getId());
         then(universityRepository).should().findByName(testUniversity1.getName());
         then(majorRepository).should().findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest1.major());
-        then(courseScheduleRepository).should().existsByProfEmpIdAndDayOfWeek(
+        then(courseScheduleRepository).should().existsByProfEmpIdAndDayOfWeekExcludingCourse(
                 testCourseRequest2.employeeId(),
                 csd.day(),
                 LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime()));
+                LocalTime.parse(csd.endTime()),
+                testCourse1.getId());
     }
 
     // 나머지 2가지 검색 타입에 대한 테스트 생략
