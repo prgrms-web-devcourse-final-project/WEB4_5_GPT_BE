@@ -145,6 +145,7 @@ public class CourseController {
             @Parameter(description = "학기 (1 또는 2)", example = "1")
             @RequestParam(required = false) Integer semester,
 
+
         @AuthenticationPrincipal SecurityUser principal,
         @Parameter(hidden = true)
         @PageableDefault @ParameterObject Pageable pageable) {
