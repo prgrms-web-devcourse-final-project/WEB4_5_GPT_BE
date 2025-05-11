@@ -127,17 +127,23 @@ public class CourseController {
     })
     @GetMapping
     public RsData<Page<?>> getAllCourses(
-        @Parameter(required = true, description = "목록 반환 모드; ENROLL: 수강신청시 목록 조회, CATALOG: 강의 조회시 목록 조회")
-        @RequestParam("mode") CourseListReturnMode mode,
-        @Parameter(description = "강의 제목 검색 키워드")
-        @RequestParam(name = "title", defaultValue = "") String title,
-        @Parameter(description = "강사/교수 이름 검색 키워드")
-        @RequestParam(name = "profName", defaultValue = "") String profName,
+            @Parameter(required = true, description = "반환할 목록 형식: FULL, ENROLL, CATALOG 중 하나", example = "FULL")
+            @RequestParam("mode") CourseListReturnMode mode,
 
-        // 추가된 필터링 파라미터
-        @Parameter(description = "전공 ID") @RequestParam(required = false) Long majorId,
-        @Parameter(description = "학년") @RequestParam(required = false) Integer grade,
-        @Parameter(description = "학기") @RequestParam(required = false) Integer semester,
+            @Parameter(description = "강의 제목 키워드 (검색용)", example = "자료구조")
+            @RequestParam(name = "title", defaultValue = "") String title,
+
+            @Parameter(description = "교수 이름 키워드 (검색용)", example = "홍길동")
+            @RequestParam(name = "profName", defaultValue = "") String profName,
+
+            @Parameter(description = "전공 ID (숫자)", example = "3")
+            @RequestParam(required = false) Long majorId,
+
+            @Parameter(description = "학년 (1~4 중 하나)", example = "2")
+            @RequestParam(required = false) Integer grade,
+
+            @Parameter(description = "학기 (1 또는 2)", example = "1")
+            @RequestParam(required = false) Integer semester,
 
         @AuthenticationPrincipal SecurityUser principal,
         @Parameter(hidden = true)
