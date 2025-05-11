@@ -8,12 +8,14 @@ import com.WEB4_5_GPT_BE.unihub.domain.course.exception.CourseNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.EnrollmentPeriodRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response.MyEnrollmentResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response.StudentEnrollmentPeriodResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.entity.Enrollment;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.*;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.repository.EnrollmentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
+import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +49,9 @@ class EnrollmentServiceTest {
     @Mock
     private CourseRepository courseRepository;
 
+    @Mock
+    private StudentProfileRepository studentProfileRepository;
+
     @InjectMocks
     private EnrollmentService enrollmentService;
 
@@ -79,6 +84,9 @@ class EnrollmentServiceTest {
         profile.setUniversity(uni);
 
         studentMember.setStudentProfile(profile);
+
+        when(studentProfileRepository.findByMemberId(studentMember.getId()))
+                .thenReturn(Optional.ofNullable(profile));
     }
 
     @Test
@@ -173,6 +181,19 @@ class EnrollmentServiceTest {
                 .semester(profile.getSemester())
                 .startDate(today.minusDays(StartDate))
                 .endDate(today.plusDays(endDate))
+                .build();
+    }
+
+    private EnrollmentPeriod createNotYetPeriod(int StartDate, int endDate) {
+        LocalDate today = LocalDate.now();
+
+        return EnrollmentPeriod.builder()
+                .university(profile.getUniversity())
+                .year(today.getYear())
+                .grade(profile.getGrade())
+                .semester(profile.getSemester())
+                .startDate(today.plusDays(StartDate))   // 시작일이 내일
+                .endDate(today.plusDays(endDate))     // 종료일이 모레
                 .build();
     }
 
@@ -283,14 +304,7 @@ class EnrollmentServiceTest {
         LocalDate today = LocalDate.now();
 
         // enrollmentPeriodRepository에서 today가 기간 밖인 EnrollmentPeriod 반환
-        EnrollmentPeriod period = EnrollmentPeriod.builder()
-                .university(profile.getUniversity())
-                .year(today.getYear())
-                .grade(profile.getGrade())
-                .semester(profile.getSemester())
-                .startDate(today.plusDays(1))   // 시작일이 내일
-                .endDate(today.plusDays(2))     // 종료일이 모레
-                .build();
+        EnrollmentPeriod period = createNotYetPeriod(1, 2);
 
         // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
         stubEnrollmentPeriod(period);
@@ -421,14 +435,7 @@ class EnrollmentServiceTest {
         LocalDate today = LocalDate.now();
 
         // enrollmentPeriodRepository에서 today가 기간 밖인 EnrollmentPeriod 반환
-        EnrollmentPeriod period = EnrollmentPeriod.builder()
-                .university(profile.getUniversity())
-                .year(today.getYear())
-                .grade(profile.getGrade())
-                .semester(profile.getSemester())
-                .startDate(today.plusDays(1))   // 시작일이 내일
-                .endDate(today.plusDays(2))     // 종료일이 모레
-                .build();
+        EnrollmentPeriod period = createNotYetPeriod(1, 2);
 
         // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
         stubEnrollmentPeriod(period);
@@ -600,4 +607,106 @@ class EnrollmentServiceTest {
         // save 호출이 일어나지 않아야 함
         verify(enrollmentRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("내 수강신청 기간 조회 - 성공")
+    void getMyEnrollmentPeriod_success() {
+
+        // given: today 기준으로 기간 안에 들어오는 start/end 날짜 설정
+        EnrollmentPeriod period = createPeriod(1, 1);
+        // id가 null 이면 테스트에서 비교하기 불편하니 임의로 부여
+        stubEnrollmentPeriod(period);
+
+        // when
+        StudentEnrollmentPeriodResponse response = enrollmentService.getMyEnrollmentPeriod(studentMember);
+
+        // then
+        assertThat(response.studentId()).isEqualTo(profile.getId());
+        assertThat(response.universityName()).isEqualTo(profile.getUniversity().getName());
+        assertThat(response.year()).isEqualTo(period.getYear());
+        assertThat(response.grade()).isEqualTo(period.getGrade());
+        assertThat(response.semester()).isEqualTo(period.getSemester());
+        assertThat(response.startDate()).isEqualTo(period.getStartDate());
+        assertThat(response.endDate()).isEqualTo(period.getEndDate());
+        assertThat(response.isEnrollmentOpen()).isTrue();
+
+    }
+
+    @Test
+    @DisplayName("내 수강신청 기간 조회 - 성공 - 아직 시작하지 않은 경우")
+    void getMyEnrollmentPeriod_fail1() {
+
+        // given: today 기준으로 기간 안에 들어오는 start/end 날짜 설정
+        EnrollmentPeriod period = createNotYetPeriod(1, 2); // startDate = 내일, endDate = 모레
+
+        stubEnrollmentPeriod(period); // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
+
+        // when
+        StudentEnrollmentPeriodResponse response = enrollmentService.getMyEnrollmentPeriod(studentMember);
+
+        // then
+        assertThat(response.studentId()).isEqualTo(profile.getId());
+        assertThat(response.universityName()).isEqualTo(profile.getUniversity().getName());
+        assertThat(response.year()).isEqualTo(period.getYear());
+        assertThat(response.grade()).isEqualTo(period.getGrade());
+        assertThat(response.semester()).isEqualTo(period.getSemester());
+        assertThat(response.startDate()).isEqualTo(period.getStartDate());
+        assertThat(response.endDate()).isEqualTo(period.getEndDate());
+        assertThat(response.isEnrollmentOpen()).isFalse();
+
+    }
+
+    @Test
+    @DisplayName("내 수강신청 기간 조회 - 이미 지난 기간")
+    void getMyEnrollmentPeriod_fail2() {
+        // given: 오늘 기준 이미 지난 기간 (endDate < today)
+        EnrollmentPeriod period = createPeriod(5, -1); // startDate = today.minusDays(5), endDate = today.minusDays(1)
+        stubEnrollmentPeriod(period);
+
+        // when
+        StudentEnrollmentPeriodResponse response =
+                enrollmentService.getMyEnrollmentPeriod(studentMember);
+
+        // then: 기간 정보는 그대로 전달되지만 isEnrollmentOpen == false
+        assertThat(response.studentId()).isEqualTo(profile.getId());
+        assertThat(response.universityName()).isEqualTo(profile.getUniversity().getName());
+        assertThat(response.year()).isEqualTo(period.getYear());
+        assertThat(response.grade()).isEqualTo(period.getGrade());
+        assertThat(response.semester()).isEqualTo(period.getSemester());
+        assertThat(response.startDate()).isEqualTo(period.getStartDate());
+        assertThat(response.endDate()).isEqualTo(period.getEndDate());
+        assertThat(response.isEnrollmentOpen()).isFalse();
+    }
+
+    @Test
+    @DisplayName("내 수강신청 기간 조회 - 실패 - 수강신청 기간 정보가 없는 경우")
+    void getMyEnrollmentPeriod_fail3() {
+
+        LocalDate today = LocalDate.now();
+
+        when(enrollmentPeriodRepository
+                .findByUniversityIdAndYearAndGradeAndSemester(
+                        eq(profile.getUniversity().getId()),
+                        eq(today.getYear()),
+                        eq(profile.getGrade()),
+                        eq(profile.getSemester())
+                ))
+                .thenReturn(Optional.empty());
+
+        // when
+        StudentEnrollmentPeriodResponse response = enrollmentService.getMyEnrollmentPeriod(studentMember);
+
+        System.out.println(response.toString());
+
+        // then: isEnrollmentOpen=false, 기타 기간 정보는 null
+        assertThat(response.studentId()).isNull();
+        assertThat(response.universityName()).isNull();
+        assertThat(response.grade()).isNull();
+        assertThat(response.semester()).isNull();
+        assertThat(response.startDate()).isNull();
+        assertThat(response.endDate()).isNull();
+        assertThat(response.isEnrollmentOpen()).isFalse();
+
+    }
+
 }
