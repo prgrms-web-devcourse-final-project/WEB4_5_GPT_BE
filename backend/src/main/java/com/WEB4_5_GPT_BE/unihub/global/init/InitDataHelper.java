@@ -53,14 +53,9 @@ public class InitDataHelper {
         return majorRepository.save(Major.builder().name(name).university(university).build());
     }
 
-    public void createStudent(String email, String pw, String name, String studentCode, Long univId, Long majorId) {
+    public void createStudent(String email, String pw, String name, String studentCode, Long univId, Long majorId, Integer grade, Integer semester) {
         emailService.markEmailAsVerified(email);
-        memberService.signUpStudent(new StudentSignUpRequest(email, pw, name, studentCode, univId, majorId, 1, 1, Role.STUDENT));
-    }
-
-    public void create2ndStudent(String email, String pw, String name, String studentCode, Long univId, Long majorId) {
-        emailService.markEmailAsVerified(email);
-        memberService.signUpStudent(new StudentSignUpRequest(email, pw, name, studentCode, univId, majorId, 2, 1, Role.STUDENT));
+        memberService.signUpStudent(new StudentSignUpRequest(email, pw, name, studentCode, univId, majorId, grade, semester, Role.STUDENT));
     }
 
     public Course createCourse(String title, Major major, String location,

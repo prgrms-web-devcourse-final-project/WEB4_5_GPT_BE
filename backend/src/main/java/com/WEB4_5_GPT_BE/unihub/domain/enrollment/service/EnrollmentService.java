@@ -7,17 +7,22 @@ import com.WEB4_5_GPT_BE.unihub.domain.course.exception.CourseNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.EnrollmentPeriodRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response.MyEnrollmentResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response.StudentEnrollmentPeriodResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.entity.Enrollment;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.*;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.repository.EnrollmentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
-import jakarta.transaction.Transactional;
+import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.StudentProfileNotFoundException;
+import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 수강 신청, 취소, 내 수강목록 조회 등의
@@ -29,6 +34,7 @@ public class EnrollmentService {
 
     private final EnrollmentRepository enrollmentRepository; // 수강신청 Repository
     private final EnrollmentPeriodRepository enrollmentPeriodRepository; // 수강신청 기간 Repository
+    private final StudentProfileRepository studentProfileRepository;
     private final CourseRepository courseRepository; // 강좌 Repository
     private final int MAXIMUM_CREDIT = 21; // 최대 학점 상수 (21학점)
 
@@ -42,7 +48,8 @@ public class EnrollmentService {
     public List<MyEnrollmentResponse> getMyEnrollmentList(Member student) {
 
         // student → StudentProfile
-        StudentProfile profile = student.getStudentProfile();
+        StudentProfile profile = studentProfileRepository.findByMemberId(student.getId())
+                .orElseThrow(StudentProfileNotFoundException::new);
 
         // 해당 학생의 수강신청 목록을 조회하고, DTO로 변환하여 반환
         return enrollmentRepository
@@ -63,8 +70,10 @@ public class EnrollmentService {
      */
     @Transactional
     public void cancelMyEnrollment(Member student, Long courseId) {
+
         // Member → StudentProfile 조회
-        StudentProfile profile = student.getStudentProfile();
+        StudentProfile profile = studentProfileRepository.findByMemberId(student.getId())
+                .orElseThrow(StudentProfileNotFoundException::new);
 
         // 수강 취소 가능 기간인지 검증
         ensureEnrollmentPeriodActive(profile);
@@ -97,7 +106,10 @@ public class EnrollmentService {
         EnrollmentPeriod period = findEnrollmentPeriod(profile, today);
 
         // 2) 조회된 수강신청 기간 내에 오늘(요청일자)이 포함되는지 검증
-        validateWithinPeriod(period, today);
+        if (!isWithinPeriod(period, today)) {
+            throw new EnrollmentPeriodClosedException();
+        }
+
     }
 
     /**
@@ -122,15 +134,15 @@ public class EnrollmentService {
 
     /**
      * 조회된 수강신청 기간에 오늘 날짜가 포함되는지 확인한다.
+     * 오늘 날짜가 수강 신청 시작일 이후이고 종료일 이전인지 확인합니다.
      *
      * @param period 조회된 EnrollmentPeriod
      * @param today  확인할 날짜
-     * @throws EnrollmentPeriodClosedException 기간 외인 경우
+     * @return true: 오늘 날짜가 수강신청 기간 내에 포함됨
      */
-    private void validateWithinPeriod(EnrollmentPeriod period, LocalDate today) {
-        if (today.isBefore(period.getStartDate()) || today.isAfter(period.getEndDate())) {
-            throw new EnrollmentPeriodClosedException();
-        }
+    private boolean isWithinPeriod(EnrollmentPeriod period, LocalDate today) {
+        return period.getStartDate().isBefore(today)
+                && period.getEndDate().isAfter(today);
     }
 
     /**
@@ -185,7 +197,8 @@ public class EnrollmentService {
     @Transactional
     public void enrollment(Member student, Long courseId) {
         // Member → StudentProfile 추출
-        StudentProfile profile = student.getStudentProfile();
+        StudentProfile profile = studentProfileRepository.findByMemberId(student.getId())
+                .orElseThrow(StudentProfileNotFoundException::new);
 
         // 수강 신청 가능 기간인지 검증
         ensureEnrollmentPeriodActive(profile);
@@ -316,4 +329,34 @@ public class EnrollmentService {
                 && b.getStartTime().isBefore(a.getEndTime());
     }
 
+    /**
+     * 학생의 수강신청 기간을 조회합니다.
+     *
+     * @param student 로그인 인증된 학생 정보
+     * @return 수강신청 기간에 해당하는 {@link StudentEnrollmentPeriodResponse} DTO
+     */
+    @Transactional
+    public StudentEnrollmentPeriodResponse getMyEnrollmentPeriod(Member student) {
+
+        StudentProfile profile = studentProfileRepository.findByMemberId(student.getId())
+                .orElseThrow(StudentProfileNotFoundException::new); // 학생 프로필 정보
+
+        University university = profile.getUniversity(); // 학생 소속 대학교 정보
+        LocalDate today = LocalDate.now(); // 오늘 날짜
+
+        // 1) 학생 정보에 해당하는 수강신청 기간 조회
+        Optional<EnrollmentPeriod> opEnrollmentPeriod = enrollmentPeriodRepository
+                .findByUniversityIdAndYearAndGradeAndSemester(
+                        university.getId(), today.getYear(), profile.getGrade(), profile.getSemester()
+                );
+
+        // 2) 조회된 수강신청 기간 내에 오늘(요청일자)이 포함되는지 검증
+        // 3) 수강신청 기간이 없거나 오늘 날짜가 포함되지 않으면 isEnrollmentOpen=false가 포함된 DTO 반환
+        return opEnrollmentPeriod
+                .map(period -> {
+                    boolean isOpen = isWithinPeriod(period, today);
+                    return StudentEnrollmentPeriodResponse.from(period, profile, isOpen);
+                })
+                .orElse(StudentEnrollmentPeriodResponse.notOpen());
+    }
 }
