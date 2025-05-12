@@ -13,11 +13,14 @@ import com.WEB4_5_GPT_BE.unihub.domain.enrollment.entity.Enrollment;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.repository.EnrollmentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Admin;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
 import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
+import com.WEB4_5_GPT_BE.unihub.domain.member.repository.AdminRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.EmailService;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.MemberService;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
@@ -40,6 +43,8 @@ public class InitDataHelper {
     private final MajorRepository majorRepository;
     private final MemberService memberService;
     private final MemberRepository memberRepository;
+    private final ProfessorRepository professorRepository;
+    private final AdminRepository adminRepository;
     private final EmailService emailService;
     private final CourseRepository courseRepository;
     private final CourseScheduleRepository courseScheduleRepository;
@@ -60,7 +65,7 @@ public class InitDataHelper {
     }
 
     public Course createCourse(String title, Major major, String location,
-                               Integer capacity, Integer enrolled, Integer credit, ProfessorProfile professor,
+                               Integer capacity, Integer enrolled, Integer credit, Professor professor,
                                Integer grade, Integer semester, String coursePlanAttachment) {
         return courseRepository.save(
                 Course.builder()
@@ -96,19 +101,18 @@ public class InitDataHelper {
     public Member createProfessor(String email, String pw, String name, String empCode, Long univId, Long majorId, ApprovalStatus status) {
         emailService.markEmailAsVerified(email,VerificationPurpose.SIGNUP);
         memberService.signUpProfessor(new ProfessorSignUpRequest(email, pw, name, empCode, univId, majorId, Role.PROFESSOR));
-        Member professor = memberRepository.findByEmail(email).orElseThrow();
-        professor.getProfessorProfile().setApprovalStatus(status);
-        return memberRepository.save(professor);
+        Professor professor = (Professor) memberRepository.findByEmail(email).orElseThrow();
+        professor.setApprovalStatus(status);
+        return professorRepository.save(professor);
     }
 
     public void createAdmin(String email, String pw, String name, PasswordEncoder encoder) {
-        Member admin = Member.builder()
+        Admin admin = Admin.builder()
                 .email(email)
                 .password(encoder.encode(pw))
                 .name(name)
-                .role(Role.ADMIN)
                 .build();
-        memberRepository.save(admin);
+        adminRepository.save(admin);
     }
 
     public long countMembers() {
@@ -128,10 +132,10 @@ public class InitDataHelper {
 
         Member member = optionalMember.get();
 
-        if (member.getRole() != Role.PROFESSOR) return;
+        if (!(member instanceof Professor)) return;
 
-        ProfessorProfile profile = member.getProfessorProfile();
-        if (profile != null && profile.getApprovalStatus() == null) {
+        Professor profile = (Professor) member;
+        if (profile.getApprovalStatus() == null) {
             profile.setApprovalStatus(status);
             memberRepository.save(member);
         }
@@ -142,7 +146,7 @@ public class InitDataHelper {
     }
 
     public void createEnrollment(Member student, Long courseId) {
-        StudentProfile profile = student.getStudentProfile();
+        Student profile = (Student) student;
         Course course = courseRepository.findById(courseId).get();
         course.incrementEnrolled();
 

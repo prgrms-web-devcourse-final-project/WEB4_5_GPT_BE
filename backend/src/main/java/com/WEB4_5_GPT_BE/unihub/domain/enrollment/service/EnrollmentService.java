@@ -12,9 +12,9 @@ import com.WEB4_5_GPT_BE.unihub.domain.enrollment.entity.Enrollment;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.*;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.repository.EnrollmentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
 import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.StudentProfileNotFoundException;
-import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,7 +34,7 @@ public class EnrollmentService {
 
     private final EnrollmentRepository enrollmentRepository; // 수강신청 Repository
     private final EnrollmentPeriodRepository enrollmentPeriodRepository; // 수강신청 기간 Repository
-    private final StudentProfileRepository studentProfileRepository;
+    private final StudentRepository studentRepository;
     private final CourseRepository courseRepository; // 강좌 Repository
     private final int MAXIMUM_CREDIT = 21; // 최대 학점 상수 (21학점)
 
@@ -48,7 +48,7 @@ public class EnrollmentService {
     public List<MyEnrollmentResponse> getMyEnrollmentList(Member student) {
 
         // student → StudentProfile
-        StudentProfile profile = studentProfileRepository.findByMemberId(student.getId())
+        Student profile = studentRepository.findById(student.getId())
                 .orElseThrow(StudentProfileNotFoundException::new);
 
         // 해당 학생의 수강신청 목록을 조회하고, DTO로 변환하여 반환
@@ -72,7 +72,7 @@ public class EnrollmentService {
     public void cancelMyEnrollment(Member student, Long courseId) {
 
         // Member → StudentProfile 조회
-        StudentProfile profile = studentProfileRepository.findByMemberId(student.getId())
+        Student profile = studentRepository.findById(student.getId())
                 .orElseThrow(StudentProfileNotFoundException::new);
 
         // 수강 취소 가능 기간인지 검증
@@ -98,7 +98,7 @@ public class EnrollmentService {
      * @throws EnrollmentPeriodNotFoundException 수강신청 기간 정보가 없는 경우
      * @throws EnrollmentPeriodClosedException   수강신청 기간 외 요청인 경우
      */
-    private void ensureEnrollmentPeriodActive(StudentProfile profile) {
+    private void ensureEnrollmentPeriodActive(Student profile) {
         // 오늘 날짜 조회
         LocalDate today = LocalDate.now();
 
@@ -120,7 +120,7 @@ public class EnrollmentService {
      * @return 학생 정보와 일치하는 수강 신청 기간 정보
      * @throws EnrollmentPeriodNotFoundException 기간 정보가 없는 경우
      */
-    private EnrollmentPeriod findEnrollmentPeriod(StudentProfile profile, LocalDate today) {
+    private EnrollmentPeriod findEnrollmentPeriod(Student profile, LocalDate today) {
         // (학교·연도·학년·학기)를 기준으로 수강신청 기간 조회
         return enrollmentPeriodRepository
                 .findByUniversityIdAndYearAndGradeAndSemester(
@@ -197,7 +197,7 @@ public class EnrollmentService {
     @Transactional
     public void enrollment(Member student, Long courseId) {
         // Member → StudentProfile 추출
-        StudentProfile profile = studentProfileRepository.findByMemberId(student.getId())
+        Student profile = studentRepository.findById(student.getId())
                 .orElseThrow(StudentProfileNotFoundException::new);
 
         // 수강 신청 가능 기간인지 검증
@@ -223,7 +223,7 @@ public class EnrollmentService {
     /**
      * 수강 신청이 가능한지 여러 예외 상황을 검증합니다.
      */
-    private void ensureEnrollmentAllowed(StudentProfile profile, Course course) {
+    private void ensureEnrollmentAllowed(Student profile, Course course) {
         ensureCapacityAvailable(course); // 정원 초과 시 예외 처리
         ensureNotAlreadyEnrolled(profile, course); // 동일강좌 중복 신청 방지
 
@@ -249,7 +249,7 @@ public class EnrollmentService {
      *
      * @throws DuplicateEnrollmentException 이미 신청되어 있으면
      */
-    private void ensureNotAlreadyEnrolled(StudentProfile profile, Course course) {
+    private void ensureNotAlreadyEnrolled(Student profile, Course course) {
         Long courseId = course.getId();
         if (enrollmentRepository.existsByCourseIdAndStudentId(courseId, profile.getId())) {
             throw new DuplicateEnrollmentException();
@@ -338,7 +338,7 @@ public class EnrollmentService {
     @Transactional
     public StudentEnrollmentPeriodResponse getMyEnrollmentPeriod(Member student) {
 
-        StudentProfile profile = studentProfileRepository.findByMemberId(student.getId())
+        Student profile = studentRepository.findById(student.getId())
                 .orElseThrow(StudentProfileNotFoundException::new); // 학생 프로필 정보
 
         University university = profile.getUniversity(); // 학생 소속 대학교 정보

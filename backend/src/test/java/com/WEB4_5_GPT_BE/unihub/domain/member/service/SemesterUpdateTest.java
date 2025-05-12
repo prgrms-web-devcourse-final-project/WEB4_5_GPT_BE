@@ -1,7 +1,7 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
-import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
+import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.scheduler.SemesterUpdateScheduler;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,7 +25,7 @@ import static org.mockito.Mockito.*;
 public class SemesterUpdateTest {
 
     @Mock
-    private StudentProfileRepository studentProfileRepository;
+    private StudentRepository studentRepository;
 
     @Mock
     private Clock clock;
@@ -40,14 +40,14 @@ public class SemesterUpdateTest {
     @DisplayName("학기 업데이트 페이징 정상 동작 테스트")
     void testUpdateAllStudentSemesters() {
         // Given
-        List<StudentProfile> studentList = new ArrayList<>();
-        studentList.add(mock(StudentProfile.class));
+        List<Student> studentList = new ArrayList<>();
+        studentList.add(mock(Student.class));
 
-        Page<StudentProfile> studentPage = new PageImpl<>(studentList);
-        Page<StudentProfile> emptyPage = new PageImpl<>(Collections.emptyList());
+        Page<Student> studentPage = new PageImpl<>(studentList);
+        Page<Student> emptyPage = new PageImpl<>(Collections.emptyList());
 
         // mock 설정: findAll 사용 시 처음에는 데이터 있는 페이지, 두 번째는 빈 페이지 반환
-        when(studentProfileRepository.findAll(any(Pageable.class)))
+        when(studentRepository.findAll(any(Pageable.class)))
                 .thenReturn(studentPage)
                 .thenReturn(emptyPage);
 
@@ -56,7 +56,7 @@ public class SemesterUpdateTest {
 
         // Then
         // 1. findAll 메소드 호출 확인 (적어도 1번 이상)
-        verify(studentProfileRepository, atLeastOnce()).findAll(any(Pageable.class));
+        verify(studentRepository, atLeastOnce()).findAll(any(Pageable.class));
 
         // 2. 기본 기능만 확인 (메소드가 오류 없이 완료되는지)
         // 테스트가 여기까지 오면 성공

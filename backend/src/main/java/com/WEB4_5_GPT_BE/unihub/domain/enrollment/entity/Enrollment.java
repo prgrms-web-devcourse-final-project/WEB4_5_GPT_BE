@@ -2,7 +2,7 @@ package com.WEB4_5_GPT_BE.unihub.domain.enrollment.entity;
 
 import com.WEB4_5_GPT_BE.unihub.domain.common.entity.BaseTimeEntity;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -34,5 +34,5 @@ public class Enrollment extends BaseTimeEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)
-    private StudentProfile student;  // 수강신청한 학생 프로필
+    private Student student;  // 수강신청한 학생 프로필
 }
