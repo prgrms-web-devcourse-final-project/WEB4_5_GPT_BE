@@ -11,6 +11,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+/**
+ * AWS S3에 관련된 비즈니스 로직을 처리하는 서비스입니다.
+ */
 @Service
 @RequiredArgsConstructor
 public class S3Service {
@@ -20,14 +23,26 @@ public class S3Service {
     @Value("${spring.cloud.aws.s3.bucket}")
     private String bucketName;
 
+    /**
+     * MultipartFile을 S3에 업로드하고, 업로드된 파일의 URL을 반환합니다.
+     * <p>
+     * 업로드된 파일은 S3에 저장되며, URL을 통해 접근할 수 있습니다.
+     * S3에 퍼블릭 읽기 권한을 부여하고 고정적인 URL을 부여받기 위해 버킷 정책(Bucket Policy)이 설정되어 있어야 합니다.
+     *
+     * @param file 업로드할 파일
+     * @return 업로드된 파일의 URL
+     * @throws IOException 파일 처리 중 발생하는 예외
+     */
     public String upload(MultipartFile file) throws IOException {
+
         // 1) 임시 파일 생성
         Path filePath = Files.createTempFile("up-", "-" + file.getOriginalFilename());
         file.transferTo(filePath.toFile());
 
-        // 2) public-read ACL 로 업로드
+        // 2) S3에 저장할 키 생성
         String key = System.currentTimeMillis() + "_" + file.getOriginalFilename();
 
+        // S3에 파일 업로드 (KEY, FILE)
         s3Client.putObject(
                 PutObjectRequest.builder()
                         .bucket(bucketName)
@@ -36,7 +51,7 @@ public class S3Service {
                 filePath
         );
 
-        // 3) 정적 URL 조합 (영구 사용 가능)
+        // 3) 정적 URL 생성
         return String.format("https://%s.s3.ap-northeast-2.amazonaws.com/%s", bucketName, key);
     }
 }
