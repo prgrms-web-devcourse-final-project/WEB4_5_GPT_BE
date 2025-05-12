@@ -1,4 +1,4 @@
-package com.WEB4_5_GPT_BE.unihub.domain.home.service;
+package com.WEB4_5_GPT_BE.unihub.domain.course.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
