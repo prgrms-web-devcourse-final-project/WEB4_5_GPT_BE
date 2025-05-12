@@ -36,6 +36,15 @@ spring:
           starttls:
             enable: true
             required: true
+  cloud:
+    aws:
+      region:
+        static: ap-northeast-2
+      credentials:
+        access-key: ${custom.aws.credentials.access-key}
+        secret-key: ${custom.aws.credentials.secret-key}
+      s3:
+        bucket: ${custom.aws.s3.bucket}
 
 management:
   health:
