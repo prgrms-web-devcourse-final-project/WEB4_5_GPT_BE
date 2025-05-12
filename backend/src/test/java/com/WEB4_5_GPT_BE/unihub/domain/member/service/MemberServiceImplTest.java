@@ -8,11 +8,12 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.UpdateEmailRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.UpdateMajorRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.VerifyPasswordRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Admin;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
-import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorProfileRepository;
-import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.service.MajorService;
@@ -42,10 +43,10 @@ class MemberServiceImplTest {
     private MemberRepository memberRepository;
 
     @Mock
-    private StudentProfileRepository studentProfileRepository;
+    private StudentRepository studentRepository;
 
     @Mock
-    private ProfessorProfileRepository professorProfileRepository;
+    private ProfessorRepository professorRepository;
 
     @Mock
     private UniversityService universityService;
@@ -90,7 +91,7 @@ class MemberServiceImplTest {
 
         when(emailService.isAlreadyVerified(request.email())).thenReturn(true);
         when(memberRepository.existsByEmail(request.email())).thenReturn(false);
-        when(studentProfileRepository.existsByStudentCodeAndUniversityId(
+        when(studentRepository.existsByStudentCodeAndUniversityId(
                 request.studentCode(), request.universityId()))
                 .thenReturn(false);
         when(universityService.findUniversityById(request.universityId())).thenReturn(mockUniversity);
@@ -101,7 +102,7 @@ class MemberServiceImplTest {
         memberService.signUpStudent(request);
 
         // then
-        verify(memberRepository, times(1)).save(any(Member.class));
+        verify(studentRepository, times(1)).save(any(Student.class));
     }
 
     @DisplayName("이메일 인증이 안 되었을 때 회원가입에 실패한다")
@@ -186,7 +187,7 @@ class MemberServiceImplTest {
 
         when(emailService.isAlreadyVerified(request.email())).thenReturn(true);
         when(memberRepository.existsByEmail(request.email())).thenReturn(false);
-        when(professorProfileRepository.existsByEmployeeIdAndUniversityId(
+        when(professorRepository.existsByEmployeeIdAndUniversityId(
                 request.employeeId(), request.universityId()))
                 .thenReturn(false);
         when(universityService.findUniversityById(request.universityId())).thenReturn(mockUniversity);
@@ -197,7 +198,7 @@ class MemberServiceImplTest {
         memberService.signUpProfessor(request);
 
         // then
-        verify(memberRepository, times(1)).save(any(Member.class));
+        verify(professorRepository, times(1)).save(any(Professor.class));
     }
 
     @DisplayName("교직원 회원가입 시 approvalStatus는 기본값으로 PENDING이다")
@@ -210,23 +211,23 @@ class MemberServiceImplTest {
 
         when(emailService.isAlreadyVerified(request.email())).thenReturn(true);
         when(memberRepository.existsByEmail(request.email())).thenReturn(false);
-        when(professorProfileRepository.existsByEmployeeIdAndUniversityId(
+        when(professorRepository.existsByEmployeeIdAndUniversityId(
                 request.employeeId(), request.universityId())).thenReturn(false);
         when(universityService.findUniversityById(request.universityId())).thenReturn(mockUniversity);
         when(majorService.getMajor(request.universityId(), request.majorId())).thenReturn(mockMajor);
         when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
 
         // 캡처용 ArgumentCaptor 추가
-        ArgumentCaptor<Member> captor = ArgumentCaptor.forClass(Member.class);
+        ArgumentCaptor<Professor> captor = ArgumentCaptor.forClass(Professor.class);
 
         // when
         memberService.signUpProfessor(request);
 
         // then
-        verify(memberRepository).save(captor.capture());
-        Member saved = captor.getValue();
+        verify(professorRepository).save(captor.capture());
+        Professor saved = captor.getValue();
 
-        assertThat(saved.getProfessorProfile().getApprovalStatus())
+        assertThat(saved.getApprovalStatus())
                 .isEqualTo(com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus.PENDING);
     }
 
@@ -322,12 +323,11 @@ class MemberServiceImplTest {
         String email = "test@auni.ac.kr";
         String newPassword = "newPassword123";
 
-        Member member =
-                Member.builder()
+        Admin member =
+                Admin.builder()
                         .email(email)
                         .password("encodedOldPassword")
                         .name("홍길동")
-                        .role(Role.STUDENT)
                         .build();
 
         when(memberRepository.findByEmail(email)).thenReturn(java.util.Optional.of(member));
@@ -369,12 +369,11 @@ class MemberServiceImplTest {
         String email = "test@auni.ac.kr";
         String samePassword = "samePassword123";
 
-        Member member =
-                Member.builder()
+        Admin member =
+                Admin.builder()
                         .email(email)
                         .password("encodedSamePassword")
                         .name("홍길동")
-                        .role(Role.STUDENT)
                         .build();
 
         when(memberRepository.findByEmail(email)).thenReturn(java.util.Optional.of(member));
@@ -393,7 +392,7 @@ class MemberServiceImplTest {
     @Test
     void givenUniqueEmail_whenUpdateEmail_thenEmailUpdated() {
         // given
-        Member member = Member.builder().id(1L).email("old@email.com").build();
+        Admin member = Admin.builder().id(1L).email("old@email.com").build();
         given(memberRepository.findById(1L)).willReturn(Optional.of(member));
         given(memberRepository.existsByEmail("new@email.com")).willReturn(false);
 
@@ -416,20 +415,16 @@ class MemberServiceImplTest {
         Major oldMajor = Major.builder().id(1L).name("컴퓨터공학").university(university).build();
         Major newMajor = Major.builder().id(2L).name("전자공학").university(university).build();
 
-        StudentProfile profile = StudentProfile.builder()
-                .id(1L)
-                .major(oldMajor)
-                .university(university) // ✅ 여기가 null이면 안 됨
-                .build();
-
-        Member member = Member.builder()
+        Student profile = Student.builder()
                 .id(1L)
                 .isDeleted(false)
+                .major(oldMajor)
+                .university(university) // ✅ 여기가 null이면 안 됨
                 .role(Role.STUDENT)
                 .build();
 
-        given(memberRepository.findById(1L)).willReturn(Optional.of(member));
-        given(studentProfileRepository.findById(1L)).willReturn(Optional.of(profile));
+        given(memberRepository.findById(1L)).willReturn(Optional.of(profile));
+        given(studentRepository.findById(1L)).willReturn(Optional.of(profile));
         given(majorService.getMajor(1L, 2L)).willReturn(newMajor);
 
         // when
@@ -444,7 +439,7 @@ class MemberServiceImplTest {
     @Test
     void givenWrongPassword_whenVerifyPassword_thenThrowException() {
         // given
-        Member member = Member.builder().id(1L).password("encodedPass").build();
+        Admin member = Admin.builder().id(1L).password("encodedPass").build();
         given(memberRepository.findById(1L)).willReturn(Optional.of(member));
         given(passwordEncoder.matches("wrong", "encodedPass")).willReturn(false);
 

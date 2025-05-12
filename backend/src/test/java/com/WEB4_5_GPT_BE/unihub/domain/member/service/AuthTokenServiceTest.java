@@ -2,6 +2,7 @@ package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.TokenMemberPayload;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Admin;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,7 +27,7 @@ class AuthTokenServiceTest {
   @Test
   @DisplayName("Member 정보로 AccessToken을 생성한다")
   void givenMember_whenGenAccessToken_thenReturnValidToken() {
-    Member member = Member.builder().id(1L).email("test@example.com").role(Role.STUDENT).build();
+    Admin member = Admin.builder().id(1L).email("test@example.com").role(Role.ADMIN).build();
 
     String token = authTokenService.genAccessToken(member);
 
@@ -34,7 +35,7 @@ class AuthTokenServiceTest {
 
     assertThat(payload.id()).isEqualTo(1L);
     assertThat(payload.email()).isEqualTo("test@example.com");
-    assertThat(payload.role()).isEqualTo("STUDENT");
+    assertThat(payload.role()).isEqualTo("ADMIN");
   }
 
   @Test

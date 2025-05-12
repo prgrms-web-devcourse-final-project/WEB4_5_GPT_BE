@@ -6,7 +6,9 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.AdminLoginRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.MemberLoginRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.AdminLoginResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.MemberLoginResponse;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Admin;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.global.Rq;
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
@@ -55,7 +57,7 @@ class AuthServiceImplTest {
     String password = "password";
     MemberLoginRequest request = new MemberLoginRequest(email, password);
 
-    Member member = Member.builder().email(email).password("encodedPassword").build();
+    Admin member = Admin.builder().email(email).password("encodedPassword").build();
 
     when(redisTemplate.opsForValue().get("login:fail:" + email)).thenReturn("0");
     when(memberRepository.findByEmail(email)).thenReturn(Optional.of(member));
@@ -101,7 +103,7 @@ class AuthServiceImplTest {
     String password = "wrongPassword";
     MemberLoginRequest request = new MemberLoginRequest(email, password);
 
-    Member member = Member.builder().email(email).password("encodedPassword").build();
+    Admin member = Admin.builder().email(email).password("encodedPassword").build();
 
     when(redisTemplate.opsForValue().get("login:fail:" + email)).thenReturn("0");
     when(memberRepository.findByEmail(email)).thenReturn(Optional.of(member));
@@ -136,11 +138,12 @@ class AuthServiceImplTest {
     String password = "adminPassword";
     AdminLoginRequest request = new AdminLoginRequest(email, password);
 
-    Member adminMember =
-        Member.builder()
+    Admin adminMember =
+        Admin.builder()
             .email(email)
             .password("encodedPassword")
-            .role(com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role.ADMIN)
+            // Member.role 필드는 엔티티가 영속될때 JPA가 채워주는 필드이므로, 모킹 테스트에서는 이 필드에 수동으로 값을 넣어주어야 한다.
+            .role(Role.ADMIN)
             .build();
 
     when(redisTemplate.opsForValue().get("login:fail:" + email)).thenReturn("0");
@@ -174,11 +177,10 @@ class AuthServiceImplTest {
     String password = "studentPassword";
     AdminLoginRequest request = new AdminLoginRequest(email, password);
 
-    Member studentMember =
-        Member.builder()
+    Student studentMember =
+        Student.builder()
             .email(email)
             .password("encodedPassword")
-            .role(com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role.STUDENT)
             .build();
 
     when(redisTemplate.opsForValue().get("login:fail:" + email)).thenReturn("0");
@@ -235,15 +237,11 @@ class AuthServiceImplTest {
     String password = "password";
     MemberLoginRequest request = new MemberLoginRequest(email, password);
 
-    Member pendingProfessor = Member.builder()
+    Professor pendingProfessor = Professor.builder()
             .email(email)
             .password("encodedPassword")
             .role(Role.PROFESSOR)
-            .professorProfile(
-                    com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile.builder()
-                            .approvalStatus(com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus.PENDING)
-                            .build()
-            )
+            .approvalStatus(com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus.PENDING)
             .build();
 
     when(redisTemplate.opsForValue().get("login:fail:" + email)).thenReturn("0");
@@ -283,8 +281,8 @@ class AuthServiceImplTest {
     String refreshToken = "validRefreshToken";
     String newAccessToken = "newAccessToken";
 
-    Member member =
-        Member.builder().id(memberId).email("test@example.com").role(Role.STUDENT).build();
+    Admin member =
+        Admin.builder().id(memberId).email("test@example.com").build();
 
     MockHttpServletRequest request = new MockHttpServletRequest();
     request.setCookies(new Cookie("refreshToken", refreshToken));
