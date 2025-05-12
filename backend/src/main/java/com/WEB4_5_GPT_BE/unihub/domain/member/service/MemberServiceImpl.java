@@ -18,6 +18,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.UpdateMajorRes
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
+import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
 import com.WEB4_5_GPT_BE.unihub.domain.member.exception.member.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.ProfessorProfileNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.StudentProfileNotFoundException;
@@ -86,8 +87,8 @@ public class MemberServiceImpl implements MemberService {
     memberRepository.save(member);
   }
 
-  private void validateEmailVerification(String email) {
-    if (!emailService.isAlreadyVerified(email)) {
+  private void validateEmailVerification(String email,VerificationPurpose purpose) {
+    if (!emailService.isAlreadyVerified(email,purpose)) {
       throw new EmailNotVerifiedException();
     }
   }
@@ -145,7 +146,7 @@ public class MemberServiceImpl implements MemberService {
     University university = universityService.findUniversityById(universityId);
     Major major = majorService.getMajor(universityId, majorId);
     validateEmailDomainMatchesUniversity(email, university);
-    validateEmailVerification(email);
+    validateEmailVerification(email, VerificationPurpose.SIGNUP);
     return new UniversityContext(university, major);
   }
 
@@ -159,27 +160,24 @@ public class MemberServiceImpl implements MemberService {
   private record UniversityContext(University university, Major major) {}
 
   @Override
-  public void sendVerificationCode(String email) {
-    if (emailService.isAlreadyVerified(email)) {
+  public void sendVerificationCode(String email, VerificationPurpose purpose) {
+    if (emailService.isAlreadyVerified(email,purpose)) {
       throw new EmailAlreadyVerifiedException();
     }
 
     try {
-      emailService.sendVerificationCode(email);
+      emailService.sendVerificationCode(email,purpose);
     } catch (Exception e) {
       throw new EmailSendFailureException();
     }
   }
 
   @Override
-  public void verifyEmailCode(EmailCodeVerificationRequest request) {
-    String email = request.email();
-    String emailCode = request.emailCode();
+  public void verifyEmailCode(String email, String code, VerificationPurpose purpose) {
+    emailService.verifyCode(email, code, purpose);
 
-    emailService.verifyCode(email, emailCode);
-
-    emailService.markEmailAsVerified(email); // 인증 완료 표시
-    emailService.deleteVerificationCode(email); // 인증코드 삭제
+    emailService.markEmailAsVerified(email,purpose); // 인증 완료 표시
+    emailService.deleteVerificationCode(email,purpose); // 인증코드 삭제
   }
 
   @Override
@@ -187,10 +185,13 @@ public class MemberServiceImpl implements MemberService {
     String email = request.email();
     String newPassword = request.password();
 
+    // 이메일로 등록된 사용자 조회
     Member member = memberRepository
             .findByEmail(email)
             .orElseThrow(EmailNotFoundException::new);
-
+      // 이메일 인증 확인
+      validateEmailVerification(email,VerificationPurpose.PASSWORD_RESET);
+    // 새로운 비밀번호가 기존 비밀번호와 같은지 확인
     if (passwordEncoder.matches(newPassword, member.getPassword())) {
       throw new PasswordSameAsOldException();
     }
@@ -251,17 +252,26 @@ public class MemberServiceImpl implements MemberService {
   }
 
 
-  @Override
-  public void updateEmail(Long memberId, UpdateEmailRequest request) {
-    Member member = findActiveMemberById(memberId);
-    if (member.getEmail().equals(request.newEmail())) {
-      throw new UnihubException("400", "현재 사용 중인 이메일과 동일합니다.");
+    @Override
+    public void updateEmail(Long memberId, UpdateEmailRequest request) {
+        Member member = findActiveMemberById(memberId);
+
+        // 이메일이 현재와 동일한 경우
+        if (member.getEmail().equals(request.newEmail())) {
+            throw new UnihubException("400", "현재 사용 중인 이메일과 동일합니다.");
+        }
+
+        // 이미 사용 중인 이메일인지 확인
+        if (memberRepository.existsByEmail(request.newEmail())) {
+            throw new UnihubException("409", "이미 사용 중인 이메일입니다.");
+        }
+
+        // 새 이메일 인증 후 이메일 변경
+        validateEmailVerification(request.newEmail(), VerificationPurpose.EMAIL_CHANGE);
+
+        member.setEmail(request.newEmail());
+        memberRepository.save(member);
     }
-    if (memberRepository.existsByEmail(request.newEmail())) {
-      throw new UnihubException("409", "이미 사용 중인 이메일입니다.");
-    }
-    member.setEmail(request.newEmail());
-  }
 
   @Override
   public UpdateMajorResponse updateMajor(Long memberId, UpdateMajorRequest request) {

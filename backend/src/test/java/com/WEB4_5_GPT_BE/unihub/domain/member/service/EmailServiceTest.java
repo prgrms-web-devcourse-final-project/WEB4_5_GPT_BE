@@ -1,5 +1,6 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 
+import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,30 +35,28 @@ public class EmailServiceTest {
   void givenEmail_whenSendVerificationCode_thenSendMailAndSaveToRedis() {
     // given
     String email = "test@example.com";
-
+    VerificationPurpose purpose = VerificationPurpose.SIGNUP;
     // when
-    emailService.sendVerificationCode(email);
+    emailService.sendVerificationCode(email,purpose);
 
     // then
     verify(mailSender).send(any(SimpleMailMessage.class));
     verify(redisTemplate.opsForValue())
-        .set(eq("email:verification:" + email), anyString(), eq(Duration.ofMinutes(5)));
+        .set(eq("email:SIGNUP:verification:" + email), anyString(), eq(Duration.ofMinutes(5)));
   }
 
   @Test
-  @DisplayName("저장된 인증코드와 입력한 코드가 일치하면 true를 반환한다")
+  @DisplayName("저장된 인증코드와 입력한 코드가 일치하면 예외 없이 성공")
   void givenCorrectCode_whenVerifyCode_thenReturnTrue() {
     // given
     String email = "test@example.com";
     String code = "123456";
+    VerificationPurpose purpose = VerificationPurpose.SIGNUP;
 
-    when(redisTemplate.opsForValue().get("email:verification:" + email)).thenReturn(code);
+    when(redisTemplate.opsForValue().get("email:SIGNUP:verification:" + email)).thenReturn(code);
 
-    // when
-    boolean result = emailService.verifyCode(email, code);
-
-    // then
-    assertThat(result).isTrue();
+    // when & then
+    emailService.verifyCode(email, code,purpose);
   }
 
   @Test
@@ -67,12 +66,12 @@ public class EmailServiceTest {
     String email = "test@example.com";
     String savedCode = "123456";
     String wrongCode = "654321";
-
-    when(redisTemplate.opsForValue().get("email:verification:" + email)).thenReturn(savedCode);
+    VerificationPurpose purpose = VerificationPurpose.SIGNUP;
+    when(redisTemplate.opsForValue().get("email:SIGNUP:verification:" + email)).thenReturn(savedCode);
 
     // when & then
-    assertThatThrownBy(() -> emailService.verifyCode(email, wrongCode))
+    assertThatThrownBy(() -> emailService.verifyCode(email, wrongCode,purpose))
             .isInstanceOf(UnihubException.class)
-            .hasMessage("이메일 인증 코드가 잘못되었습니다.");
+            .hasMessage("인증 코드가 일치하지 않습니다.");
   }
 }

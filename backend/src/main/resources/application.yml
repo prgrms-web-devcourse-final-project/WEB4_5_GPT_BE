@@ -83,3 +83,7 @@ cors:
     - https://api.sulee.site
     - https://api.un1hub.site
     - http://localhost:5173
+
+sentry:
+  dsn: ${custom.sentry.dsn}
+  send-default-pii: ${custom.sentry.send-default-pii}
