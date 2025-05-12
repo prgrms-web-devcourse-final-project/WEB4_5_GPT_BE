@@ -15,6 +15,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Admin;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
+import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.AdminRepository;
@@ -59,7 +60,7 @@ public class InitDataHelper {
     }
 
     public void createStudent(String email, String pw, String name, String studentCode, Long univId, Long majorId, Integer grade, Integer semester) {
-        emailService.markEmailAsVerified(email);
+        emailService.markEmailAsVerified(email, VerificationPurpose.SIGNUP);
         memberService.signUpStudent(new StudentSignUpRequest(email, pw, name, studentCode, univId, majorId, grade, semester, Role.STUDENT));
     }
 
@@ -98,7 +99,7 @@ public class InitDataHelper {
     }
 
     public Member createProfessor(String email, String pw, String name, String empCode, Long univId, Long majorId, ApprovalStatus status) {
-        emailService.markEmailAsVerified(email);
+        emailService.markEmailAsVerified(email,VerificationPurpose.SIGNUP);
         memberService.signUpProfessor(new ProfessorSignUpRequest(email, pw, name, empCode, univId, majorId, Role.PROFESSOR));
         Professor professor = (Professor) memberRepository.findByEmail(email).orElseThrow();
         professor.setApprovalStatus(status);
