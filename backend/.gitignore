@@ -40,3 +40,4 @@ out/
 unihub_dev.mv.db
 unihub_dev.trace.db
 src/main/resources/application-secret.yml
+.env

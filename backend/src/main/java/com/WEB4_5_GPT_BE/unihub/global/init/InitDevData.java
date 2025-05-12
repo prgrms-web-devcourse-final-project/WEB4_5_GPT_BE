@@ -41,7 +41,7 @@ public class InitDevData {
         // 2) 1학년 학생·교수·관리자 계정 생성
         helper.createStudent(
                 "haneulkim@auni.ac.kr", "studentPw", "김하늘", "20250001",
-                university.getId(), majorSW.getId()
+                university.getId(), majorSW.getId(), 1, 1
         );
         Member professor1 = helper.createProfessor(
                 "professor1@auni.ac.kr", "password", "김교수", "EMP20250001",
@@ -70,9 +70,9 @@ public class InitDevData {
         helper.createEnrollment(student1, swCourses.get(1).getId());
 
         // 6) 2학년 학생 생성 (/api/members/signup/student)
-        helper.create2ndStudent(
+        helper.createStudent(
                 "secondstudent@auni.ac.kr", "studentPw2", "박학생", "20250002",
-                university.getId(), majorCS.getId()
+                university.getId(), majorCS.getId(), 2, 1
         );
         Member student2 = helper.getMemberByEmail("secondstudent@auni.ac.kr");
 

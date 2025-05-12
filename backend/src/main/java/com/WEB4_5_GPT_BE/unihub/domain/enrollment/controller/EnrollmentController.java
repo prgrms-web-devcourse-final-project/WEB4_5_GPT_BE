@@ -3,11 +3,13 @@ package com.WEB4_5_GPT_BE.unihub.domain.enrollment.controller;
 import com.WEB4_5_GPT_BE.unihub.domain.course.exception.CourseNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.request.EnrollmentRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response.MyEnrollmentResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response.StudentEnrollmentPeriodResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.*;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.EnrollmentService;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.springDoc.apiResponse.EnrollmentApiResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.springDoc.apiResponse.EnrollmentCancelApiResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.springDoc.apiResponse.GetMyEnrollmentListApiResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.springDoc.apiResponse.getMyEnrollmentPeriodApiResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.global.Rq;
 import com.WEB4_5_GPT_BE.unihub.global.response.Empty;
@@ -50,12 +52,21 @@ public class EnrollmentController {
     public RsData<List<MyEnrollmentResponse>> getMyEnrollmentList() {
 
         Member actor = rq.getActor(); // 인증된 사용자(Actor) 정보 획득
-        Member student = rq.getRealActor(actor); // 실제 학생(Member) 객체 얻기 (StudentProfile 필요)
-
-        // 내 수강목록을 조회하여 반환
-        List<MyEnrollmentResponse> response = enrollmentService.getMyEnrollmentList(student);
+        List<MyEnrollmentResponse> response = enrollmentService.getMyEnrollmentList(actor); // 내 수강목록을 조회하여 반환
 
         return new RsData<>("200", "내 수강목록 조회가 완료되었습니다.", response);
+    }
+
+    @Operation(summary = "내 수강신청 기간 조회",
+            description = "로그인된 학생의 수강신청 기간 정보를 조회합니다. header에 Bearer accessToken이 없다면 접근할 수 없습니다.")
+    @getMyEnrollmentPeriodApiResponse // api 요청에 대한 성공,예외 response 예시를 정의합니다.
+    @GetMapping("/periods/me")
+    public RsData<StudentEnrollmentPeriodResponse> getMyEnrollmentPeriod() {
+
+        Member actor = rq.getActor(); // 인증된 사용자(Actor) 정보 획득
+        StudentEnrollmentPeriodResponse response = enrollmentService.getMyEnrollmentPeriod(actor); // 내 수강신청 기간 정보 조회
+
+        return new RsData<>("200", "내 수강신청 기간 정보를 조회했습니다.", response);
     }
 
     /**
@@ -76,10 +87,7 @@ public class EnrollmentController {
     public RsData<Empty> enrollmentCancel(@PathVariable Long courseId) {
 
         Member actor = rq.getActor(); // 인증된 사용자(Actor) 정보 획득
-        Member student = rq.getRealActor(actor); // 실제 학생(Member) 객체 얻기 (StudentProfile 필요)
-
-        // 해당 강좌에 대한 수강 취소 요청
-        enrollmentService.cancelMyEnrollment(student, courseId);
+        enrollmentService.cancelMyEnrollment(actor, courseId); // 해당 강좌에 대한 수강 취소 요청
 
         return new RsData<>("200", "수강 취소가 완료되었습니다.");
     }
@@ -106,10 +114,7 @@ public class EnrollmentController {
     public RsData<Empty> enrollment(@RequestBody EnrollmentRequest request) {
 
         Member actor = rq.getActor(); // 인증된 사용자(Actor) 정보 획득
-        Member student = rq.getRealActor(actor); // 실제 학생(Member) 객체 얻기 (StudentProfile 필요)
-
-        // 해당 강좌에 대한 수강 신청 요청
-        enrollmentService.enrollment(student, request.courseId());
+        enrollmentService.enrollment(actor, request.courseId()); // 해당 강좌에 대한 수강 신청 요청
 
         return new RsData<>("200", "수강 신청이 완료되었습니다.");
     }

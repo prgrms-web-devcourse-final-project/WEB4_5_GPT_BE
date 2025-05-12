@@ -4,10 +4,19 @@ import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.MemberLoginRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.PasswordResetConfirmationRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.UpdateEmailRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.UpdateMajorRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.UpdatePasswordRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.VerifyPasswordRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.EmailService;
 import com.WEB4_5_GPT_BE.unihub.global.config.RedisTestContainerConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,16 +25,19 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @Transactional
@@ -97,7 +109,7 @@ public class MemberControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("로그인에 성공했습니다."))
                 .andExpect(jsonPath("$.data.accessToken").exists())
-                .andExpect(jsonPath("$.data.refreshToken").exists());
+                .andExpect(header().string("Set-Cookie", Matchers.containsString("refreshToken=")));;
     }
 
     @Test
@@ -122,14 +134,23 @@ public class MemberControllerTest {
     void refreshToken_success() throws Exception {
         MemberLoginRequest loginRequest = new MemberLoginRequest("teststudent@auni.ac.kr", "password");
 
-        String loginResponse = mockMvc.perform(post("/api/members/login")
+        MockHttpServletResponse loginResponse = mockMvc.perform(post("/api/members/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
-                .andReturn().getResponse().getContentAsString();
+                .andReturn()
+                .getResponse();
 
-        String refreshToken = objectMapper.readTree(loginResponse).path("data").path("refreshToken").asText();
+        Cookie refreshTokenCookie = Arrays.stream(loginResponse.getCookies())
+                .filter(cookie -> "refreshToken".equals(cookie.getName()))
+                .findFirst()
+                .orElse(null);
 
-        mockMvc.perform(post("/api/members/refresh").cookie(new Cookie("refreshToken", refreshToken)))
+        assertThat(refreshTokenCookie)
+                .as("refreshToken 쿠키가 응답에 포함되어야 합니다.")
+                .isNotNull();
+
+        mockMvc.perform(post("/api/members/refresh")
+                        .cookie(refreshTokenCookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("새로운 토큰이 발급되었습니다."))
                 .andExpect(jsonPath("$.data.accessToken").exists());
@@ -164,7 +185,6 @@ public class MemberControllerTest {
         PasswordResetConfirmationRequest request = new PasswordResetConfirmationRequest(email, "newpassword123");
 
         mockMvc.perform(post("/api/members/password-reset/confirm")
-                        .header("Authorization", "Bearer " + accessToken) // 로그인된 사용자의 토큰 추가
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
