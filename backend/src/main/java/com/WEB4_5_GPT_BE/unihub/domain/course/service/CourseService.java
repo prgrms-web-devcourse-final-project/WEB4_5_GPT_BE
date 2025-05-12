@@ -4,9 +4,9 @@ import com.WEB4_5_GPT_BE.unihub.domain.course.dto.*;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseScheduleRepository;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
-import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorProfileRepository;
-import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
+import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.MajorRepository;
@@ -39,9 +39,9 @@ public class CourseService {
 
     private final UniversityRepository universityRepository;
 
-    private final StudentProfileRepository studentProfileRepository;
+    private final StudentRepository studentRepository;
 
-    private final ProfessorProfileRepository professorProfileRepository;
+    private final ProfessorRepository professorRepository;
 
     /**
      * 주어진 ID에 해당하는 강의 정보를 반환한다.
@@ -74,9 +74,9 @@ public class CourseService {
         if (doesLocationScheduleConflict(courseRequest.schedule(), u.getId(), courseRequest.location())) {
             throw new UnihubException(String.valueOf(HttpStatus.CONFLICT.value()), "강의 장소가 이미 사용 중입니다.");
         }
-        ProfessorProfile p = courseRequest.employeeId() == null ?
+        Professor p = courseRequest.employeeId() == null ?
                 null :
-                professorProfileRepository.findByUniversityIdAndEmployeeId(u.getId(), courseRequest.employeeId()).orElseThrow(
+                professorRepository.findByUniversityIdAndEmployeeId(u.getId(), courseRequest.employeeId()).orElseThrow(
                         () -> new UnihubException(String.valueOf(HttpStatus.BAD_REQUEST.value()), "존재하지 않는 교수입니다.")
                 );
         if (p != null && doesProfScheduleConflict(courseRequest.schedule(), p.getEmployeeId())) {
@@ -105,9 +105,9 @@ public class CourseService {
         if (doesLocationScheduleConflictExcludingCourse(courseRequest.schedule(), u.getId(), courseRequest.location(), courseId)) {
             throw new UnihubException(String.valueOf(HttpStatus.CONFLICT.value()), "강의 장소가 이미 사용 중입니다.");
         }
-        ProfessorProfile p = courseRequest.employeeId() == null ?
+        Professor p = courseRequest.employeeId() == null ?
                 null :
-                professorProfileRepository.findByUniversityIdAndEmployeeId(u.getId(), courseRequest.employeeId()).orElseThrow(
+                professorRepository.findByUniversityIdAndEmployeeId(u.getId(), courseRequest.employeeId()).orElseThrow(
                         () -> new UnihubException(String.valueOf(HttpStatus.BAD_REQUEST.value()), "존재하지 않는 교수입니다.")
                 );
         if (p != null && doesProfScheduleConflictExcludingCourse(courseRequest.schedule(), p.getEmployeeId(), courseId)) {
@@ -194,16 +194,17 @@ public class CourseService {
      * @return 대학 ID
      */
     // TODO: 관리자가 강의 목록을 조회했을때 대응 추가
+    // TODO: 회원 도메인 변경으로 인한 리팩토링 고려
     private Long getUnivIdFromPrincipal(SecurityUser principal) {
         GrantedAuthority authRole = principal.getAuthorities().stream().findFirst().orElseThrow(
                 () -> new UnihubException(String.valueOf(HttpStatus.INTERNAL_SERVER_ERROR.value()), "인증정보에서 권한을 불러오지 못했습니다.")
         );
         return switch (authRole.getAuthority()) {
-            case "ROLE_STUDENT" -> studentProfileRepository.findByMemberId(principal.getId()).orElseThrow(
+            case "ROLE_STUDENT" -> studentRepository.findById(principal.getId()).orElseThrow(
                             () -> new UnihubException(String.valueOf(HttpStatus.BAD_REQUEST.value()), "인증된 학생이 존재하지 않습니다.")
                     )
                     .getUniversity().getId();
-            case "ROLE_PROFESSOR" -> professorProfileRepository.findByMemberId(principal.getId()).orElseThrow(
+            case "ROLE_PROFESSOR" -> professorRepository.findById(principal.getId()).orElseThrow(
                             () -> new UnihubException(String.valueOf(HttpStatus.BAD_REQUEST.value()), "인증된 교수가 존재하지 않습니다.")
                     )
                     .getUniversity().getId();

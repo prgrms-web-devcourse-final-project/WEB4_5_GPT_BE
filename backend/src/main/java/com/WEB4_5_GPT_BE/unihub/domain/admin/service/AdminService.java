@@ -4,15 +4,16 @@ import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.request.*;
 import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.response.EnrollmentPeriodResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.response.ProfessorResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.response.StudentResponse;
-import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.EnrollmentPeriod;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.EnrollmentPeriodRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Admin;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
+import com.WEB4_5_GPT_BE.unihub.domain.member.repository.AdminRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
-import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorProfileRepository;
-import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.EmailService;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.UniversityRepository;
@@ -31,8 +32,9 @@ import java.time.LocalDate;
 public class AdminService {
 
     private final MemberRepository memberRepository;
-    private final StudentProfileRepository studentProfileRepository;
-    private final ProfessorProfileRepository professorProfileRepository;
+    private final StudentRepository studentRepository;
+    private final ProfessorRepository professorRepository;
+    private final AdminRepository adminRepository;
     private final EnrollmentPeriodRepository enrollmentPeriodRepository;
     private final UniversityRepository universityRepository;
     private final EmailService emailService;
@@ -41,8 +43,8 @@ public class AdminService {
      * 학생 회원 목록 조회
      */
     public Page<StudentResponse> getStudents(StudentSearchRequest searchRequest, Pageable pageable) {
-        Page<StudentProfile> students =
-                studentProfileRepository.findStudentsWithFilters(
+        Page<Student> students =
+                studentRepository.findStudentsWithFilters(
                         searchRequest.universityId(),
                         searchRequest.majorId(),
                         searchRequest.grade(),
@@ -52,14 +54,14 @@ public class AdminService {
         return students.map(
                 profile ->
                         new StudentResponse(
-                                profile.getMember().getId(),
+                                profile.getId(),
                                 profile.getUniversity().getName(),
-                                profile.getMember().getName(),
+                                profile.getName(),
                                 profile.getStudentCode(),
                                 profile.getMajor().getName(),
                                 profile.getGrade(),
                                 profile.getSemester(),
-                                profile.getMember().getCreatedAt()));
+                                profile.getCreatedAt()));
     }
 
     /**
@@ -67,8 +69,8 @@ public class AdminService {
      */
     public Page<ProfessorResponse> getProfessors(
             ProfessorSearchRequest searchRequest, Pageable pageable) {
-        Page<ProfessorProfile> professors =
-                professorProfileRepository.findProfessorsWithFilters(
+        Page<Professor> professors =
+                professorRepository.findProfessorsWithFilters(
                         searchRequest.universityId(),
                         searchRequest.professorName(),
                         searchRequest.majorId(),
@@ -78,12 +80,12 @@ public class AdminService {
         return professors.map(
                 profile ->
                         new ProfessorResponse(
-                                profile.getMember().getId(),
+                                profile.getId(),
                                 profile.getUniversity().getName(),
-                                profile.getMember().getName(),
+                                profile.getName(),
                                 profile.getMajor().getName(),
                                 profile.getApprovalStatus(),
-                                profile.getMember().getCreatedAt()));
+                                profile.getCreatedAt()));
     }
 
     /**
@@ -92,8 +94,8 @@ public class AdminService {
     @Transactional
     public void changeProfessorStatus(Long memberId, ProfessorApprovalRequest request) {
 
-        ProfessorProfile professorProfile =
-                professorProfileRepository
+        Professor professorProfile =
+                professorRepository
                         .findById(memberId)
                         .orElseThrow(() -> new UnihubException("400", "해당 교직원이 존재하지 않습니다."));
 
@@ -251,26 +253,25 @@ public class AdminService {
         }
 
         // 관리자 생성 및 초대 메일 발송 로직
-        Member admin =
-                Member.builder()
+        Admin admin =
+                Admin.builder()
                         .name(request.adminName())
                         .email(request.email())
                         .password("changeme")
-                        .role(Role.ADMIN)
                         .build();
 
-    Member savedAdmin = memberRepository.save(admin);
+        Member savedAdmin = adminRepository.save(admin);
 
-    // 비동기로 이메일 전송
-    sendAdminInvitationEmailAsync(savedAdmin.getEmail(), savedAdmin.getName());
-  }
+        // 비동기로 이메일 전송
+        sendAdminInvitationEmailAsync(savedAdmin.getEmail(), savedAdmin.getName());
+    }
 
-  /**
-   * 관리자 초대 이메일을 비동기적으로 전송
-   */
-  @Async
-  public void sendAdminInvitationEmailAsync(String email, String adminName) {
-    // 비동기로 이메일 전송 실행
-    emailService.sendAdminInvitation(email, adminName);
-  }
+    /**
+     * 관리자 초대 이메일을 비동기적으로 전송
+     */
+    @Async
+    public void sendAdminInvitationEmailAsync(String email, String adminName) {
+        // 비동기로 이메일 전송 실행
+        emailService.sendAdminInvitation(email, adminName);
+    }
 }

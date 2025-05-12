@@ -48,7 +48,8 @@ public class Rq {
 
     SecurityUser user = (SecurityUser) authentication.getPrincipal();
 
-    return Member.builder().id(user.getId()).email(user.getUsername()).name(user.getName()).build();
+//    return Member.builder().id(user.getId()).email(user.getUsername()).name(user.getName()).build();
+      return memberService.findById(user.getId()).orElseThrow();
   }
 
   public Member getRealActor(Member actor) {
