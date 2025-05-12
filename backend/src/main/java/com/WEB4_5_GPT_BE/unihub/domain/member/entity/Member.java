@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "role")
+// TODO: Lombok의 @SuperBuilder 애노테이션은 @Builder와 동시에 사용하지 못하기 때문에 BaseTimeEntity를 상속받는 대신 auditing 필드를 직접 추가
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "member",
         uniqueConstraints = @UniqueConstraint(columnNames = {"role", "email"}))
