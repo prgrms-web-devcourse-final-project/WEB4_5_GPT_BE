@@ -90,9 +90,13 @@ public class CourseController {
             @ApiResponse(responseCode = "409", description = "수정 실패; 새 강의 스케줄이 기존 강의실 또는 교수 스케줄과 겹침",
                     content = {@Content(mediaType = "application/json", schema = @Schema(implementation = RsData.class))})
     })
-    @PutMapping("/{courseId}")
-    public RsData<CourseWithFullScheduleResponse> updateCourse(@PathVariable Long courseId, @RequestBody CourseRequest courseRequest) {
-        CourseWithFullScheduleResponse res = courseService.updateCourse(courseId, courseRequest);
+    @PutMapping(path = "/{courseId}",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public RsData<CourseWithFullScheduleResponse> updateCourse(
+            @PathVariable Long courseId,
+            @RequestPart("data") CourseRequest courseRequest,
+            @RequestPart(name = "file", required = false) MultipartFile coursePlanFile) {
+        CourseWithFullScheduleResponse res = courseService.updateCourse(courseId, courseRequest, coursePlanFile);
         return new RsData<>(String.valueOf(HttpStatus.OK.value()), "성공적으로 수정되었습니다.", res);
     }
 
