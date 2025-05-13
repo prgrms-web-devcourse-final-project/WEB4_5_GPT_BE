@@ -170,6 +170,9 @@ public class CourseService {
         Course course = courseRepository.findById(courseId).orElseThrow(
                 () -> new UnihubException(String.valueOf(HttpStatus.NOT_FOUND.value()), "해당 강의가 존재하지 않습니다.")
         );
+        if (course.getCoursePlanAttachment() != null) {
+            s3Service.deleteByUrl(course.getCoursePlanAttachment());
+        }
         courseRepository.delete(course);
     }
 
