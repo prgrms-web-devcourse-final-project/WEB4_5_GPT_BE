@@ -1,6 +1,7 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 
 import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
+
 import com.WEB4_5_GPT_BE.unihub.domain.member.exception.member.EmailAlreadyVerifiedException;
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class EmailService {
      * @param purpose  인증 목적 (가입, 비밀번호 재설정 등)
      */
     public void sendVerificationCode(String email, VerificationPurpose purpose) {
+
         String codeKey = buildKey(purpose, email);
         String verifiedKey = buildVerifiedKey(purpose, email);
 

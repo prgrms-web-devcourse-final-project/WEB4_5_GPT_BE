@@ -55,7 +55,9 @@ class CourseServiceTest {
     private UniversityRepository universityRepository;
 
     @Mock
+
     private ProfessorRepository professorRepository;
+
 
     @InjectMocks
     private CourseService courseService;
@@ -242,6 +244,7 @@ class CourseServiceTest {
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest2.major()))
                 .willReturn(Optional.of(testCourse2.getMajor()));
         CourseScheduleDto csd = testCourseRequest2.schedule().getFirst();
+
         given(professorRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
                 .willReturn(Optional.of(testProfessorProfile1));
         given(courseScheduleRepository.existsByProfEmpIdAndDayOfWeek(

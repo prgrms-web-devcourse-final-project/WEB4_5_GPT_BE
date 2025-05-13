@@ -406,6 +406,7 @@ class MemberServiceImplTest {
         String email = "unverified@auni.ac.kr";
         String newPassword = "newPassword123";
 
+
         Member member = Student.builder()
                 .email(email)
                 .password("encodedOldPassword")
@@ -511,6 +512,7 @@ class MemberServiceImplTest {
     @Test
     void givenCorrectPassword_whenVerifyPassword_thenSuccess() {
         // given
+
         Admin member = Admin.builder().id(1L).password("encodedPass").build();
         given(memberRepository.findById(1L)).willReturn(Optional.of(member));
         given(passwordEncoder.matches("correct", "encodedPass")).willReturn(true);  // 비밀번호 일치

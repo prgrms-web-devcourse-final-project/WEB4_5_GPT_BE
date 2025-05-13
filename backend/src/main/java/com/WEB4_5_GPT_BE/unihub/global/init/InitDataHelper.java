@@ -15,10 +15,12 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Admin;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
+
 import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.AdminRepository;
+
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.EmailService;
