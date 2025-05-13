@@ -5,11 +5,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
+import java.util.Optional;
+
 public interface NoticeRepository extends JpaRepository<Notice, Long> {
 
-    // 삭제되지 않은 공지사항 페이징 조회
-    Page<Notice> findByIsDeletedFalse(Pageable pageable);
+    // 공지사항 목록 조회 (삭제되지 않은 공지사항 전체, 최신순)
+    List<Notice> findByIsDeletedFalseOrderByCreatedAtDesc();
 
-    // 제목에 키워드가 포함된 공지사항 페이징 조회 (삭제되지 않은 것만)
-    Page<Notice> findByIsDeletedFalseAndTitleContainingIgnoreCase(String keyword, Pageable pageable);
+    // 공지사항 목록 조회 (제목 검색 포함)
+    List<Notice> findByTitleContainingAndIsDeletedFalseOrderByCreatedAtDesc(String title);
+
+    // 상세 조회 (삭제되지 않은 것만)
+    Optional<Notice> findByIdAndIsDeletedFalse(Long id);
 }

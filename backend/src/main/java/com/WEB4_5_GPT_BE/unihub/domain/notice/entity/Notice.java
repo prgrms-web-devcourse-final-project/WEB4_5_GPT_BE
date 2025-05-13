@@ -31,7 +31,7 @@ public class Notice extends BaseTimeEntity {
     @Builder.Default
     private boolean isDeleted = false;
 
-    public void markDeleted() {
+    public void softDelete() {
         this.isDeleted = true;
     }
 
