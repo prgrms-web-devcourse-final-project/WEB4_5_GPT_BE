@@ -1,6 +1,7 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 
 import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
+import com.WEB4_5_GPT_BE.unihub.domain.member.exception.member.EmailAlreadyVerifiedException;
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -29,28 +30,26 @@ public class EmailService {
      * @param purpose  인증 목적 (가입, 비밀번호 재설정 등)
      */
     public void sendVerificationCode(String email, VerificationPurpose purpose) {
-        String code = generateAndStoreCode(email, purpose);
-        sendEmail(email, code, purpose);
-    }
+        String codeKey = buildKey(purpose, email);
+        String verifiedKey = buildVerifiedKey(purpose, email);
 
+        boolean isVerified = redisTemplate.hasKey(verifiedKey);
+        boolean hasCode = redisTemplate.hasKey(codeKey);
 
-    /**
-     * 인증 코드 생성 후 Redis에 저장합니다.
-     * 헬퍼로 분리하여 재사용성을 높였습니다.
-     * @return 생성된 6자리 인증 코드
-     */
-    private String generateAndStoreCode(String email, VerificationPurpose purpose) {
+        // 인증 완료 상태인데 코드가 없다? => 인증 완료 처리된 상태
+        if (isVerified && !hasCode) {
+            throw new EmailAlreadyVerifiedException();
+        }
+
+        // 그 외의 경우는 인증 중이거나 코드 만료된 경우 → 새 코드 발급
         String code = generateRandomCode();
-        String key = buildKey(purpose, email);
         try {
-            // Redis에 인증 코드 저장
-            redisTemplate.opsForValue().set(key, code, CODE_EXPIRATION);
+            redisTemplate.opsForValue().set(codeKey, code, CODE_EXPIRATION);
         } catch (Exception e) {
-            // Redis 저장 실패 시 처리
             throw new UnihubException("500", "인증 코드 저장에 실패했습니다.");
         }
 
-        return code;
+        sendEmail(email, code, purpose);
     }
 
     /**
