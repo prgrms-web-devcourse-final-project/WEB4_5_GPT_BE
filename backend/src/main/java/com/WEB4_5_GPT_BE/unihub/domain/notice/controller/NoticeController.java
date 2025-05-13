@@ -10,6 +10,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,10 +31,11 @@ public class NoticeController {
             @ApiResponse(responseCode = "200", description = "공지사항 목록 조회 성공")
     })
     @GetMapping
-    public RsData<List<NoticeListResponse>> getNotices(
-            @RequestParam(value = "title", required = false) String title
+    public RsData<Page<NoticeListResponse>> getNotices(
+            @RequestParam(value = "title", required = false) String title,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return new RsData<>("200", "공지사항 목록 조회 성공", noticeService.getNotices(title));
+        return new RsData<>("200", "공지사항 목록 조회 성공", noticeService.getNotices(title, pageable));
     }
 
     @Operation(summary = "공지사항 상세 조회")

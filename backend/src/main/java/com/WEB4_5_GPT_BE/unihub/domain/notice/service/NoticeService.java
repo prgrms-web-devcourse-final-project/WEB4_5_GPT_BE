@@ -10,6 +10,8 @@ import com.WEB4_5_GPT_BE.unihub.domain.notice.entity.Notice;
 import com.WEB4_5_GPT_BE.unihub.domain.notice.repository.NoticeRepository;
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,11 +27,11 @@ public class NoticeService {
 
     // 목록 조회
     @Transactional(readOnly = true)
-    public List<NoticeListResponse> getNotices(String title) {
-        List<Notice> notices = (title == null || title.isBlank())
-                ? noticeRepository.findByIsDeletedFalseOrderByCreatedAtDesc()
-                : noticeRepository.findByTitleContainingAndIsDeletedFalseOrderByCreatedAtDesc(title);
-        return notices.stream().map(NoticeListResponse::from).toList();
+    public Page<NoticeListResponse> getNotices(String title, Pageable pageable) {
+        Page<Notice> notices = (title == null || title.isBlank())
+                ? noticeRepository.findByIsDeletedFalse(pageable)
+                : noticeRepository.findByTitleContainingAndIsDeletedFalse(title, pageable);
+        return notices.map(NoticeListResponse::from);
     }
 
     // 상세 조회

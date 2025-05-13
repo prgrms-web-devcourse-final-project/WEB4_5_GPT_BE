@@ -11,10 +11,10 @@ import java.util.Optional;
 public interface NoticeRepository extends JpaRepository<Notice, Long> {
 
     // 공지사항 목록 조회 (삭제되지 않은 공지사항 전체, 최신순)
-    List<Notice> findByIsDeletedFalseOrderByCreatedAtDesc();
+    Page<Notice> findByIsDeletedFalse(Pageable pageable);
 
     // 공지사항 목록 조회 (제목 검색 포함)
-    List<Notice> findByTitleContainingAndIsDeletedFalseOrderByCreatedAtDesc(String title);
+    Page<Notice> findByTitleContainingAndIsDeletedFalse(String title, Pageable pageable);
 
     // 상세 조회 (삭제되지 않은 것만)
     Optional<Notice> findByIdAndIsDeletedFalse(Long id);
