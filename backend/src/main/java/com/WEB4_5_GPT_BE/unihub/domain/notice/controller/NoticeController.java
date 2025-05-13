@@ -5,10 +5,12 @@ import com.WEB4_5_GPT_BE.unihub.domain.notice.dto.request.NoticeUpdateRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.notice.dto.response.*;
 import com.WEB4_5_GPT_BE.unihub.domain.notice.service.NoticeService;
 import com.WEB4_5_GPT_BE.unihub.global.response.RsData;
+import com.WEB4_5_GPT_BE.unihub.global.security.SecurityUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -47,8 +49,11 @@ public class NoticeController {
             @ApiResponse(responseCode = "400", description = "입력값 누락 또는 첨부파일 업로드 실패")
     })
     @PostMapping
-    public RsData<NoticeCreateResponse> createNotice(@RequestBody NoticeCreateRequest request) {
-        return new RsData<>("200", "공지사항 작성 성공", noticeService.createNotice(request));
+    public RsData<NoticeCreateResponse> createNotice(
+            @AuthenticationPrincipal SecurityUser user,
+            @RequestBody NoticeCreateRequest request
+    ) {
+        return new RsData<>("200", "공지사항 작성 성공", noticeService.createNotice(user.getId(), request));
     }
 
     @Operation(summary = "공지사항 수정")
@@ -58,10 +63,11 @@ public class NoticeController {
     })
     @PatchMapping("/{id}")
     public RsData<NoticeUpdateResponse> updateNotice(
+            @AuthenticationPrincipal SecurityUser user,
             @PathVariable Long id,
             @RequestBody NoticeUpdateRequest request
     ) {
-        return new RsData<>("200", "공지사항 수정 성공", noticeService.updateNotice(id, request));
+        return new RsData<>("200", "공지사항 수정 성공", noticeService.updateNotice(user.getId(), id, request));
     }
 
     @Operation(summary = "공지사항 삭제")
@@ -70,7 +76,10 @@ public class NoticeController {
             @ApiResponse(responseCode = "404", description = "존재하지 않는 공지사항입니다.")
     })
     @DeleteMapping("/{id}")
-    public RsData<NoticeDeleteResponse> deleteNotice(@PathVariable Long id) {
-        return new RsData<>("200", "공지사항 삭제 성공", noticeService.deleteNotice(id));
+    public RsData<NoticeDeleteResponse> deleteNotice(
+            @AuthenticationPrincipal SecurityUser user,
+            @PathVariable Long id
+    ) {
+        return new RsData<>("200", "공지사항 삭제 성공", noticeService.deleteNotice(user.getId(), id));
     }
 }

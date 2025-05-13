@@ -1,5 +1,8 @@
 package com.WEB4_5_GPT_BE.unihub.domain.notice.service;
 
+import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
+import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.notice.dto.request.NoticeCreateRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.notice.dto.request.NoticeUpdateRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.notice.dto.response.*;
@@ -18,6 +21,7 @@ import java.util.List;
 public class NoticeService {
 
     private final NoticeRepository noticeRepository;
+    private final MemberRepository memberRepository;
 
     // 목록 조회
     @Transactional(readOnly = true)
@@ -37,7 +41,13 @@ public class NoticeService {
     }
 
     // 생성
-    public NoticeCreateResponse createNotice(NoticeCreateRequest request) {
+    public NoticeCreateResponse createNotice(Long memberId, NoticeCreateRequest request) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new UnihubException("404", "회원 정보를 찾을 수 없습니다."));
+        if (member.getRole() != Role.ADMIN) {
+            throw new UnihubException("403", "관리자만 공지사항을 작성할 수 있습니다.");
+        }
+
         Notice notice = Notice.builder()
                 .title(request.title())
                 .content(request.content())
@@ -48,17 +58,29 @@ public class NoticeService {
     }
 
     // 수정
-    public NoticeUpdateResponse updateNotice(Long id, NoticeUpdateRequest request) {
+    public NoticeUpdateResponse updateNotice(Long memberId, Long id, NoticeUpdateRequest request) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new UnihubException("404", "회원 정보를 찾을 수 없습니다."));
+        if (member.getRole() != Role.ADMIN) {
+            throw new UnihubException("403", "관리자만 공지사항을 수정할 수 있습니다.");
+        }
+
         Notice notice = noticeRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new UnihubException("404", "존재하지 않는 공지사항입니다."));
+
         notice.setTitle(request.title());
         notice.setContent(request.content());
         notice.setAttachmentUrl(request.attachmentUrl());
         return NoticeUpdateResponse.from(notice);
     }
-
     // 삭제
-    public NoticeDeleteResponse deleteNotice(Long id) {
+    public NoticeDeleteResponse deleteNotice(Long memberId, Long id) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new UnihubException("404", "회원 정보를 찾을 수 없습니다."));
+        if (member.getRole() != Role.ADMIN) {
+            throw new UnihubException("403", "관리자만 공지사항을 삭제할 수 있습니다.");
+        }
+
         Notice notice = noticeRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new UnihubException("404", "존재하지 않는 공지사항입니다."));
         notice.softDelete();
