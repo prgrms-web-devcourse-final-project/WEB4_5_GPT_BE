@@ -2,6 +2,7 @@ package com.WEB4_5_GPT_BE.unihub.domain.course.service;
 
 import com.WEB4_5_GPT_BE.unihub.domain.course.dto.*;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
+import com.WEB4_5_GPT_BE.unihub.domain.course.exception.FileUploadException;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseScheduleRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
@@ -20,7 +21,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -42,6 +45,8 @@ public class CourseService {
     private final StudentRepository studentRepository;
 
     private final ProfessorRepository professorRepository;
+
+    private final S3Service s3Service;
 
     /**
      * 주어진 ID에 해당하는 강의 정보를 반환한다.
@@ -84,6 +89,26 @@ public class CourseService {
         }
         Course res = courseRequest.toEntity(m, 0, p);
         return CourseWithFullScheduleResponse.from(courseRepository.save(res));
+    }
+
+    public CourseWithFullScheduleResponse createCourse(CourseRequest req, MultipartFile file) {
+
+        String url = null;
+
+        try {
+            if (file != null && !file.isEmpty()) {
+                url = s3Service.upload(file);
+                req = req.withCoursePlanAttachment(url);
+            }
+            return createCourse(req); // 기존 createCourse(CourseRequest) 호출
+        } catch (IOException e) {
+            throw new FileUploadException();
+        } catch (UnihubException ex) {
+            if (url != null) {
+                s3Service.deleteByUrl(url); // 실패 시 업로드 롤백
+            }
+            throw ex;
+        }
     }
 
     /**

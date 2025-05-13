@@ -5,9 +5,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -53,5 +55,34 @@ public class S3Service {
 
         // 3) 정적 URL 생성
         return String.format("https://%s.s3.ap-northeast-2.amazonaws.com/%s", bucketName, key);
+    }
+
+    /**
+     * S3에 저장된 객체를 key로 삭제합니다.
+     *
+     * @param key S3 버킷 내 객체 키 (예: "1612345678900_plan.pdf")
+     */
+    public void deleteByKey(String key) {
+        s3Client.deleteObject(
+                DeleteObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(key)
+                        .build()
+        );
+    }
+
+    /**
+     * 업로드 후 반환된 URL을 이용해 S3 객체를 삭제합니다.
+     *
+     * @param fileUrl upload() 이 반환한 URL
+     */
+    public void deleteByUrl(String fileUrl) {
+        // URL 의 path 부분에서 "/" 제거 후 key 추출
+        URI uri = URI.create(fileUrl);
+        String path = uri.getPath();            // ex: "/1612345678900_plan.pdf"
+        String key = path.startsWith("/")
+                ? path.substring(1)
+                : path; // ex: "1612345678900_plan.pdf"
+        deleteByKey(key);
     }
 }

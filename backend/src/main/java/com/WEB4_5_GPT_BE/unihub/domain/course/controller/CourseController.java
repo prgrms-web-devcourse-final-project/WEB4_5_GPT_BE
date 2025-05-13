@@ -20,8 +20,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 강의 도메인 컨트롤러 레이어.
@@ -64,9 +66,11 @@ public class CourseController {
             @ApiResponse(responseCode = "409", description = "생성 실패; 강의 스케줄이 기존 강의실 또는 교수 스케줄과 겹침",
                     content = {@Content(mediaType = "application/json", schema = @Schema(implementation = RsData.class))})
     })
-    @PostMapping
-    public RsData<CourseWithFullScheduleResponse> createCourse(@RequestBody CourseRequest courseRequest) {
-        CourseWithFullScheduleResponse res = courseService.createCourse(courseRequest);
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public RsData<CourseWithFullScheduleResponse> createCourse(
+            @RequestPart("data") CourseRequest courseRequest,
+            @RequestPart(name = "file", required = false) MultipartFile coursePlanFile) {
+        CourseWithFullScheduleResponse res = courseService.createCourse(courseRequest, coursePlanFile);
         return new RsData<>(String.valueOf(HttpStatus.CREATED.value()), "성공적으로 생성되었습니다.", res);
     }
 
