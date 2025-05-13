@@ -11,6 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.nio.file.Path;
@@ -71,5 +72,43 @@ class S3ServiceTest {
 
         // 임시 파일 실제 생성 여부
         assertTrue(actualPath.toFile().exists(), "임시 PDF 파일이 생성되어야 합니다");
+    }
+
+
+    @Test
+    @DisplayName("deleteByKey 호출 시 S3Client.deleteObject에 올바른 요청 전달")
+    void test2_deleteByKey_invokesDeleteWithCorrectKey() {
+        // given
+        String key = "1612345678900_plan.pdf";
+
+        // when
+        s3Service.deleteByKey(key);
+
+        // then
+        ArgumentCaptor<DeleteObjectRequest> captor = ArgumentCaptor.forClass(DeleteObjectRequest.class);
+        verify(s3Client).deleteObject(captor.capture());
+
+        DeleteObjectRequest deleteReq = captor.getValue();
+        assertThat(deleteReq.bucket()).isEqualTo("test-bucket");
+        assertThat(deleteReq.key()).isEqualTo(key);
+    }
+
+    @Test
+    @DisplayName("deleteByUrl 호출 시 URL에서 key를 추출하여 S3Client.deleteObject에 올바른 요청 전달")
+    void test3_deleteByUrl_extractsKeyAndInvokesDelete() {
+        // given
+        String key = "1612345678900_plan.pdf";
+        String url = String.format("https://test-bucket.s3.ap-northeast-2.amazonaws.com/%s", key);
+
+        // when
+        s3Service.deleteByUrl(url);
+
+        // then
+        ArgumentCaptor<DeleteObjectRequest> captor = ArgumentCaptor.forClass(DeleteObjectRequest.class);
+        verify(s3Client).deleteObject(captor.capture());
+
+        DeleteObjectRequest deleteReq = captor.getValue();
+        assertThat(deleteReq.bucket()).isEqualTo("test-bucket");
+        assertThat(deleteReq.key()).isEqualTo(key);
     }
 }
