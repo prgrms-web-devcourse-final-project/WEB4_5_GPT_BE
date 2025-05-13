@@ -6,6 +6,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.course.dto.CourseWithFullScheduleResponse
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.CourseSchedule;
 import com.WEB4_5_GPT_BE.unihub.domain.course.service.CourseService;
+import com.WEB4_5_GPT_BE.unihub.domain.course.service.S3Service;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.AuthTokenService;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
@@ -24,8 +25,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
@@ -33,6 +34,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalTime;
 import java.util.List;
@@ -72,6 +74,9 @@ class CourseControllerTest {
 
     @MockitoBean
     private AuthTokenService authTokenService;
+
+    @MockitoBean
+    private S3Service s3Service;
 
     private University testUniversity = new University(5L,
             "testUniversity", "unihub.ac.kr");
@@ -140,12 +145,32 @@ class CourseControllerTest {
     @Test
     @DisplayName("정상적인 강의 정보로 생성 요청시 성공.")
     void givenValidCourseRequest_whenCreatingCourse_thenReturnCreatedCourse() throws Exception {
-        given(courseService.createCourse(any(CourseRequest.class)))
+// 기존
+//        given(courseService.createCourse(any(CourseRequest.class)))
+//                .willReturn(CourseWithFullScheduleResponse.from(testCourse));
+//
+//        ResultActions resultActions = mockMvc.perform(post("/api/courses")
+//                    .contentType(MediaType.APPLICATION_JSON)
+//                    .content(objectMapper.writeValueAsString(CourseRequest.from(testCourse))));
+
+        // 1) service stub: CourseRequest + no file
+        given(courseService.createCourse(any(CourseRequest.class), isNull()))
                 .willReturn(CourseWithFullScheduleResponse.from(testCourse));
 
-        ResultActions resultActions = mockMvc.perform(post("/api/courses")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(CourseRequest.from(testCourse))));
+        // 2) JSON part 준비 (@RequestPart("data"))
+        MockMultipartFile dataPart = new MockMultipartFile(
+                "data",                              // @RequestPart("data")
+                "",                                  // 원본 filename
+                "application/json",
+                objectMapper.writeValueAsBytes(CourseRequest.from(testCourse))
+        );
+
+        // 3) multipart/form-data 요청 수행 (file 파트는 아예 넣지 않음)
+        ResultActions resultActions = mockMvc.perform(
+                multipart("/api/courses")
+                        .file(dataPart)
+                        .characterEncoding("UTF-8")    // 한글 깨짐 방지
+        );
 
         resultActions
                 // 테스트 실행시 필요한 빈만 로드되기 때문에 AOP가 동작하지 않음. 실제 응답은 정상적으로 201 Created 코드가 들어감
@@ -156,7 +181,62 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.title").value(testCourse.getTitle()))
                 .andExpect(jsonPath("$.data.schedule", hasSize(2)))
                 .andExpect(jsonPath("$.data.schedule[0].day").value(testCourse.getSchedules().getFirst().getDay().toString()));
-        then(courseService).should().createCourse(any(CourseRequest.class));
+        then(courseService).should()
+                .createCourse(any(CourseRequest.class), isNull());
+    }
+
+    @Test
+    @DisplayName("파일이 포함된 강의 정보로 생성 요청시, 업로드된 URL이 저장되어 반환된다.")
+    void givenValidCourseRequestWithFile_whenCreatingCourse_thenReturnCreatedCourseWithAttachmentUrl() throws Exception {
+        // — 1) 업로드된 URL 과, 그것이 세팅된 Course 객체 준비
+        String uploadedUrl = "https://bucket-1.s3.ap-northeast-2.amazonaws.com/12345_plan.png";
+        Course courseWithAttachment = new Course(
+                testCourse.getId(),
+                testCourse.getTitle(),
+                testCourse.getMajor(),
+                testCourse.getLocation(),
+                testCourse.getCapacity(),
+                testCourse.getEnrolled(),
+                testCourse.getCredit(),
+                testCourse.getProfessor(),
+                testCourse.getGrade(),
+                testCourse.getSemester(),
+                uploadedUrl
+        );
+        courseWithAttachment.getSchedules().addAll(testCourse.getSchedules());
+
+        // — 2) 서비스 스텁: 2-arg 버전에 스텁을 걸어줌
+        given(courseService.createCourse(any(CourseRequest.class), any(MultipartFile.class)))
+                .willReturn(CourseWithFullScheduleResponse.from(courseWithAttachment));
+
+        // — 3) JSON data 파트
+        MockMultipartFile dataPart = new MockMultipartFile(
+                "data",
+                "",
+                "application/json",
+                objectMapper.writeValueAsBytes(CourseRequest.from(testCourse))
+        );
+
+        // — 4) 파일 파트
+        MockMultipartFile filePart = new MockMultipartFile(
+                "file",
+                "plan.png",
+                "image/png",
+                "dummy-png-bytes".getBytes()
+        );
+
+        mockMvc.perform(
+                        multipart("/api/courses")
+                                .file(dataPart)
+                                .file(filePart)
+                                .contentType(MediaType.MULTIPART_FORM_DATA)
+                                .characterEncoding("UTF-8")
+                                .accept(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("성공적으로 생성되었습니다."))
+                .andExpect(jsonPath("$.data.coursePlanAttachment").value(uploadedUrl))
+                .andExpect(jsonPath("$.data.title").value(testCourse.getTitle()));
     }
 
     @Test
@@ -253,7 +333,6 @@ class CourseControllerTest {
                 any(Pageable.class)
         );
     }
-
 
 
 }
