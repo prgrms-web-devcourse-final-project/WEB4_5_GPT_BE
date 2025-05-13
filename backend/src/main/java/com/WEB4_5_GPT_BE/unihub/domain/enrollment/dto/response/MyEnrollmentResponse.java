@@ -47,7 +47,7 @@ public record MyEnrollmentResponse(
                 .courseId(course.getId())
                 .majorName(course.getMajor().getName())
                 .courseTitle(course.getTitle())
-                .professorName(course.getProfessor().getMember().getName())
+                .professorName(course.getProfessor().getName())
                 .location(course.getLocation())
                 .schedule(schedules)
                 .credit(course.getCredit())

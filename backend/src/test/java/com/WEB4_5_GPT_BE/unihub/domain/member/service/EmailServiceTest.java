@@ -1,6 +1,7 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.service;
 
 import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
+import com.WEB4_5_GPT_BE.unihub.domain.member.exception.member.EmailAlreadyVerifiedException;
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -74,4 +75,49 @@ public class EmailServiceTest {
             .isInstanceOf(UnihubException.class)
             .hasMessage("인증 코드가 일치하지 않습니다.");
   }
+    @Test
+    @DisplayName("인증완료 O + 코드 O → 덮어쓰기 후 재전송 성공")
+    void givenVerifiedAndCodeExists_whenSendVerificationCode_thenOverwriteCodeAndSendEmail() {
+        String email = "test@example.com";
+        VerificationPurpose purpose = VerificationPurpose.SIGNUP;
+
+        when(redisTemplate.hasKey("email:SIGNUP:verified:" + email)).thenReturn(true);
+        when(redisTemplate.hasKey("email:SIGNUP:verification:" + email)).thenReturn(true);
+
+        emailService.sendVerificationCode(email, purpose);
+
+        verify(mailSender).send(any(SimpleMailMessage.class));
+        verify(redisTemplate.opsForValue())
+                .set(eq("email:SIGNUP:verification:" + email), anyString(), eq(Duration.ofMinutes(5)));
+    }
+
+    @Test
+    @DisplayName("인증완료 O + 코드 X → 예외 발생")
+    void givenVerifiedAndCodeMissing_whenSendVerificationCode_thenThrowEmailAlreadyVerified() {
+        String email = "test@example.com";
+        VerificationPurpose purpose = VerificationPurpose.SIGNUP;
+
+        when(redisTemplate.hasKey("email:SIGNUP:verified:" + email)).thenReturn(true);
+        when(redisTemplate.hasKey("email:SIGNUP:verification:" + email)).thenReturn(false);
+
+        assertThatThrownBy(() -> emailService.sendVerificationCode(email, purpose))
+                .isInstanceOf(EmailAlreadyVerifiedException.class);
+    }
+
+    @Test
+    @DisplayName("인증완료 X + 코드 O → 덮어쓰기 후 이메일 재전송")
+    void givenUnverifiedAndCodeExists_whenSendVerificationCode_thenOverwriteCodeAndSendEmail() {
+        String email = "test@example.com";
+        VerificationPurpose purpose = VerificationPurpose.SIGNUP;
+
+        when(redisTemplate.hasKey("email:SIGNUP:verified:" + email)).thenReturn(false);
+        when(redisTemplate.hasKey("email:SIGNUP:verification:" + email)).thenReturn(true);
+
+        emailService.sendVerificationCode(email, purpose);
+
+        verify(mailSender).send(any(SimpleMailMessage.class));
+        verify(redisTemplate.opsForValue())
+                .set(eq("email:SIGNUP:verification:" + email), anyString(), eq(Duration.ofMinutes(5)));
+    }
+
 }

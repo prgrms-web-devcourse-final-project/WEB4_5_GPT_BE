@@ -4,8 +4,8 @@ import com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.DayOfWeek;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
-import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
+import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import jakarta.annotation.PostConstruct;
@@ -25,14 +25,14 @@ import java.util.List;
 public class InitTestData {
 
     private final InitDataHelper helper;
-    private final StudentProfileRepository studentProfileRepository;
+    private final StudentRepository studentRepository;
     private final PasswordEncoder passwordEncoder;
 
     @PostConstruct
     @Transactional
     public void init() {
         // 테스트 환경에서는 항상 초기화
-        studentProfileRepository.deleteAll();
+        studentRepository.deleteAll();
         helper.clearAllMemberData();
 
         // 관리자 계정 생성 메서드
@@ -55,10 +55,10 @@ public class InitTestData {
         initEnrollmentPeriod(university);
 
         // 테스트용 강좌 생성
-        List<Course> courses = initTestCourses(major, authenticatedProfessor.getProfessorProfile());
+        List<Course> courses = initTestCourses(major, (Professor) authenticatedProfessor);
 
         // 예외상황 강좌 생성
-        initConflictCourses(major, authenticatedProfessor.getProfessorProfile());
+        initConflictCourses(major, (Professor) authenticatedProfessor);
 
         // ------- ↓초기화 이후 추가적인 작업↓ -------
 
@@ -194,7 +194,7 @@ public class InitTestData {
     /**
      * Major + ProfessorProfile 기반으로 3개의 테스트용 강좌 생성
      */
-    private List<Course> initTestCourses(Major major, ProfessorProfile prof) {
+    private List<Course> initTestCourses(Major major, Professor prof) {
 
         List<Course> courses = new ArrayList<>();
 
@@ -223,7 +223,7 @@ public class InitTestData {
     /**
      * 정원초과, 학점초과, 시간표충돌 강좌 생성 메서드
      */
-    private void initConflictCourses(Major major, ProfessorProfile professorProfile) {
+    private void initConflictCourses(Major major, Professor professorProfile) {
         //  정원초과 강좌
         Course full = helper.createCourse("정원초과강좌", major, "OO동 104호",
                 1, 1, 3, professorProfile,

@@ -2,7 +2,6 @@ package com.WEB4_5_GPT_BE.unihub.domain.course.service;
 
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.DayOfWeek;
-import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
 import com.WEB4_5_GPT_BE.unihub.domain.course.dto.CourseRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.course.dto.CourseScheduleDto;
 import com.WEB4_5_GPT_BE.unihub.domain.course.dto.CourseWithFullScheduleResponse;
@@ -10,9 +9,8 @@ import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.CourseSchedule;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseScheduleRepository;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
-import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorProfileRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
+import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.MajorRepository;
@@ -57,14 +55,15 @@ class CourseServiceTest {
     private UniversityRepository universityRepository;
 
     @Mock
-    private ProfessorProfileRepository professorProfileRepository;
+
+    private ProfessorRepository professorRepository;
+
 
     @InjectMocks
     private CourseService courseService;
 
     private Course testCourse1;
     private Course testCourse2;
-    private Course testCourse3;
     // testCourse1과 강의실 스케줄 중복
     private CourseRequest testCourseRequest1;
     // testCourse1과 교수 스케줄 중복
@@ -73,14 +72,11 @@ class CourseServiceTest {
     private CourseRequest testCourseRequest3;
     private Major testMajor1;
     private Major testMajor2;
-    private ProfessorProfile testProfessorProfile1;
+    private Professor testProfessorProfile1;
     private University testUniversity1;
-    private Member testMember1;
 
     @BeforeEach
     public void setUp() {
-        testMember1 = new Member(1L, "testEmail@company.com", "testPassword1",
-                "testMember1", Role.PROFESSOR, false, null, null, null);
         testUniversity1 = new University(1L, "testUniversity1", "unihub.ac.kr");
         testMajor1 = new Major(1L, testUniversity1, "testMajor1");
         testMajor2 = new Major(2L, testUniversity1, "testMajor2");
@@ -92,9 +88,6 @@ class CourseServiceTest {
         testCourse2 = new Course(3L, "testCourse3", testMajor2,
                 "testLocation3", 29, 1, 2,
                 testProfessorProfile1, 1, 1, "/anotherPath/anotherImage.png");
-        testCourse3 = new Course(3L, "testCourse3", testMajor2,
-                "testLocation3", 29, 1, 2,
-                testProfessorProfile1, 1, 1, "/anotherPath/anotherImage.png");
         testCourse1.getSchedules().add(new CourseSchedule(
                 1L, testCourse1, testUniversity1.getId(), testCourse1.getLocation(), null,
                 DayOfWeek.MON, LocalTime.parse("12:00"), LocalTime.parse("14:00")));
@@ -104,11 +97,18 @@ class CourseServiceTest {
         testCourse1.getSchedules().add(new CourseSchedule(
                 1L, testCourse1, testUniversity1.getId(), testCourse1.getLocation(), null,
                 DayOfWeek.FRI, LocalTime.parse("12:00"), LocalTime.parse("14:00")));
-        testProfessorProfile1 = new ProfessorProfile(1L, testMember1, "testEmpId1",
-                testUniversity1, testMajor2, ApprovalStatus.APPROVED);
+        testProfessorProfile1 = Professor.builder()
+                .id(1L)
+                .university(testUniversity1)
+                .major(testMajor2)
+                .password("testPassword1")
+                .email("testProfEmail1@unihub.ac.kr")
+                .employeeId("testEmpId1")
+                .approvalStatus(ApprovalStatus.APPROVED)
+                .name("testMember1")
+                .build();
         testCourse2.setProfessor(testProfessorProfile1);
         testCourse1.getSchedules().forEach(cs -> cs.setProfessorProfileEmployeeId(testProfessorProfile1.getEmployeeId()));
-        testMember1.setProfessorProfile(testProfessorProfile1);
         testCourseRequest1 = new CourseRequest("testCourseRequest1", testMajor2.getName(), testUniversity1.getName(),
                 testCourse1.getLocation(), 40, 3, null, 4, 2, null,
                 List.of(new CourseScheduleDto(DayOfWeek.MON, "13:00", "14:00")));
@@ -155,7 +155,7 @@ class CourseServiceTest {
         given(universityRepository.findByName(testUniversity1.getName())).willReturn(Optional.of(testUniversity1));
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest.major()))
                 .willReturn(Optional.of(testCourse2.getMajor()));
-        given(professorProfileRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
+        given(professorRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
                 .willReturn(Optional.of(testProfessorProfile1));
         given(courseRepository.save(any(Course.class))).willReturn(testCourseRequest.toEntity(testMajor2, 0, testProfessorProfile1));
 
@@ -175,7 +175,7 @@ class CourseServiceTest {
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest3.major()))
                 .willReturn(Optional.of(testCourse2.getMajor()));
         CourseScheduleDto csd = testCourseRequest3.schedule().getFirst();
-        given(professorProfileRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
+        given(professorRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
                 .willReturn(Optional.of(testProfessorProfile1));
         given(courseScheduleRepository.existsByUnivIdAndLocationAndDayOfWeek(
                 testUniversity1.getId(),
@@ -244,7 +244,8 @@ class CourseServiceTest {
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest2.major()))
                 .willReturn(Optional.of(testCourse2.getMajor()));
         CourseScheduleDto csd = testCourseRequest2.schedule().getFirst();
-        given(professorProfileRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
+
+        given(professorRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
                 .willReturn(Optional.of(testProfessorProfile1));
         given(courseScheduleRepository.existsByProfEmpIdAndDayOfWeek(
                 testCourseRequest2.employeeId(),
@@ -291,7 +292,7 @@ class CourseServiceTest {
         given(universityRepository.findByName(testUniversity1.getName())).willReturn(Optional.of(testUniversity1));
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest.major()))
                 .willReturn(Optional.of(testMajor2));
-        given(professorProfileRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
+        given(professorRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
                 .willReturn(Optional.of(testProfessorProfile1));
         given(courseRepository.save(any(Course.class))).willReturn(testCourseRequest.toEntity(testMajor2, 0, testProfessorProfile1));
 
@@ -311,7 +312,7 @@ class CourseServiceTest {
         given(universityRepository.findByName(testUniversity1.getName())).willReturn(Optional.of(testUniversity1));
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest3.major()))
                 .willReturn(Optional.of(testCourse2.getMajor()));
-        given(professorProfileRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
+        given(professorRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
                 .willReturn(Optional.of(testProfessorProfile1));
         CourseScheduleDto csd = testCourseRequest3.schedule().getFirst();
         given(courseScheduleRepository.existsByUnivIdAndLocationAndDayOfWeekExcludingCourse(
@@ -339,7 +340,7 @@ class CourseServiceTest {
         then(courseRepository).should().findById(1L);
         then(universityRepository).should().findByName(testUniversity1.getName());
         then(majorRepository).should().findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest3.major());
-        then(professorProfileRepository).should().findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId());
+        then(professorRepository).should().findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId());
         then(courseScheduleRepository).should().existsByUnivIdAndLocationAndDayOfWeekExcludingCourse(
                 testUniversity1.getId(),
                 testCourseRequest3.location(),
@@ -398,7 +399,7 @@ class CourseServiceTest {
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest2.major()))
                 .willReturn(Optional.of(testCourse2.getMajor()));
         CourseScheduleDto csd = testCourseRequest2.schedule().getFirst();
-        given(professorProfileRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
+        given(professorRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
                 .willReturn(Optional.of(testProfessorProfile1));
         given(courseScheduleRepository.existsByProfEmpIdAndDayOfWeekExcludingCourse(
                 testCourseRequest2.employeeId(),
@@ -436,7 +437,7 @@ class CourseServiceTest {
                 2
         );
 
-        SecurityUser authUser = new SecurityUser(testMember1, List.of(new SimpleGrantedAuthority("ROLE_PROFESSOR")));
+        SecurityUser authUser = new SecurityUser(testProfessorProfile1, List.of(new SimpleGrantedAuthority("ROLE_PROFESSOR")));
 
         Long majorId = 1L;
         Integer grade = 2;
@@ -450,7 +451,7 @@ class CourseServiceTest {
         ArgumentCaptor<Integer> semesterCaptor = ArgumentCaptor.forClass(Integer.class);
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
 
-        given(professorProfileRepository.findByMemberId(testMember1.getId()))
+        given(professorRepository.findById(testProfessorProfile1.getId()))
                 .willReturn(Optional.of(testProfessorProfile1));
         given(courseRepository.findWithFilters(
                 universityIdCaptor.capture(),
@@ -478,7 +479,7 @@ class CourseServiceTest {
         assertThat(semesterCaptor.getValue()).isEqualTo(semester);
         assertThat(pageableCaptor.getValue()).isEqualTo(pageable);
 
-        then(professorProfileRepository).should().findByMemberId(testMember1.getId());
+        then(professorRepository).should().findById(testProfessorProfile1.getId());
         then(courseRepository).should().findWithFilters(
                 anyLong(), anyString(), anyString(), any(), any(), any(), any(Pageable.class)
         );

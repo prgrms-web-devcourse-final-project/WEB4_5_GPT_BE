@@ -7,11 +7,12 @@ import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.response.EnrollmentPeriodRespon
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.EnrollmentPeriod;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.EnrollmentPeriodRepository;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Admin;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
+import com.WEB4_5_GPT_BE.unihub.domain.member.repository.AdminRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
-import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorProfileRepository;
-import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentProfileRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.EmailService;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.UniversityRepository;
@@ -37,9 +38,11 @@ public class AdminServiceTest {
 
   @Mock private MemberRepository memberRepository;
 
-  @Mock private StudentProfileRepository studentProfileRepository;
+  @Mock private AdminRepository adminRepository;
 
-  @Mock private ProfessorProfileRepository professorProfileRepository;
+  @Mock private StudentRepository studentRepository;
+
+  @Mock private ProfessorRepository professorRepository;
 
   @Mock private EnrollmentPeriodRepository enrollmentPeriodRepository;
 
@@ -56,8 +59,8 @@ public class AdminServiceTest {
     Long memberId = 1L;
     ProfessorApprovalRequest request = new ProfessorApprovalRequest(ApprovalStatus.APPROVED);
 
-    ProfessorProfile professorProfile = mock(ProfessorProfile.class);
-    when(professorProfileRepository.findById(memberId)).thenReturn(Optional.of(professorProfile));
+    Professor professorProfile = mock(Professor.class);
+    when(professorRepository.findById(memberId)).thenReturn(Optional.of(professorProfile));
 
     // when
     adminService.changeProfessorStatus(memberId, request);
@@ -73,7 +76,7 @@ public class AdminServiceTest {
     Long memberId = 1L;
     ProfessorApprovalRequest request = new ProfessorApprovalRequest(ApprovalStatus.APPROVED);
 
-    when(professorProfileRepository.findById(memberId)).thenReturn(Optional.empty());
+    when(professorRepository.findById(memberId)).thenReturn(Optional.empty());
 
     // when & then
     assertThatThrownBy(() -> adminService.changeProfessorStatus(memberId, request))
@@ -197,19 +200,19 @@ public class AdminServiceTest {
     AdminInviteRequest request = new AdminInviteRequest("관리자", "admin@example.com");
     when(memberRepository.existsByEmail("admin@example.com")).thenReturn(false);
     
-    Member savedAdmin = Member.builder()
+    Admin savedAdmin = Admin.builder()
         .id(1L)
         .name("관리자")
         .email("admin@example.com")
         .password("changeme")
         .build();
-    when(memberRepository.save(any(Member.class))).thenReturn(savedAdmin);
+    when(adminRepository.save(any(Admin.class))).thenReturn(savedAdmin);
     
     // when
     adminService.inviteAdmin(request);
 
     // then
-    verify(memberRepository).save(any(Member.class));
+    verify(adminRepository).save(any(Admin.class));
     // 비동기 메소드가 호출되었는지 확인 (실제로는 비동기로 실행되지만 테스트에서는 동기적으로 호출 여부만 확인)
     verify(emailService).sendAdminInvitation(eq("admin@example.com"), eq("관리자"));
   }

@@ -4,6 +4,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.DayOfWeek;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import jakarta.annotation.PostConstruct;
@@ -62,7 +63,7 @@ public class InitProdOrStgData {
         );
 
         // 4) SW전공 테스트 강좌 4개 + 스케줄 생성 (/api/courses)
-        List<Course> swCourses = initCoursesForSw(professor1, majorSW);
+        List<Course> swCourses = initCoursesForSw((Professor) professor1, majorSW);
 
         // 5) 김하늘 학생이 두 강좌 수강신청 (/api/enrollments)
         Member student1 = helper.getMemberByEmail("haneulkim@auni.ac.kr");
@@ -85,7 +86,7 @@ public class InitProdOrStgData {
         );
 
         // 8) 컴공전공 강좌 3개 + 스케줄 생성
-        List<Course> csCourses = initCoursesForCS(professor2, majorCS);
+        List<Course> csCourses = initCoursesForCS((Professor) professor2, majorCS);
 
         // 9) 2학년 학생이 첫 번째 컴공전공 강좌 수강신청 (기간 검증용)
         helper.createEnrollment(student2, csCourses.get(0).getId());
@@ -96,19 +97,19 @@ public class InitProdOrStgData {
                 university.getId(), majorCS.getId(), ApprovalStatus.PENDING
         );
 
-        initConflictCourses(professor2, majorSW);
+        initConflictCourses((Professor) professor2, majorSW);
     }
 
     /**
      * 소프트웨어 공학전공 강좌 생성 메서드
      */
-    private List<Course> initCoursesForSw(Member professor, Major major) {
+    private List<Course> initCoursesForSw(Professor professor, Major major) {
 
         // 자료구조
         Course dataStructure = helper.createCourse(
                 "자료구조", major, "교육관 401호",
                 30, 0, 3,
-                professor.getProfessorProfile(),
+                professor,
                 3, 2, "/plans/data-structure.pdf"
         );
         helper.createCourseScheduleAndAssociateWithCourse(dataStructure, DayOfWeek.MON, "09:00:00", "10:30:00");
@@ -118,7 +119,7 @@ public class InitProdOrStgData {
         Course os = helper.createCourse(
                 "운영체제", major, "교육관 402호",
                 30, 0, 2,
-                professor.getProfessorProfile(),
+                professor,
                 3, 2, "/plans/os.pdf"
         );
         helper.createCourseScheduleAndAssociateWithCourse(os, DayOfWeek.TUE, "09:00:00", "10:30:00");
@@ -128,7 +129,7 @@ public class InitProdOrStgData {
         Course network = helper.createCourse(
                 "네트워크", major, "교육관 403호",
                 25, 0, 3,
-                professor.getProfessorProfile(),
+                professor,
                 3, 2, "/plans/network.pdf"
         );
         helper.createCourseScheduleAndAssociateWithCourse(network, DayOfWeek.WED, "10:00:00", "11:30:00");
@@ -137,7 +138,7 @@ public class InitProdOrStgData {
         Course javaCourse = helper.createCourse(
                 "자바 프로그래밍", major, "교육관 301호",
                 40, 0, 3,
-                professor.getProfessorProfile(),
+                professor,
                 1, 1, "/plans/java.pdf"
         );
         helper.createCourseScheduleAndAssociateWithCourse(javaCourse, DayOfWeek.MON, "09:00", "11:00");
@@ -148,10 +149,10 @@ public class InitProdOrStgData {
     /**
      * 컴퓨터공학전공 강좌 생성 메서드
      */
-    private List<Course> initCoursesForCS(Member professor, Major major) {
+    private List<Course> initCoursesForCS(Professor professor, Major major) {
         Course algo = helper.createCourse(
                 "알고리즘", major, "공학관 201호",
-                30, 0, 3, professor.getProfessorProfile(),
+                30, 0, 3, professor,
                 2, 1, "/plans/algorithm.pdf"
         );
         helper.createCourseScheduleAndAssociateWithCourse(algo, DayOfWeek.MON, "10:00:00", "11:30:00");
@@ -159,7 +160,7 @@ public class InitProdOrStgData {
 
         Course db = helper.createCourse(
                 "데이터베이스", major, "공학관 202호",
-                35, 0, 3, professor.getProfessorProfile(),
+                35, 0, 3, professor,
                 2, 1, "/plans/database.pdf"
         );
         helper.createCourseScheduleAndAssociateWithCourse(db, DayOfWeek.TUE, "09:00:00", "10:30:00");
@@ -167,7 +168,7 @@ public class InitProdOrStgData {
 
         Course ai = helper.createCourse(
                 "인공지능", major, "공학관 203호",
-                25, 0, 3, professor.getProfessorProfile(),
+                25, 0, 3, professor,
                 2, 1, "/plans/ai.pdf"
         );
         helper.createCourseScheduleAndAssociateWithCourse(ai, DayOfWeek.FRI, "11:00:00", "12:30:00");
@@ -175,13 +176,13 @@ public class InitProdOrStgData {
         return List.of(algo, db, ai);
     }
 
-    private void initConflictCourses(Member professor, Major major) {
+    private void initConflictCourses(Professor professor, Major major) {
         // 1) 정원초과 강좌 (capacity=30, 이미 enrolled=30 신청함)
         Course full = helper.createCourse(
                 "정원초과강좌", major, "OO동 104호",
                 30, 30,
                 3,                          // credit
-                professor.getProfessorProfile(),
+                professor,
                 1, 1, "/plans/full.pdf"
         );
         helper.createCourseScheduleAndAssociateWithCourse(
@@ -193,7 +194,7 @@ public class InitProdOrStgData {
                 "학점초과강좌", major, "OO동 105호",
                 30, 0,                      // capacity=30, enrolled=0
                 21,                         // credit=20
-                professor.getProfessorProfile(),
+                professor,
                 1, 1, "/plans/heavy.pdf"
         );
         helper.createCourseScheduleAndAssociateWithCourse(
@@ -203,7 +204,7 @@ public class InitProdOrStgData {
         Course conflict = helper.createCourse(
                 "충돌강좌", major, "OO동 106호",
                 30, 0, 3,
-                professor.getProfessorProfile(),
+                professor,
                 1, 1, "/plans/conflict.pdf"
         );
         // 모든 DayOfWeek 에 00:00~23:59 스케줄 추가

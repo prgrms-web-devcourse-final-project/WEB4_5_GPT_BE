@@ -1,7 +1,7 @@
 package com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response;
 
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.EnrollmentPeriod;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
 import lombok.Builder;
 
 import java.time.LocalDate;
@@ -26,7 +26,7 @@ public record StudentEnrollmentPeriodResponse(
      */
     public static StudentEnrollmentPeriodResponse from(
             EnrollmentPeriod period,
-            StudentProfile profile,
+            Student profile,
             boolean isEnrollmentOpen
     ) {
         return StudentEnrollmentPeriodResponse.builder()
