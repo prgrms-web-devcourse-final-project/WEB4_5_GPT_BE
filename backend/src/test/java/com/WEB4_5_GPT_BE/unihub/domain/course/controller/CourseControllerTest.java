@@ -240,20 +240,31 @@ class CourseControllerTest {
     }
 
     @Test
-    @DisplayName("강의 ID와 정상적인 강의 정보로 수정 요청시 성공.")
-    void givenCourseIdAndValidCourseRequest_whenUpdatingCourse_thenReturnUpdatedCourse() throws Exception {
+    @DisplayName("파일 없이 강의 수정 요청 → 성공")
+    void givenValidCourseRequestWithoutFile_whenUpdatingCourse_thenReturnUpdatedCourse() throws Exception {
         Long courseId = 1L;
-        ArgumentCaptor<Long> longCaptor = ArgumentCaptor.forClass(Long.class);
-        given(courseService.updateCourse(longCaptor.capture(), any(CourseRequest.class)))
-                .willReturn(CourseWithFullScheduleResponse.from(testCourse));
 
-        ResultActions resultActions = mockMvc.perform(put("/api/courses/%d".formatted(courseId))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(CourseRequest.from(testCourse)))
-                .characterEncoding("utf-8"));
-        Long captured = longCaptor.getValue();
+        given(courseService.updateCourse(
+                eq(courseId),
+                any(CourseRequest.class),
+                isNull()
+        )).willReturn(CourseWithFullScheduleResponse.from(testCourse));
 
-        resultActions
+        // json part 준비
+        MockMultipartFile jsonPart = new MockMultipartFile(
+                "data", "", "application/json",
+                objectMapper.writeValueAsBytes(CourseRequest.from(testCourse))
+        );
+
+        // multipart PUT 요청 (파일 첨부 없음)
+        mockMvc.perform(multipart("/api/courses/{id}", courseId)
+                        .file(jsonPart)
+                        .with(r -> {
+                            r.setMethod("PUT");
+                            return r;
+                        })
+                        .characterEncoding("UTF-8")
+                )
                 .andExpect(status().isOk())
                 .andExpect(handler().handlerType(CourseController.class))
                 .andExpect(handler().methodName("updateCourse"))
@@ -261,8 +272,71 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.title").value(testCourse.getTitle()))
                 .andExpect(jsonPath("$.data.schedule", hasSize(2)))
                 .andExpect(jsonPath("$.data.schedule[0].day").value(testCourse.getSchedules().getFirst().getDay().toString()));
-        assertThat(captured).isEqualTo(courseId);
-        then(courseService).should().updateCourse(any(Long.class), any(CourseRequest.class));
+
+        // verify + captor
+        ArgumentCaptor<Long> idCaptor = ArgumentCaptor.forClass(Long.class);
+        ArgumentCaptor<CourseRequest> reqCaptor = ArgumentCaptor.forClass(CourseRequest.class);
+        verify(courseService).updateCourse(
+                idCaptor.capture(),
+                reqCaptor.capture(),
+                isNull()
+        );
+        assertThat(idCaptor.getValue()).isEqualTo(courseId);
+    }
+
+    @Test
+    @DisplayName("강의 수정시, 파일 업로드가 정상적으로 작동하고 반환된 URL 이 그대로 response 에 담긴다")
+    void givenValidRequestWithFile_whenUpdatingCourse_thenReturnCourseWithNewAttachmentUrl() throws Exception {
+        Long courseId = 1L;
+        String newUrl = "https://bucket-1.s3.ap-northeast-2.amazonaws.com/12345_plan.pdf";
+
+        // 1) 원본 testCourse 와 동일한 속성 + 새로운 attachmentUrl 인스턴스 생성
+        Course courseWithNewAttachment = new Course(
+                testCourse.getId(),
+                testCourse.getTitle(),
+                testCourse.getMajor(),
+                testCourse.getLocation(),
+                testCourse.getCapacity(),
+                testCourse.getEnrolled(),
+                testCourse.getCredit(),
+                testCourse.getProfessor(),
+                testCourse.getGrade(),
+                testCourse.getSemester(),
+                newUrl
+        );
+        courseWithNewAttachment.getSchedules().addAll(testCourse.getSchedules());
+
+        // 2) service stub
+        given(courseService.updateCourse(
+                eq(courseId),
+                any(CourseRequest.class),
+                any(MultipartFile.class))
+        ).willReturn(CourseWithFullScheduleResponse.from(courseWithNewAttachment));
+
+        // 3) JSON part
+        MockMultipartFile json = new MockMultipartFile(
+                "data", "", "application/json",
+                objectMapper.writeValueAsBytes(CourseRequest.from(testCourse))
+        );
+        // 4) file part
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "plan.pdf", "application/pdf", "dummy".getBytes()
+        );
+
+        // 5) multipart PUT 요청
+        mockMvc.perform(multipart("/api/courses/{id}", courseId)
+                        .file(json).file(file)
+                        .with(r -> {
+                            r.setMethod("PUT");
+                            return r;
+                        })
+                        .characterEncoding("UTF-8")
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.coursePlanAttachment").value(newUrl));
+
+        then(courseService).should()
+                .updateCourse(eq(courseId), any(CourseRequest.class), any(MultipartFile.class));
     }
 
     @Test
