@@ -143,6 +143,24 @@ public class CourseService {
         return CourseWithFullScheduleResponse.from(courseRepository.save(res));
     }
 
+    public CourseWithFullScheduleResponse updateCourse(Long courseId, CourseRequest courseRequest, MultipartFile file) {
+        String url = null;
+        try {
+            if (file != null && !file.isEmpty()) {
+                url = s3Service.upload(file);
+                courseRequest = courseRequest.withCoursePlanAttachment(url);
+            }
+            return updateCourse(courseId, courseRequest); // 기존 updateCourse(courseId, courseRequest) 호출
+        } catch (IOException e) {
+            throw new FileUploadException();
+        } catch (UnihubException ex) {
+            if (url != null) {
+                s3Service.deleteByUrl(url); // 실패 시 업로드 롤백
+            }
+            throw ex;
+        }
+    }
+
     /**
      * 주어진 ID에 해당하는 강의를 삭제한다.
      *
