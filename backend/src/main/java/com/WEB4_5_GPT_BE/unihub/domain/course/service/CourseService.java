@@ -15,6 +15,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.university.repository.UniversityRepositor
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
 import com.WEB4_5_GPT_BE.unihub.global.security.SecurityUser;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -30,6 +31,7 @@ import java.util.List;
 /**
  * 강의 도메인 서비스 레이어.
  */
+@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -170,8 +172,16 @@ public class CourseService {
         Course course = courseRepository.findById(courseId).orElseThrow(
                 () -> new UnihubException(String.valueOf(HttpStatus.NOT_FOUND.value()), "해당 강의가 존재하지 않습니다.")
         );
-        if (course.getCoursePlanAttachment() != null) {
-            s3Service.deleteByUrl(course.getCoursePlanAttachment());
+
+        // s3에 업로드된 강의계획서 파일 삭제
+        // 실패 시에도 강의 삭제는 정상 진행되도록 구현하고 log에 남김
+        String attachment = course.getCoursePlanAttachment();
+        if (attachment != null) {
+            try {
+                s3Service.deleteByUrl(attachment);
+            } catch (Exception e) {
+                log.warn("S3 파일 삭제 실패 (but ignoring): {}", attachment, e);
+            }
         }
         courseRepository.delete(course);
     }
