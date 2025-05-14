@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
@@ -32,12 +33,14 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/courses")
 @RequiredArgsConstructor
+@SecurityRequirement(name = "accessToken을 사용한 bearerAuth 로그인 인증")
 public class CourseController {
 
     private final CourseService courseService;
 
     /**
      * 주어진 ID에 해당하는 강의를 조회한다.
+     *
      * @param courseId 조회하고자 하는 강의의 ID
      * @return 조회된 강의에 해당하는 {@link CourseWithFullScheduleResponse} DTO
      */
@@ -56,7 +59,7 @@ public class CourseController {
     /**
      * 주어진 정보를 바탕으로 새 강의를 생성합니다.
      * - 강의계획서 파일(`file` 파트)을 전송하면 AWS S3에 업로드 후
-     *   발급된 URL을 `coursePlanAttachment` 필드에 저장합니다.
+     * 발급된 URL을 `coursePlanAttachment` 필드에 저장합니다.
      * - 강의실/교수 스케줄 충돌 여부 및 전공·교수 유효성을 검증한 뒤 저장합니다.
      *
      * @param courseRequest  생성할 강의의 상세 데이터 (JSON, `data` 파트)
@@ -87,12 +90,12 @@ public class CourseController {
     /**
      * 주어진 강의 정보를 바탕으로 기존 강의를 수정합니다.
      * - 강의계획서 파일(`file`)이 함께 전송되면, AWS S3에 업로드 후
-     *   새로운 URL로 `coursePlanAttachment`를 교체합니다.
+     * 새로운 URL로 `coursePlanAttachment`를 교체합니다.
      * - 스케줄, 전공/교수 등 유효성 검사 후 충돌이 없으면 덮어씌우기 방식으로 업데이트합니다.
      *
-     * @param courseId        수정 대상 강의의 ID
-     * @param courseRequest   수정할 강의의 상세 데이터 (JSON, `data` 파트)
-     * @param coursePlanFile  새로운 강의계획서 파일 (multipart `file` 파트)
+     * @param courseId       수정 대상 강의의 ID
+     * @param courseRequest  수정할 강의의 상세 데이터 (JSON, `data` 파트)
+     * @param coursePlanFile 새로운 강의계획서 파일 (multipart `file` 파트)
      * @return 수정된 강의 정보를 담은 {@link CourseWithFullScheduleResponse}
      */
     @Operation(
@@ -143,22 +146,23 @@ public class CourseController {
 
     /**
      * 주어진 필터링/페이지네이션 정보와 인증 유저 정보를 바탕으로 강의 목록을 조회한다.
-     * @param mode 조회 모드(반환할 DTO의 종류)
-     * @param title 강의 제목 필터링 문자열
-     * @param profName 교수 이름 필터링 문자열
+     *
+     * @param mode      조회 모드(반환할 DTO의 종류)
+     * @param title     강의 제목 필터링 문자열
+     * @param profName  교수 이름 필터링 문자열
      * @param principal 인증된 유저 정보
-     * @param pageable 페이지네이션 정보
+     * @param pageable  페이지네이션 정보
      * @return {@code mode}에서 명시된 타입의 DTO가 담긴 {@link Page} 오브젝트
      */
     @Operation(summary = "강의 목록 조회", description = "주어진 조건에 해당하는 강의의 목록을 반환합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공", content = @Content(mediaType = "application/json")),
             @ApiResponse(responseCode = "500", description = "조회 실패; 인증된 유저의 데이터 또는 쿼리 파라미터가 잘못됨",
-            content = {@Content(mediaType = "application/json", schema = @Schema(implementation = RsData.class))})
+                    content = {@Content(mediaType = "application/json", schema = @Schema(implementation = RsData.class))})
     })
     @GetMapping
     public RsData<Page<?>> getAllCourses(
-            @Parameter(required = true, description = "반환할 목록 형식: FULL, ENROLL, CATALOG 중 하나", example = "FULL")
+            @Parameter(required = true, description = "반환할 목록 형식: FULL, ENROLL, CATALOG, TIMETABLE 중 하나", example = "FULL")
             @RequestParam("mode") CourseListReturnMode mode,
 
             @Parameter(description = "강의 제목 키워드 (검색용)", example = "자료구조")
@@ -177,9 +181,9 @@ public class CourseController {
             @RequestParam(required = false) Integer semester,
 
 
-        @AuthenticationPrincipal SecurityUser principal,
-        @Parameter(hidden = true)
-        @PageableDefault @ParameterObject Pageable pageable) {
+            @AuthenticationPrincipal SecurityUser principal,
+            @Parameter(hidden = true)
+            @PageableDefault @ParameterObject Pageable pageable) {
         // TODO: 인증이 안되어있는 상태에서 요청이 들어오면 인증 정보에서 소속 대학ID를 꺼내오는 과정에서 NPE가 발생한다.
 //        if (principal == null) {
 //            return new RsData<>(String.valueOf(HttpStatus.UNAUTHORIZED.value()), "인증이 필요합니다.");
@@ -194,6 +198,9 @@ public class CourseController {
             case CATALOG -> new RsData<>(String.valueOf(HttpStatus.OK.value()),
                     "조회에 성공했습니다.",
                     courseService.findAllCoursesModeCatalog(title, profName, majorId, grade, semester, principal, pageable));
+            case TIMETABLE -> new RsData<>(String.valueOf(HttpStatus.OK.value()),
+                    "조회에 성공했습니다.",
+                    courseService.findAllCoursesModeTimetable(title, profName, majorId, grade, semester, principal, pageable));
         };
     }
 }
