@@ -16,9 +16,11 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageStudentR
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.ProfessorCourseResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.UpdateMajorResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
+
 import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
+
 import com.WEB4_5_GPT_BE.unihub.domain.member.exception.member.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.ProfessorProfileNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.StudentProfileNotFoundException;
