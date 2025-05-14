@@ -38,6 +38,7 @@ public class CourseController {
 
     /**
      * 주어진 ID에 해당하는 강의를 조회한다.
+     *
      * @param courseId 조회하고자 하는 강의의 ID
      * @return 조회된 강의에 해당하는 {@link CourseWithFullScheduleResponse} DTO
      */
@@ -56,7 +57,7 @@ public class CourseController {
     /**
      * 주어진 정보를 바탕으로 새 강의를 생성합니다.
      * - 강의계획서 파일(`file` 파트)을 전송하면 AWS S3에 업로드 후
-     *   발급된 URL을 `coursePlanAttachment` 필드에 저장합니다.
+     * 발급된 URL을 `coursePlanAttachment` 필드에 저장합니다.
      * - 강의실/교수 스케줄 충돌 여부 및 전공·교수 유효성을 검증한 뒤 저장합니다.
      *
      * @param courseRequest  생성할 강의의 상세 데이터 (JSON, `data` 파트)
@@ -87,12 +88,12 @@ public class CourseController {
     /**
      * 주어진 강의 정보를 바탕으로 기존 강의를 수정합니다.
      * - 강의계획서 파일(`file`)이 함께 전송되면, AWS S3에 업로드 후
-     *   새로운 URL로 `coursePlanAttachment`를 교체합니다.
+     * 새로운 URL로 `coursePlanAttachment`를 교체합니다.
      * - 스케줄, 전공/교수 등 유효성 검사 후 충돌이 없으면 덮어씌우기 방식으로 업데이트합니다.
      *
-     * @param courseId        수정 대상 강의의 ID
-     * @param courseRequest   수정할 강의의 상세 데이터 (JSON, `data` 파트)
-     * @param coursePlanFile  새로운 강의계획서 파일 (multipart `file` 파트)
+     * @param courseId       수정 대상 강의의 ID
+     * @param courseRequest  수정할 강의의 상세 데이터 (JSON, `data` 파트)
+     * @param coursePlanFile 새로운 강의계획서 파일 (multipart `file` 파트)
      * @return 수정된 강의 정보를 담은 {@link CourseWithFullScheduleResponse}
      */
     @Operation(
