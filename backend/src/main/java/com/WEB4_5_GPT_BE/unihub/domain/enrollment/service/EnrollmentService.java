@@ -72,6 +72,8 @@ public class EnrollmentService {
         // student → StudentProfile
         Student profile = studentRepository.getReferenceById(student.getId());
 
+        ensureEnrollmentPeriodActive(profile);
+
         // 해당 학생의 수강신청 목록을 조회하고, DTO로 변환하여 반환
         return enrollmentRepository
                 .findAllByStudent(profile)

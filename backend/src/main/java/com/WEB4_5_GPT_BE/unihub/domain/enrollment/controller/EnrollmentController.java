@@ -125,23 +125,33 @@ public class EnrollmentController {
         return new RsData<>("200", "수강 신청이 완료되었습니다.");
     }
 
-    @Operation(summary = "내 강의 불러오기 (시간표 등록용 간소화된 response)", description = "주어진 조건에 해당하는 내 강의의 목록을 반환합니다.")
+    @Operation(summary = "내 강의 불러오기 (시간표 등록용 간소화된 response)", description = "주어진 조건에 해당하는 내 강의의 목록을 반환합니다. 필수 쿼리 파라미터(year, semester)가 누락된 경우 400 에러가 발생합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "400", description = "필수 쿼리 파라미터가 누락됨",
+                    content = {@Content(mediaType = "application/json", schema = @Schema(implementation = RsData.class))}),
             @ApiResponse(responseCode = "500", description = "조회 실패; 인증된 유저의 데이터 또는 쿼리 파라미터가 잘못됨",
                     content = {@Content(mediaType = "application/json", schema = @Schema(implementation = RsData.class))})
     })
     @GetMapping("/timetables/me")
     public RsData<List<MyEnrollmentListForTimetableResponse>> getMyEnrollmentsForTimetable(
             @Parameter(required = true, description = "조회할 연도", example = "2025")
-            @RequestParam("year") int year,
+            @RequestParam(value = "year", required = false) Integer year,
             @Parameter(required = true, description = "조회할 학기", example = "1")
-            @RequestParam("semester") Integer semester
+            @RequestParam(value = "semester", required = false) Integer semester
     ) {
+        // 필수 파라미터 검증
+        if (year == null) {
+            throw new RequiredParameterMissingException("year");
+        }
+        if (semester == null) {
+            throw new RequiredParameterMissingException("semester");
+        }
+
         Member actor = rq.getActor();
-        List<MyEnrollmentListForTimetableResponse> myEnrollmentListForTimetableResponse = enrollmentService.getMyEnrollmentsForTimetable(actor, year, semester);
+        List<MyEnrollmentListForTimetableResponse> myEnrollmentListForTimetableResponse =
+                enrollmentService.getMyEnrollmentsForTimetable(actor, year, semester);
 
         return new RsData<>("200", "시간표 등록용 강의 목록 조회 완료", myEnrollmentListForTimetableResponse);
     }
-
 }
