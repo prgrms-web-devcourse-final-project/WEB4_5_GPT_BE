@@ -14,7 +14,11 @@ import com.WEB4_5_GPT_BE.unihub.domain.enrollment.repository.EnrollmentRepositor
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
+import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.EmailService;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.MemberService;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
@@ -62,6 +66,10 @@ class EnrollmentConcurrencyTest {
     @Autowired
     CourseScheduleRepository courseScheduleRepository;
     @Autowired
+    ProfessorRepository professorRepository;
+    @Autowired
+    StudentRepository studentRepository;
+    @Autowired
     MemberRepository memberRepository;
     @Autowired
     EnrollmentPeriodRepository enrollmentPeriodRepository;
@@ -77,7 +85,7 @@ class EnrollmentConcurrencyTest {
         students = IntStream.rangeClosed(1, 100)
                 .mapToObj(i -> {
                     String email = String.format("concurrentStudent%d@buni.ac.kr", i);
-                    emailService.markEmailAsVerified(email);
+                    emailService.markEmailAsVerified(email, VerificationPurpose.SIGNUP);
                     memberService.signUpStudent(new StudentSignUpRequest(
                                     email,
                                     "password",
@@ -93,14 +101,13 @@ class EnrollmentConcurrencyTest {
                     return memberRepository.findByEmail(email).orElseThrow();
                 }).toList();
 
-        emailService.markEmailAsVerified("professor@buni.ac.kr");
+        emailService.markEmailAsVerified("professor@buni.ac.kr", VerificationPurpose.SIGNUP);
         memberService.signUpProfessor(new ProfessorSignUpRequest("professor@buni.ac.kr", "password",
                 "김교수", "EMP00000", university.getId(), major.getId(), Role.PROFESSOR));
 
-        Member professor = memberRepository.findByEmail("professor@buni.ac.kr").orElseThrow();
-        professor.getProfessorProfile().setApprovalStatus(ApprovalStatus.APPROVED);
-
-        memberRepository.save(professor);
+        Professor professor = (Professor) memberRepository.findByEmail("professor@buni.ac.kr").orElseThrow();
+        professor.setApprovalStatus(ApprovalStatus.APPROVED);
+        professorRepository.save(professor);
 
 
         // 수강신청 기간 설정 (1학년·1학기)
@@ -122,7 +129,7 @@ class EnrollmentConcurrencyTest {
                 .capacity(30)
                 .enrolled(0)
                 .credit(3)
-                .professor(professor.getProfessorProfile())
+                .professor(professor)
                 .grade(1)
                 .semester(1)
                 .coursePlanAttachment("/plans/ds.pdf")
@@ -135,7 +142,7 @@ class EnrollmentConcurrencyTest {
                         .course(course)
                         .universityId(university.getId())
                         .location(course.getLocation())
-                        .professorProfileEmployeeId(professor.getProfessorProfile().getEmployeeId())
+                        .professorProfileEmployeeId(professor.getEmployeeId())
                         .day(DayOfWeek.MON)
                         .startTime(LocalTime.parse("09:00:00"))
                         .endTime(LocalTime.parse("10:30:00"))
