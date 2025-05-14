@@ -17,6 +17,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
 import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.StudentProfileNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
+import com.WEB4_5_GPT_BE.unihub.global.concurrent.ConcurrencyGuard;
 import com.WEB4_5_GPT_BE.unihub.global.security.SecurityUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -211,6 +212,8 @@ public class EnrollmentService {
      * 여러 예외 상황을 검증한 후 수강 신청을 진행합니다.
      * 수강 신청 완료 후 해당 강좌의 현재 수강인원을 증가시킵니다.
      *
+     * @ConcurrencyGuard(lockName = "course") 분산 락으로 동시 수강신청을 방지합니다.
+     *
      * @param student  로그인 인증된 학생 정보
      * @param courseId 신청할 강좌의 ID
      * @throws CourseNotFoundException           강좌 정보가 없는 경우
@@ -221,7 +224,7 @@ public class EnrollmentService {
      * @throws CreditLimitExceededException      최대 학점 초과 시
      * @throws ScheduleConflictException         기존 신청한 강좌와 시간표가 겹치는 경우
      */
-    @Transactional
+    @ConcurrencyGuard(lockName = "course")
     public void enrollment(Member student, Long courseId) {
         // Member → StudentProfile 추출
         Student profile = studentRepository.findById(student.getId())
