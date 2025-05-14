@@ -3,11 +3,17 @@ package com.WEB4_5_GPT_BE.unihub.domain.timetable.entity;
 import com.WEB4_5_GPT_BE.unihub.domain.common.entity.BaseTimeEntity;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 @Table(name = "timetable_item")
 public class TimetableItem extends BaseTimeEntity {
 
