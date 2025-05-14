@@ -397,4 +397,85 @@ public class MemberControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("비밀번호 검증 성공"));
     }
+
+    @Test
+    @DisplayName("관리자 마이페이지 조회 성공")
+    void getAdminMyPage_success() throws Exception {
+        MemberLoginRequest loginRequest = new MemberLoginRequest("adminmaster@auni.ac.kr", "adminPw");
+
+        String response = mockMvc.perform(post("/api/members/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andReturn().getResponse().getContentAsString();
+
+        String accessToken = objectMapper.readTree(response).path("data").path("accessToken").asText();
+
+        mockMvc.perform(get("/api/members/me/admin")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("관리자 마이페이지 조회 성공"))
+                .andExpect(jsonPath("$.data.email").value("adminmaster@auni.ac.kr"));
+    }
+
+    @Test
+    @DisplayName("관리자 이메일 변경 성공")
+    void updateAdminEmail_success() throws Exception {
+        MemberLoginRequest loginRequest = new MemberLoginRequest("adminmaster@auni.ac.kr", "adminPw");
+        String response = mockMvc.perform(post("/api/members/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andReturn().getResponse().getContentAsString();
+
+        String accessToken = objectMapper.readTree(response).path("data").path("accessToken").asText();
+
+        // 이메일 인증 완료된 것으로 처리
+        emailService.markEmailAsVerified("newadmin@auni.ac.kr", VerificationPurpose.EMAIL_CHANGE);
+
+        UpdateEmailRequest request = new UpdateEmailRequest("newadmin@auni.ac.kr");
+
+        mockMvc.perform(patch("/api/members/me/email")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("이메일 변경 성공"));
+    }
+
+    @Test
+    @DisplayName("관리자 비밀번호 변경 성공")
+    void updateAdminPassword_success() throws Exception {
+        MemberLoginRequest loginRequest = new MemberLoginRequest("adminmaster@auni.ac.kr", "adminPw");
+        String response = mockMvc.perform(post("/api/members/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andReturn().getResponse().getContentAsString();
+
+        String accessToken = objectMapper.readTree(response).path("data").path("accessToken").asText();
+
+        UpdatePasswordRequest request = new UpdatePasswordRequest("adminPw", "newAdminPw");
+
+        mockMvc.perform(patch("/api/members/me/password")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("비밀번호 변경 성공"));
+    }
+
+    @Test
+    @DisplayName("관리자 회원 탈퇴 성공")
+    void deleteAdmin_success() throws Exception {
+        MemberLoginRequest loginRequest = new MemberLoginRequest("adminmaster@auni.ac.kr", "adminPw");
+        String response = mockMvc.perform(post("/api/members/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andReturn().getResponse().getContentAsString();
+
+        String accessToken = objectMapper.readTree(response).path("data").path("accessToken").asText();
+
+        mockMvc.perform(delete("/api/members/me")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("회원 탈퇴 성공"));
+    }
 }
