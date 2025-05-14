@@ -36,6 +36,7 @@ public class CourseController {
 
     /**
      * 주어진 ID에 해당하는 강의를 조회한다.
+     *
      * @param courseId 조회하고자 하는 강의의 ID
      * @return 조회된 강의에 해당하는 {@link CourseWithFullScheduleResponse} DTO
      */
@@ -53,6 +54,7 @@ public class CourseController {
 
     /**
      * 주어진 정보를 바탕으로 스케줄을 검증한 뒤 새 강의를 생성한다.
+     *
      * @param courseRequest 생성하고자 하는 강의의 정보
      * @return 생성된 강의에 해당하는 {@link CourseWithFullScheduleResponse} DTO
      */
@@ -72,7 +74,8 @@ public class CourseController {
 
     /**
      * 주어진 강의 정보의 스케줄을 검증한 뒤 주어진 ID에 해당하는 강의위에 덮어씌운다.
-     * @param courseId 덮어쓰고자 하는 강의의 ID
+     *
+     * @param courseId      덮어쓰고자 하는 강의의 ID
      * @param courseRequest 덮어씌우고자 하는 강의 정보
      * @return 갱신된 강의에 해당하는 {@link CourseWithFullScheduleResponse} DTO
      */
@@ -94,6 +97,7 @@ public class CourseController {
 
     /**
      * 주어진 ID에 해당하는 강의를 삭제한다.
+     *
      * @param courseId 삭제하고자 하는 강의의 ID
      * @return 해당 없음
      */
@@ -112,18 +116,19 @@ public class CourseController {
 
     /**
      * 주어진 필터링/페이지네이션 정보와 인증 유저 정보를 바탕으로 강의 목록을 조회한다.
-     * @param mode 조회 모드(반환할 DTO의 종류)
-     * @param title 강의 제목 필터링 문자열
-     * @param profName 교수 이름 필터링 문자열
+     *
+     * @param mode      조회 모드(반환할 DTO의 종류)
+     * @param title     강의 제목 필터링 문자열
+     * @param profName  교수 이름 필터링 문자열
      * @param principal 인증된 유저 정보
-     * @param pageable 페이지네이션 정보
+     * @param pageable  페이지네이션 정보
      * @return {@code mode}에서 명시된 타입의 DTO가 담긴 {@link Page} 오브젝트
      */
     @Operation(summary = "강의 목록 조회", description = "주어진 조건에 해당하는 강의의 목록을 반환합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공", content = @Content(mediaType = "application/json")),
             @ApiResponse(responseCode = "500", description = "조회 실패; 인증된 유저의 데이터 또는 쿼리 파라미터가 잘못됨",
-            content = {@Content(mediaType = "application/json", schema = @Schema(implementation = RsData.class))})
+                    content = {@Content(mediaType = "application/json", schema = @Schema(implementation = RsData.class))})
     })
     @GetMapping
     public RsData<Page<?>> getAllCourses(
@@ -146,9 +151,9 @@ public class CourseController {
             @RequestParam(required = false) Integer semester,
 
 
-        @AuthenticationPrincipal SecurityUser principal,
-        @Parameter(hidden = true)
-        @PageableDefault @ParameterObject Pageable pageable) {
+            @AuthenticationPrincipal SecurityUser principal,
+            @Parameter(hidden = true)
+            @PageableDefault @ParameterObject Pageable pageable) {
         // TODO: 인증이 안되어있는 상태에서 요청이 들어오면 인증 정보에서 소속 대학ID를 꺼내오는 과정에서 NPE가 발생한다.
 //        if (principal == null) {
 //            return new RsData<>(String.valueOf(HttpStatus.UNAUTHORIZED.value()), "인증이 필요합니다.");
