@@ -26,6 +26,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.time.LocalTime;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.BDDAssertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
@@ -55,9 +57,10 @@ class CourseServiceTest {
     private UniversityRepository universityRepository;
 
     @Mock
-
     private ProfessorRepository professorRepository;
 
+    @Mock
+    private S3Service s3Service;
 
     @InjectMocks
     private CourseService courseService;
@@ -483,5 +486,51 @@ class CourseServiceTest {
         then(courseRepository).should().findWithFilters(
                 anyLong(), anyString(), anyString(), any(), any(), any(), any(Pageable.class)
         );
+    }
+
+    @Test
+    @DisplayName("존재하는 강의는 S3 파일 삭제 후 DB에서 삭제된다")
+    void deleteCourse_withAttachment_deletesFileAndCourse() {
+        // given
+        Long courseId = 42L;
+        // dummy Major/University 객체 생성
+        University uni = new University(1L, "U", "u.ac.kr");
+        Major maj = new Major(2L, uni, "DummyMajor");
+        // 빌더를 이용해 coursePlanAttachment 만 지정
+        Course course = Course.builder()
+                .id(courseId)
+                .title("삭제용 강의")
+                .major(maj)
+                .location("TestRoom")
+                .capacity(10)
+                .enrolled(5)
+                .credit(3)
+                .professor(null)
+                .grade(1)
+                .semester(1)
+                .coursePlanAttachment("/some/bucket/path.pdf")
+                .build();
+
+        given(courseRepository.findById(courseId)).willReturn(Optional.of(course));
+
+        // when
+        courseService.deleteCourse(courseId);
+
+        // then
+        then(s3Service).should().deleteByUrl("/some/bucket/path.pdf");
+        then(courseRepository).should().delete(course);
+    }
+
+    @Test
+    @DisplayName("강의가 존재하지 않으면 404 예외 발생")
+    void deleteCourse_notFound_throwsException() {
+        given(courseRepository.findById(anyLong())).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> courseService.deleteCourse(99L))
+                .isInstanceOfSatisfying(UnihubException.class, ex ->
+                        assertThat(ex.getCode())
+                                .isEqualTo(String.valueOf(HttpStatus.NOT_FOUND.value()))
+                );
     }
 }
