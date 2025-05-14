@@ -2,6 +2,7 @@ package com.WEB4_5_GPT_BE.unihub.domain.course.service;
 
 import com.WEB4_5_GPT_BE.unihub.domain.course.dto.*;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
+import com.WEB4_5_GPT_BE.unihub.domain.course.exception.FileUploadException;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseScheduleRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
@@ -14,19 +15,23 @@ import com.WEB4_5_GPT_BE.unihub.domain.university.repository.UniversityRepositor
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
 import com.WEB4_5_GPT_BE.unihub.global.security.SecurityUser;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalTime;
 import java.util.List;
 
 /**
  * 강의 도메인 서비스 레이어.
  */
+@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -42,6 +47,8 @@ public class CourseService {
     private final StudentRepository studentRepository;
 
     private final ProfessorRepository professorRepository;
+
+    private final S3Service s3Service;
 
     /**
      * 주어진 ID에 해당하는 강의 정보를 반환한다.
@@ -86,6 +93,26 @@ public class CourseService {
         return CourseWithFullScheduleResponse.from(courseRepository.save(res));
     }
 
+    public CourseWithFullScheduleResponse createCourse(CourseRequest req, MultipartFile file) {
+
+        String url = null;
+
+        try {
+            if (file != null && !file.isEmpty()) {
+                url = s3Service.upload(file);
+                req = req.withCoursePlanAttachment(url);
+            }
+            return createCourse(req); // 기존 createCourse(CourseRequest) 호출
+        } catch (IOException e) {
+            throw new FileUploadException();
+        } catch (UnihubException ex) {
+            if (url != null) {
+                s3Service.deleteByUrl(url); // 실패 시 업로드 롤백
+            }
+            throw ex;
+        }
+    }
+
     /**
      * 주어진 강의 정보를 주어진 ID에 해당하는 강의 위에 덮어쓴다.
      *
@@ -118,6 +145,24 @@ public class CourseService {
         return CourseWithFullScheduleResponse.from(courseRepository.save(res));
     }
 
+    public CourseWithFullScheduleResponse updateCourse(Long courseId, CourseRequest courseRequest, MultipartFile file) {
+        String url = null;
+        try {
+            if (file != null && !file.isEmpty()) {
+                url = s3Service.upload(file);
+                courseRequest = courseRequest.withCoursePlanAttachment(url);
+            }
+            return updateCourse(courseId, courseRequest); // 기존 updateCourse(courseId, courseRequest) 호출
+        } catch (IOException e) {
+            throw new FileUploadException();
+        } catch (UnihubException ex) {
+            if (url != null) {
+                s3Service.deleteByUrl(url); // 실패 시 업로드 롤백
+            }
+            throw ex;
+        }
+    }
+
     /**
      * 주어진 ID에 해당하는 강의를 삭제한다.
      *
@@ -127,6 +172,17 @@ public class CourseService {
         Course course = courseRepository.findById(courseId).orElseThrow(
                 () -> new UnihubException(String.valueOf(HttpStatus.NOT_FOUND.value()), "해당 강의가 존재하지 않습니다.")
         );
+
+        // s3에 업로드된 강의계획서 파일 삭제
+        // 실패 시에도 강의 삭제는 정상 진행되도록 구현하고 log에 남김
+        String attachment = course.getCoursePlanAttachment();
+        if (attachment != null) {
+            try {
+                s3Service.deleteByUrl(attachment);
+            } catch (Exception e) {
+                log.warn("S3 파일 삭제 실패 (but ignoring): {}", attachment, e);
+            }
+        }
         courseRepository.delete(course);
     }
 

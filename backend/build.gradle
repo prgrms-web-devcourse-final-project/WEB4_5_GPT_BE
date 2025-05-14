@@ -83,8 +83,8 @@ dependencies {
     // sentry 실행시 예외 전송용
     implementation 'io.sentry:sentry-spring-boot-starter:6.30.0'
 
-    // AWS S3 (필요 시 주석 해제)
-    // implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.3.0'
+    // AWS S3
+    implementation("io.awspring.cloud:spring-cloud-aws-starter-s3:3.3.0")
 }
 
 
