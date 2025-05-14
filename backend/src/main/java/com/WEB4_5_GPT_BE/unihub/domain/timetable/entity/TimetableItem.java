@@ -1,6 +1,7 @@
 package com.WEB4_5_GPT_BE.unihub.domain.timetable.entity;
 
 import com.WEB4_5_GPT_BE.unihub.domain.common.entity.BaseTimeEntity;
+import com.WEB4_5_GPT_BE.unihub.domain.common.enums.TimetableItemType;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
 import jakarta.persistence.*;
 import lombok.*;
@@ -29,6 +30,10 @@ public class TimetableItem extends BaseTimeEntity {
     @JoinColumn(name = "course_id") // 강의가 아닌 경우 NULL
     private Course course;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private TimetableItemType type;
+
     @Column(nullable = false)
     private String title;
 
@@ -45,5 +50,5 @@ public class TimetableItem extends BaseTimeEntity {
     private String memo;
 
     @OneToMany(mappedBy = "timetableItem", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<TimetableItemSchedule> schedule = new ArrayList<>();
+    private List<TimetableItemSchedule> schedules = new ArrayList<>();
 }
