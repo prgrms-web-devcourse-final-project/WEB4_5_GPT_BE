@@ -98,18 +98,8 @@ public class InitProdOrStgData {
         );
 
         initConflictCourses((Professor) professor2, majorSW);
-        //공지사항 초기 데이터 추가
-        helper.createNotice("필독 공지", "수강신청 일정 공지",null);
-        helper.createNotice(
-                "시스템 점검 안내",
-                "안녕하세요.\n더 나은 서비스를 제공하기 위해 시스템 점검이 예정되어 있습니다.",
-                null
-        );
-        helper.createNotice(
-                "여름학기 수강신청 안내",
-                "여름학기 수강신청이 시작됩니다.",
-                null
-        );
+        //공지사항 생성
+        initNotices();
     }
 
     /**
@@ -225,5 +215,18 @@ public class InitProdOrStgData {
                     conflict, day, "00:00:00", "23:59:59"
             );
         }
+    }
+    private void initNotices() {
+
+
+        helper.createNotice("필독 공지", "수강신청 일정 공지", null);
+        helper.createNotice("시스템 점검 안내",
+                "안녕하세요.\n더 나은 서비스를 제공하기 위해 시스템 점검이 예정되어 있습니다.",
+                null
+        );
+        helper.createNotice("여름학기 수강신청 안내",
+                "여름학기 수강신청이 시작됩니다.",
+                null
+        );
     }
 }
