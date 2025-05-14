@@ -73,6 +73,9 @@ public class InitTestData {
         helper.createEnrollment(student, courses.get(1).getId()); // 자료구조
         helper.createEnrollment(student, courses.get(2).getId()); // 운영체제
 
+        //공지사항 초기 데이터 추가
+        helper.createNotice("필독 공지", "수강신청 일정 공지",null);
+
     }
 
     /**

@@ -25,6 +25,8 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.EmailService;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.MemberService;
+import com.WEB4_5_GPT_BE.unihub.domain.notice.entity.Notice;
+import com.WEB4_5_GPT_BE.unihub.domain.notice.repository.NoticeRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.MajorRepository;
@@ -52,6 +54,7 @@ public class InitDataHelper {
     private final CourseScheduleRepository courseScheduleRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final EnrollmentPeriodRepository enrollmentPeriodRepository;
+    private final NoticeRepository noticeRepository;
 
     public University createUniversity(String name, String emailDomain) {
         return universityRepository.save(University.builder().name(name).emailDomain(emailDomain).build());
@@ -174,6 +177,16 @@ public class InitDataHelper {
                 .endDate(endDate)
                 .build();
         enrollmentPeriodRepository.save(period);
+    }
+
+    public Notice createNotice(String title, String content, String attachmentUrl) {
+        Notice notice = Notice.builder()
+                .title(title)
+                .content(content)
+                .attachmentUrl(attachmentUrl)
+                .isDeleted(false)
+                .build();
+        return noticeRepository.save(notice);
     }
 
 }
