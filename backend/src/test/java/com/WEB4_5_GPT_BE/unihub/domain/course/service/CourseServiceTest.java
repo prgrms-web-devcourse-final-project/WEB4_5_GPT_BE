@@ -16,6 +16,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.MajorRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.UniversityRepository;
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
+import com.WEB4_5_GPT_BE.unihub.global.infra.s3.S3Service;
 import com.WEB4_5_GPT_BE.unihub.global.security.SecurityUser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
