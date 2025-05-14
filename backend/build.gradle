@@ -68,6 +68,7 @@ dependencies {
     testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.testcontainers:mysql'
+    implementation 'org.springframework:spring-test'
 
     // Spring Boot Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

@@ -232,6 +232,4 @@ class NoticeControllerTest {
                 .andExpect(status().isForbidden());
     }
 
-
-
 }
