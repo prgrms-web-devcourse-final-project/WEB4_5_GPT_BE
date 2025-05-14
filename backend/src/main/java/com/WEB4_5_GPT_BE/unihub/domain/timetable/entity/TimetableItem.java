@@ -49,6 +49,7 @@ public class TimetableItem extends BaseTimeEntity {
     @Column(length = 300)
     private String memo;
 
+    @Builder.Default
     @OneToMany(mappedBy = "timetableItem", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TimetableItemSchedule> schedules = new ArrayList<>();
 }
