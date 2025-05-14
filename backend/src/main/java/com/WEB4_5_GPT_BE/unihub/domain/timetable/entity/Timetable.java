@@ -31,6 +31,7 @@ public class Timetable extends BaseTimeEntity {
     @Column(nullable = false)
     private Integer semester; // 학기 (1, 2)
 
+    @Builder.Default
     @OneToMany(mappedBy = "timetable", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TimetableItem> items = new ArrayList<>();
 }
