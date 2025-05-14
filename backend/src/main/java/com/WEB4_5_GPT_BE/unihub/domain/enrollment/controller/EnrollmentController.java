@@ -125,7 +125,7 @@ public class EnrollmentController {
         return new RsData<>("200", "수강 신청이 완료되었습니다.");
     }
 
-    @Operation(summary = "내 강의 불러오기", description = "주어진 조건에 해당하는 내 강의의 목록을 반환합니다.")
+    @Operation(summary = "내 강의 불러오기 (시간표 등록용 간소화된 response)", description = "주어진 조건에 해당하는 내 강의의 목록을 반환합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공", content = @Content(mediaType = "application/json")),
             @ApiResponse(responseCode = "500", description = "조회 실패; 인증된 유저의 데이터 또는 쿼리 파라미터가 잘못됨",
