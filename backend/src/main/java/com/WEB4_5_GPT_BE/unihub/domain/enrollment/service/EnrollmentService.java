@@ -17,6 +17,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
 import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.StudentProfileNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
+import com.WEB4_5_GPT_BE.unihub.global.security.SecurityUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,7 +68,7 @@ public class EnrollmentService {
      * @return 수강신청 내역에 해당하는 {@link MyEnrollmentResponse} DTO 리스트
      */
     @Transactional
-    public List<TimetableCourseResponse> getMyEnrollmentsForTimetable(Member student, int year, Integer semester) {
+    public List<TimetableCourseResponse> getMyEnrollmentsForTimetable(SecurityUser student, int year, Integer semester) {
 
         // student → StudentProfile
         Student profile = studentRepository.getReferenceById(student.getId());

@@ -12,7 +12,6 @@ import com.WEB4_5_GPT_BE.unihub.domain.enrollment.springDoc.apiResponse.Enrollme
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.springDoc.apiResponse.GetMyEnrollmentListApiResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.springDoc.apiResponse.getMyEnrollmentPeriodApiResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
-import com.WEB4_5_GPT_BE.unihub.global.Rq;
 import com.WEB4_5_GPT_BE.unihub.global.response.Empty;
 import com.WEB4_5_GPT_BE.unihub.global.response.RsData;
 import com.WEB4_5_GPT_BE.unihub.global.security.SecurityUser;
@@ -43,7 +42,6 @@ import java.util.List;
 public class EnrollmentController {
 
     private final EnrollmentService enrollmentService;
-    private final Rq rq;
 
     /**
      * 내 수강신청 목록을 조회합니다.
@@ -139,7 +137,8 @@ public class EnrollmentController {
             @Parameter(required = true, description = "조회할 연도", example = "2025")
             @RequestParam(value = "year", required = false) Integer year,
             @Parameter(required = true, description = "조회할 학기", example = "1")
-            @RequestParam(value = "semester", required = false) Integer semester
+            @RequestParam(value = "semester", required = false) Integer semester,
+            @AuthenticationPrincipal SecurityUser actor
     ) {
         // 필수 파라미터 검증
         if (year == null) {
@@ -149,7 +148,6 @@ public class EnrollmentController {
             throw new RequiredParameterMissingException("semester");
         }
 
-        Member actor = rq.getActor();
         List<TimetableCourseResponse> timetableCourseResponse =
                 enrollmentService.getMyEnrollmentsForTimetable(actor, year, semester);
 
