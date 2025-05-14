@@ -11,10 +11,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.UpdateEmailRequ
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.UpdateMajorRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.UpdatePasswordRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.VerifyPasswordRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageProfessorResponse;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageStudentResponse;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.ProfessorCourseResponse;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.UpdateMajorResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 
 import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
@@ -353,6 +350,22 @@ public class MemberServiceImpl implements MemberService {
         }
 
         return member;
+    }
+
+    public MyPageAdminResponse getAdminMyPage(Long memberId) {
+        Member member = findActiveMemberById(memberId);
+
+        if (member.getRole() != Role.ADMIN) {
+            throw new UnihubException("403", "관리자만 접근할 수 있습니다.");
+        }
+
+        return MyPageAdminResponse.builder()
+                .id(member.getId())
+                .email(member.getEmail())
+                .name(member.getName())
+                .role(member.getRole())
+                .createdAt(member.getCreatedAt())
+                .build();
     }
 }
 
