@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/timetables")
+@SecurityRequirement(name = "accessToken을 사용한 bearerAuth 로그인 인증")
 public class TimetableController {
 
     private final TimetableService timetableService;
@@ -37,7 +38,6 @@ public class TimetableController {
             @ApiResponse(responseCode = "409", description = "이미 해당 학기의 시간표가 존재합니다"),
             @ApiResponse(responseCode = "400", description = "요청 필드가 유효하지 않음 (예: 연도 또는 학기 누락)")
     })
-    @SecurityRequirement(name = "accessToken을 사용한 bearerAuth 로그인 인증")
     @PostMapping
     public RsData<Empty> createTimetable(@RequestBody @Valid TimetableCreateRequest request) {
         Member member = rq.getActor();

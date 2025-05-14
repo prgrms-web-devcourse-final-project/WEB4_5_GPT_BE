@@ -9,6 +9,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.timetable.dto.response.share.TimetableSha
 import com.WEB4_5_GPT_BE.unihub.domain.timetable.dto.response.share.TimetableSharedViewResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.timetable.entity.Timetable;
 import com.WEB4_5_GPT_BE.unihub.domain.timetable.exception.timetable.TimetableAlreadyExistsException;
+import com.WEB4_5_GPT_BE.unihub.domain.timetable.exception.timetable.TimetableNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.timetable.repository.TimetableRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -51,8 +52,12 @@ public class TimetableServiceImpl implements TimetableService {
     }
 
     @Override
-    public TimetableDetailResponse getMyTimetable(Member member) {
-        return null;
+    public TimetableDetailResponse getMyTimetable(Member member, int year, int semester) {
+        Timetable timetable = timetableRepository
+                .findByMemberIdAndYearAndSemester(member.getId(), year, semester)
+                .orElseThrow(TimetableNotFoundException::new);
+
+        return TimetableDetailResponse.of(timetable);
     }
 
     @Override

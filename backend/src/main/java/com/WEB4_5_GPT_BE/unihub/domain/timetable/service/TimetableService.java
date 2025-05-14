@@ -16,7 +16,7 @@ public interface TimetableService {
     void createTimetable(Member member, TimetableCreateRequest request);
 
     // 내 시간표 조회
-    TimetableDetailResponse getMyTimetable(Member member);
+    TimetableDetailResponse getMyTimetable(Member member, int year, int semester);
 
     // 등록된 시간표 학기 목록 조회
     List<TimetableSemesterResponse> getRegisteredSemesters(Member member);
