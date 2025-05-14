@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -83,44 +84,131 @@ class NoticeControllerTest {
     }
 
     @Test
-    @DisplayName("공지사항 작성 성공")
+    @DisplayName("공지사항 작성 성공 - 파일 없이")
     void createNotice_success() throws Exception {
         String token = loginAndGetAccessToken("adminmaster@auni.ac.kr", "adminPw");
-        NoticeCreateRequest request = new NoticeCreateRequest("새 공지", "공지 내용", null);
 
-        mockMvc.perform(post("/api/notices")
+        // JSON 데이터를 multipart/form-data에 포함시키기 위한 data part 생성
+        MockMultipartFile dataPart = new MockMultipartFile(
+                "data", "", "application/json",
+                objectMapper.writeValueAsBytes(new NoticeCreateRequest("새 공지", "공지 내용", null))
+        );
+
+        mockMvc.perform(multipart("/api/notices")
+                        .file(dataPart)
                         .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .characterEncoding("UTF-8"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.title").value("새 공지"));
     }
 
     @Test
-    @DisplayName("학생 권한으로 공지사항 작성 실패")
+    @DisplayName("공지사항 작성 성공 - 파일 포함")
+    void createNotice_withFile_success() throws Exception {
+        String token = loginAndGetAccessToken("adminmaster@auni.ac.kr", "adminPw");
+
+        MockMultipartFile dataPart = new MockMultipartFile(
+                "data", "", "application/json",
+                objectMapper.writeValueAsBytes(new NoticeCreateRequest("공지제목", "공지내용", null))
+        );
+
+        MockMultipartFile filePart = new MockMultipartFile(
+                "file", "sample.pdf", "application/pdf", "dummy content".getBytes()
+        );
+
+        mockMvc.perform(multipart("/api/notices")
+                        .file(dataPart)
+                        .file(filePart)
+                        .header("Authorization", "Bearer " + token)
+                        .characterEncoding("UTF-8"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.title").value("공지제목"));
+    }
+
+    @Test
+    @DisplayName("학생 권한으로 공지사항 작성 실패 - multipart")
     void createNotice_byStudent_thenForbidden() throws Exception {
         String token = loginAndGetAccessToken("teststudent@auni.ac.kr", "password");
-        NoticeCreateRequest request = new NoticeCreateRequest("학생 공지", "학생이 작성", null);
 
-        mockMvc.perform(post("/api/notices")
+        MockMultipartFile dataPart = new MockMultipartFile(
+                "data", "", "application/json",
+                objectMapper.writeValueAsBytes(new NoticeCreateRequest("학생 공지", "학생이 작성", null))
+        );
+
+        mockMvc.perform(multipart("/api/notices")
+                        .file(dataPart)
                         .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .characterEncoding("UTF-8"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @DisplayName("공지사항 수정 성공")
+    @DisplayName("공지사항 수정 성공 - 파일 없이")
     void updateNotice_success() throws Exception {
         String token = loginAndGetAccessToken("adminmaster@auni.ac.kr", "adminPw");
-        NoticeUpdateRequest request = new NoticeUpdateRequest("수정된 제목", "수정된 내용", null);
 
-        mockMvc.perform(patch("/api/notices/1")
+        MockMultipartFile dataPart = new MockMultipartFile(
+                "data", "", "application/json",
+                objectMapper.writeValueAsBytes(new NoticeUpdateRequest("수정된 제목", "수정된 내용", null))
+        );
+
+        mockMvc.perform(multipart("/api/notices/1")
+                        .file(dataPart)
+                        .with(r -> {
+                            r.setMethod("PATCH"); // multipart 요청은 기본 POST이므로 override
+                            return r;
+                        })
                         .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .characterEncoding("UTF-8"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.title").value("수정된 제목"));
+    }
+
+    @Test
+    @DisplayName("공지사항 수정 성공 - 새 파일 포함")
+    void updateNotice_withFile_success() throws Exception {
+        String token = loginAndGetAccessToken("adminmaster@auni.ac.kr", "adminPw");
+
+        MockMultipartFile dataPart = new MockMultipartFile(
+                "data", "", "application/json",
+                objectMapper.writeValueAsBytes(new NoticeUpdateRequest("변경된 제목", "변경된 내용", null))
+        );
+
+        MockMultipartFile filePart = new MockMultipartFile(
+                "file", "updated.pdf", "application/pdf", "updated file".getBytes()
+        );
+
+        mockMvc.perform(multipart("/api/notices/1")
+                        .file(dataPart)
+                        .file(filePart)
+                        .with(r -> {
+                            r.setMethod("PATCH");
+                            return r;
+                        })
+                        .header("Authorization", "Bearer " + token)
+                        .characterEncoding("UTF-8"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.title").value("변경된 제목"));
+    }
+
+    @Test
+    @DisplayName("공지사항 수정 실패 - 존재하지 않는 ID")
+    void updateNotice_notFound() throws Exception {
+        String token = loginAndGetAccessToken("adminmaster@auni.ac.kr", "adminPw");
+
+        MockMultipartFile dataPart = new MockMultipartFile(
+                "data", "", "application/json",
+                objectMapper.writeValueAsBytes(new NoticeUpdateRequest("수정", "내용", null))
+        );
+
+        mockMvc.perform(multipart("/api/notices/99999")
+                        .file(dataPart)
+                        .with(r -> {
+                            r.setMethod("PATCH");
+                            return r;
+                        })
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -133,4 +221,17 @@ class NoticeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("공지사항 삭제 성공"));
     }
+
+    @Test
+    @DisplayName("학생 권한으로 공지사항 삭제 실패")
+    void deleteNotice_byStudent_thenForbidden() throws Exception {
+        String token = loginAndGetAccessToken("teststudent@auni.ac.kr", "password");
+
+        mockMvc.perform(delete("/api/notices/1")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden());
+    }
+
+
+
 }
