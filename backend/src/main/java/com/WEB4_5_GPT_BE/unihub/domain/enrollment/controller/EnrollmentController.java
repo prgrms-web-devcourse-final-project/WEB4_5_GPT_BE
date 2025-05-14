@@ -1,6 +1,6 @@
 package com.WEB4_5_GPT_BE.unihub.domain.enrollment.controller;
 
-import com.WEB4_5_GPT_BE.unihub.domain.course.dto.MyEnrollmentListForTimetableResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.course.dto.TimetableCourseResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.course.exception.CourseNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.request.EnrollmentRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response.MyEnrollmentResponse;
@@ -134,7 +134,7 @@ public class EnrollmentController {
                     content = {@Content(mediaType = "application/json", schema = @Schema(implementation = RsData.class))})
     })
     @GetMapping("/timetables/me")
-    public RsData<List<MyEnrollmentListForTimetableResponse>> getMyEnrollmentsForTimetable(
+    public RsData<List<TimetableCourseResponse>> getMyEnrollmentsForTimetable(
             @Parameter(required = true, description = "조회할 연도", example = "2025")
             @RequestParam(value = "year", required = false) Integer year,
             @Parameter(required = true, description = "조회할 학기", example = "1")
@@ -149,9 +149,9 @@ public class EnrollmentController {
         }
 
         Member actor = rq.getActor();
-        List<MyEnrollmentListForTimetableResponse> myEnrollmentListForTimetableResponse =
+        List<TimetableCourseResponse> timetableCourseResponse =
                 enrollmentService.getMyEnrollmentsForTimetable(actor, year, semester);
 
-        return new RsData<>("200", "시간표 등록용 강의 목록 조회 완료", myEnrollmentListForTimetableResponse);
+        return new RsData<>("200", "시간표 등록용 강의 목록 조회 완료", timetableCourseResponse);
     }
 }

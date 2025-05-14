@@ -132,7 +132,7 @@ public class CourseController {
     })
     @GetMapping
     public RsData<Page<?>> getAllCourses(
-            @Parameter(required = true, description = "반환할 목록 형식: FULL, ENROLL, CATALOG 중 하나", example = "FULL")
+            @Parameter(required = true, description = "반환할 목록 형식: FULL, ENROLL, CATALOG, TIMETABLE 중 하나", example = "FULL")
             @RequestParam("mode") CourseListReturnMode mode,
 
             @Parameter(description = "강의 제목 키워드 (검색용)", example = "자료구조")
@@ -168,6 +168,9 @@ public class CourseController {
             case CATALOG -> new RsData<>(String.valueOf(HttpStatus.OK.value()),
                     "조회에 성공했습니다.",
                     courseService.findAllCoursesModeCatalog(title, profName, majorId, grade, semester, principal, pageable));
+            case TIMETABLE -> new RsData<>(String.valueOf(HttpStatus.OK.value()),
+                    "조회에 성공했습니다.",
+                    courseService.findAllCoursesModeTimetable(title, profName, majorId, grade, semester, principal, pageable));
         };
     }
 }
