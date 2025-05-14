@@ -244,6 +244,25 @@ public class CourseService {
     }
 
     /**
+     * 주어진 필터링/페이지네이션 정보를 바탕으로, 인증되어 있는 유저의 소속 대학에서 제공되고 있는 강의 목록을 반환한다(강의 목록 조회시).
+     *
+     * @param title     강의 이름 필터링 문자열
+     * @param profName  교수 이름 필터링 문자열
+     * @param principal 인증되어있는 유저
+     * @param pageable  페이지네이션 정보
+     * @return 조회된 강의에 해당하는 {@link TimetableCourseResponse} DTO가 담긴 {@link Page} 오브젝트
+     */
+    public Page<TimetableCourseResponse> findAllCoursesModeTimetable(
+            String title, String profName, Long majorId, Integer grade, Integer semester,
+            SecurityUser principal, Pageable pageable) {
+
+        Long authUserUnivId = getUnivIdFromPrincipal(principal);
+        return courseRepository
+                .findWithFilters(authUserUnivId, title, profName, majorId, grade, semester, pageable)
+                .map(TimetableCourseResponse::from);
+    }
+
+    /**
      * 주어진 {@link SecurityUser}로부터 소속 대학 ID를 추출한다.
      *
      * @param principal 대학 ID를 추출할 인증 유저 정보
