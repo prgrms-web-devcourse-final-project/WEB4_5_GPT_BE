@@ -1,12 +1,15 @@
 package com.WEB4_5_GPT_BE.unihub.global;
 
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
+import com.WEB4_5_GPT_BE.unihub.domain.member.service.MemberService;
+import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
 import com.WEB4_5_GPT_BE.unihub.global.security.SecurityUser;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -23,6 +26,7 @@ public class Rq {
 
   private final HttpServletRequest request;
   private final HttpServletResponse response;
+  private final MemberService memberService;
 
   public void setLogin(Member member) {
     List<SimpleGrantedAuthority> authorities =
@@ -89,5 +93,17 @@ public class Rq {
     cookie.setAttribute("SameSite", "None");
     cookie.setMaxAge(0);
     response.addCookie(cookie);
+  }
+
+  public Member getActor() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+    if (authentication == null || !(authentication.getPrincipal() instanceof SecurityUser)) {
+      throw new UnihubException("401", "로그인이 필요합니다.");
+    }
+
+    SecurityUser user = (SecurityUser) authentication.getPrincipal();
+
+    return memberService.findById(user.getId()).orElseThrow();
   }
 }
