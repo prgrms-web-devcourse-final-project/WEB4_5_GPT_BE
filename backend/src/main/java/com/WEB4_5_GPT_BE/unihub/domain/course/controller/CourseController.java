@@ -184,10 +184,6 @@ public class CourseController {
             @AuthenticationPrincipal SecurityUser principal,
             @Parameter(hidden = true)
             @PageableDefault @ParameterObject Pageable pageable) {
-        // TODO: 인증이 안되어있는 상태에서 요청이 들어오면 인증 정보에서 소속 대학ID를 꺼내오는 과정에서 NPE가 발생한다.
-//        if (principal == null) {
-//            return new RsData<>(String.valueOf(HttpStatus.UNAUTHORIZED.value()), "인증이 필요합니다.");
-//        }
         return switch (mode) {
             case FULL -> new RsData<>(String.valueOf(HttpStatus.OK.value()),
                     "조회에 성공했습니다.",
