@@ -1,5 +1,7 @@
 package com.WEB4_5_GPT_BE.unihub.global.concurrent;
 
+import org.springframework.context.annotation.Profile;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -13,6 +15,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * 동시 접근을 제어합니다.
  */
 @Documented
+@Profile("!test")
 @Target(METHOD)            // 해당 애노테이션을 메서드에만 적용할 수 있도록 지정
 @Retention(RUNTIME)        // 런타임 시점까지 애노테이션 정보를 유지하여 AOP 등에서 활용할 수 있게 함
 public @interface ConcurrencyGuard {

@@ -74,8 +74,8 @@ class EnrollmentControllerTest {
     }
 
     @Test
-    @DisplayName("수강 신청 - 성공")
     @Transactional
+    @DisplayName("수강 신청 - 성공")
     void enrollment_success() throws Exception {
         // given: 학생 로그인 후 accessToken을 발급받고, 기존 수강 신청 내역이 2개임을 확인
         String accessToken = loginAndGetAccessToken("teststudent@auni.ac.kr", "password");
@@ -193,6 +193,7 @@ class EnrollmentControllerTest {
     }
 
     @Test
+    @Transactional
     @DisplayName("수강 신청 실패 – 최대 학점 초과 시")
     void enrollment_fail_creditLimit() throws Exception {
         // given: 로그인, '학점초과강좌' ID
@@ -214,6 +215,7 @@ class EnrollmentControllerTest {
     }
 
     @Test
+    @Transactional
     @DisplayName("수강 신청 실패 – 시간표 충돌 시")
     void enrollment_fail_scheduleConflict() throws Exception {
         // given: 로그인, '충돌강좌' ID

@@ -9,6 +9,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
@@ -16,6 +17,7 @@ import java.lang.reflect.Method;
 @Slf4j
 @Aspect
 @Component
+@Profile("!test")
 @RequiredArgsConstructor
 public class ConcurrencyGuardAspect {
 

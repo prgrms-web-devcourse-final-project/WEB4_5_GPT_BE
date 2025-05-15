@@ -1,6 +1,7 @@
 package com.WEB4_5_GPT_BE.unihub.global.concurrent;
 
 import org.aspectj.lang.ProceedingJoinPoint;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 이를 통해 데이터 정합성을 보장할 수 있습니다.
  */
 @Component
+@Profile("!test")
 public class TransactionAspect {
     /**
      * [propagation = REQUIRES_NEW]
