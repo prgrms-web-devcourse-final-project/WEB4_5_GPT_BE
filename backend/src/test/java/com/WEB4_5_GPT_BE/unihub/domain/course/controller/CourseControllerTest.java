@@ -6,7 +6,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.course.dto.CourseWithFullScheduleResponse
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.CourseSchedule;
 import com.WEB4_5_GPT_BE.unihub.domain.course.service.CourseService;
-import com.WEB4_5_GPT_BE.unihub.domain.course.service.S3Service;
+import com.WEB4_5_GPT_BE.unihub.global.infra.s3.S3Service;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.AuthTokenService;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;

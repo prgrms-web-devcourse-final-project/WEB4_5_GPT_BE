@@ -14,8 +14,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -53,12 +55,13 @@ public class NoticeController {
             @ApiResponse(responseCode = "200", description = "공지사항 작성 성공"),
             @ApiResponse(responseCode = "400", description = "입력값 누락 또는 첨부파일 업로드 실패")
     })
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public RsData<NoticeCreateResponse> createNotice(
             @AuthenticationPrincipal SecurityUser user,
-            @RequestBody NoticeCreateRequest request
+            @RequestPart("data") NoticeCreateRequest request,
+            @RequestPart(name = "file", required = false) MultipartFile file
     ) {
-        return new RsData<>("200", "공지사항 작성 성공", noticeService.createNotice(user.getId(), request));
+        return new RsData<>("200", "공지사항 작성 성공", noticeService.createNotice(user.getId(), request, file));
     }
 
     @Operation(summary = "공지사항 수정")
@@ -66,13 +69,14 @@ public class NoticeController {
             @ApiResponse(responseCode = "200", description = "공지사항 수정 성공"),
             @ApiResponse(responseCode = "404", description = "존재하지 않는 공지사항입니다.")
     })
-    @PatchMapping("/{id}")
+    @PatchMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public RsData<NoticeUpdateResponse> updateNotice(
             @AuthenticationPrincipal SecurityUser user,
             @PathVariable Long id,
-            @RequestBody NoticeUpdateRequest request
+            @RequestPart("data") NoticeUpdateRequest request,
+            @RequestPart(name = "file", required = false) MultipartFile file
     ) {
-        return new RsData<>("200", "공지사항 수정 성공", noticeService.updateNotice(user.getId(), id, request));
+        return new RsData<>("200", "공지사항 수정 성공", noticeService.updateNotice(user.getId(), id, request, file));
     }
 
     @Operation(summary = "공지사항 삭제")

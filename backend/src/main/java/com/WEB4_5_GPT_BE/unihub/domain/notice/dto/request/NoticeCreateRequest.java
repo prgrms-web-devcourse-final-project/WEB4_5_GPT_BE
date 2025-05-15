@@ -4,6 +4,5 @@ import jakarta.validation.constraints.NotBlank;
 
 public record NoticeCreateRequest(
         @NotBlank(message = "제목은 필수입니다.") String title,
-        @NotBlank(message = "본문은 필수입니다.") String content,
-        String attachmentUrl // 첨부파일은 선택
+        @NotBlank(message = "본문은 필수입니다.") String content
 ) {}
