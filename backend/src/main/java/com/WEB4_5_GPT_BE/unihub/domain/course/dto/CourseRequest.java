@@ -67,23 +67,4 @@ public record CourseRequest(
                 course.getSchedules().stream().map(CourseScheduleDto::from).toList()
         );
     }
-
-    /**
-     * 새로운 coursePlanAttachment 로 교체한 새 CourseRequest 를 만듭니다.
-     */
-    public CourseRequest withCoursePlanAttachment(String newAttachment) {
-        return new CourseRequest(
-                this.title,
-                this.major,
-                this.university,
-                this.location,
-                this.capacity,
-                this.credit,
-                this.employeeId,
-                this.grade,
-                this.semester,
-                newAttachment,
-                this.schedule
-        );
-    }
 }

@@ -1,8 +1,8 @@
 package com.WEB4_5_GPT_BE.unihub.domain.course.controller;
 
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.CourseListReturnMode;
-import com.WEB4_5_GPT_BE.unihub.domain.course.dto.CourseRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.course.dto.CourseWithFullScheduleResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.course.dto.CourseWithOutUrlRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.course.service.CourseService;
 import com.WEB4_5_GPT_BE.unihub.global.response.Empty;
 import com.WEB4_5_GPT_BE.unihub.global.response.RsData;
@@ -62,7 +62,7 @@ public class CourseController {
      * 발급된 URL을 `coursePlanAttachment` 필드에 저장합니다.
      * - 강의실/교수 스케줄 충돌 여부 및 전공·교수 유효성을 검증한 뒤 저장합니다.
      *
-     * @param courseRequest  생성할 강의의 상세 데이터 (JSON, `data` 파트)
+     * @param courseWithOutUrlRequest  생성할 강의의 상세 데이터 (JSON, `data` 파트)
      * @param coursePlanFile 강의계획서 파일 (multipart `file` 파트)
      * @return 생성된 강의 정보를 담은 {@link CourseWithFullScheduleResponse}
      */
@@ -78,12 +78,12 @@ public class CourseController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public RsData<CourseWithFullScheduleResponse> createCourse(
             @Parameter(description = "생성할 강의 정보를 담은 JSON", content = @Content(mediaType = "application/json"))
-            @RequestPart("data") CourseRequest courseRequest,
+            @RequestPart("data") CourseWithOutUrlRequest courseWithOutUrlRequest,
 
             @Parameter(description = "강의계획서 파일", content = @Content(mediaType = "application/octet-stream"))
             @RequestPart(name = "file", required = false) MultipartFile coursePlanFile
     ) {
-        CourseWithFullScheduleResponse res = courseService.createCourse(courseRequest, coursePlanFile);
+        CourseWithFullScheduleResponse res = courseService.createCourse(courseWithOutUrlRequest, coursePlanFile);
         return new RsData<>(String.valueOf(HttpStatus.CREATED.value()), "성공적으로 생성되었습니다.", res);
     }
 
@@ -94,7 +94,7 @@ public class CourseController {
      * - 스케줄, 전공/교수 등 유효성 검사 후 충돌이 없으면 덮어씌우기 방식으로 업데이트합니다.
      *
      * @param courseId       수정 대상 강의의 ID
-     * @param courseRequest  수정할 강의의 상세 데이터 (JSON, `data` 파트)
+     * @param courseWithOutUrlRequest  수정할 강의의 상세 데이터 (JSON, `data` 파트)
      * @param coursePlanFile 새로운 강의계획서 파일 (multipart `file` 파트)
      * @return 수정된 강의 정보를 담은 {@link CourseWithFullScheduleResponse}
      */
@@ -115,12 +115,12 @@ public class CourseController {
             @PathVariable Long courseId,
 
             @Parameter(description = "수정할 강의 정보를 담은 JSON", content = @Content(mediaType = "application/json"))
-            @RequestPart("data") CourseRequest courseRequest,
+            @RequestPart("data") CourseWithOutUrlRequest courseWithOutUrlRequest,
 
             @Parameter(description = "새로운 강의계획서 파일", content = @Content(mediaType = "application/octet-stream"))
             @RequestPart(name = "file", required = false) MultipartFile coursePlanFile
     ) {
-        CourseWithFullScheduleResponse res = courseService.updateCourse(courseId, courseRequest, coursePlanFile);
+        CourseWithFullScheduleResponse res = courseService.updateCourse(courseId, courseWithOutUrlRequest, coursePlanFile);
         return new RsData<>(String.valueOf(HttpStatus.OK.value()), "성공적으로 수정되었습니다.", res);
     }
 

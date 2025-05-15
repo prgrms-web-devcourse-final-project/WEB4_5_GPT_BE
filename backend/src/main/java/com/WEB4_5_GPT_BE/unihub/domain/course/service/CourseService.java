@@ -94,22 +94,18 @@ public class CourseService {
         return CourseWithFullScheduleResponse.from(courseRepository.save(res));
     }
 
-    public CourseWithFullScheduleResponse createCourse(CourseRequest req, MultipartFile file) {
-
+    public CourseWithFullScheduleResponse createCourse(CourseWithOutUrlRequest req, MultipartFile file) {
         String url = null;
-
         try {
             if (file != null && !file.isEmpty()) {
                 url = s3Service.upload(file);
-                req = req.withCoursePlanAttachment(url);
             }
-            return createCourse(req); // 기존 createCourse(CourseRequest) 호출
+            CourseRequest courseRequest = req.withCoursePlanAttachment(url);
+            return createCourse(courseRequest); // 기존 createCourse(CourseRequest) 호출
         } catch (IOException e) {
             throw new FileUploadException();
         } catch (UnihubException ex) {
-            if (url != null) {
-                s3Service.deleteByUrl(url); // 실패 시 업로드 롤백
-            }
+            deleteS3AttachmentIfExistsAndLog(url); // 실패 시 업로드 롤백
             throw ex;
         }
     }
@@ -143,24 +139,44 @@ public class CourseService {
         }
         Course res = courseRequest.toEntity(m, orig.getEnrolled(), p);
         res.setId(orig.getId());
+
+        // 기존 강의의 스케줄 s3 삭제, 실패 시에도 강의 수정은 정상 진행되도록 구현하고 log에 남김
+        deleteS3AttachmentIfExistsAndLog(orig.getCoursePlanAttachment());
+
         return CourseWithFullScheduleResponse.from(courseRepository.save(res));
     }
 
-    public CourseWithFullScheduleResponse updateCourse(Long courseId, CourseRequest courseRequest, MultipartFile file) {
+    /**
+     * 주어진 강의 정보를 주어진 ID에 해당하는 강의 위에 덮어쓴다.
+     *
+     * @param courseId 덮어쓰고자 하는 강의의 ID
+     * @param req      덮어쓸 정보
+     * @param file     강의계획서 파일
+     * @return 입력한 file을 업로드 및 강의계획서 URL을 업데이트하여 기존 updateCourse(courseId, courseRequest) 호출
+     */
+    public CourseWithFullScheduleResponse updateCourse(Long courseId, CourseWithOutUrlRequest req, MultipartFile file) {
         String url = null;
         try {
             if (file != null && !file.isEmpty()) {
-                url = s3Service.upload(file);
-                courseRequest = courseRequest.withCoursePlanAttachment(url);
+                url = s3Service.upload(file); // 사용자가 등록한 파일이 존재한다면 s3 업로드 url 발급
             }
+            CourseRequest courseRequest = req.withCoursePlanAttachment(url);
             return updateCourse(courseId, courseRequest); // 기존 updateCourse(courseId, courseRequest) 호출
         } catch (IOException e) {
             throw new FileUploadException();
         } catch (UnihubException ex) {
-            if (url != null) {
-                s3Service.deleteByUrl(url); // 실패 시 업로드 롤백
-            }
+            deleteS3AttachmentIfExistsAndLog(url); // 실패 시 업로드 롤백
             throw ex;
+        }
+    }
+
+    private void deleteS3AttachmentIfExistsAndLog(String attachmentUrl) {
+        if (attachmentUrl != null) {
+            try {
+                s3Service.deleteByUrl(attachmentUrl);
+            } catch (Exception e) {
+                log.warn("S3 파일 삭제 실패 (but ignoring): {}", attachmentUrl, e);
+            }
         }
     }
 
@@ -173,17 +189,9 @@ public class CourseService {
         Course course = courseRepository.findById(courseId).orElseThrow(
                 () -> new UnihubException(String.valueOf(HttpStatus.NOT_FOUND.value()), "해당 강의가 존재하지 않습니다.")
         );
+        // s3에 업로드된 강의계획서 파일 삭제, 실패 시에도 강의 삭제는 정상 진행되도록 구현하고 log 남김
+        deleteS3AttachmentIfExistsAndLog(course.getCoursePlanAttachment());
 
-        // s3에 업로드된 강의계획서 파일 삭제
-        // 실패 시에도 강의 삭제는 정상 진행되도록 구현하고 log에 남김
-        String attachment = course.getCoursePlanAttachment();
-        if (attachment != null) {
-            try {
-                s3Service.deleteByUrl(attachment);
-            } catch (Exception e) {
-                log.warn("S3 파일 삭제 실패 (but ignoring): {}", attachment, e);
-            }
-        }
         courseRepository.delete(course);
     }
 

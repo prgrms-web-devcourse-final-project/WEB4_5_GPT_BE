@@ -3,15 +3,16 @@ package com.WEB4_5_GPT_BE.unihub.domain.course.controller;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.DayOfWeek;
 import com.WEB4_5_GPT_BE.unihub.domain.course.dto.CourseRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.course.dto.CourseWithFullScheduleResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.course.dto.CourseWithOutUrlRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.CourseSchedule;
 import com.WEB4_5_GPT_BE.unihub.domain.course.service.CourseService;
-import com.WEB4_5_GPT_BE.unihub.global.infra.s3.S3Service;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.AuthTokenService;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.global.Rq;
 import com.WEB4_5_GPT_BE.unihub.global.alert.AlertNotifier;
+import com.WEB4_5_GPT_BE.unihub.global.infra.s3.S3Service;
 import com.WEB4_5_GPT_BE.unihub.global.security.CustomAuthenticationFilter;
 import com.WEB4_5_GPT_BE.unihub.global.security.SecurityUser;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -154,7 +155,7 @@ class CourseControllerTest {
 //                    .content(objectMapper.writeValueAsString(CourseRequest.from(testCourse))));
 
         // 1) service stub: CourseRequest + no file
-        given(courseService.createCourse(any(CourseRequest.class), isNull()))
+        given(courseService.createCourse(any(CourseWithOutUrlRequest.class), isNull()))
                 .willReturn(CourseWithFullScheduleResponse.from(testCourse));
 
         // 2) JSON part 준비 (@RequestPart("data"))
@@ -182,7 +183,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.schedule", hasSize(2)))
                 .andExpect(jsonPath("$.data.schedule[0].day").value(testCourse.getSchedules().getFirst().getDay().toString()));
         then(courseService).should()
-                .createCourse(any(CourseRequest.class), isNull());
+                .createCourse(any(CourseWithOutUrlRequest.class), isNull());
     }
 
     @Test
@@ -206,7 +207,7 @@ class CourseControllerTest {
         courseWithAttachment.getSchedules().addAll(testCourse.getSchedules());
 
         // — 2) 서비스 스텁: 2-arg 버전에 스텁을 걸어줌
-        given(courseService.createCourse(any(CourseRequest.class), any(MultipartFile.class)))
+        given(courseService.createCourse(any(CourseWithOutUrlRequest.class), any(MultipartFile.class)))
                 .willReturn(CourseWithFullScheduleResponse.from(courseWithAttachment));
 
         // — 3) JSON data 파트
@@ -246,7 +247,7 @@ class CourseControllerTest {
 
         given(courseService.updateCourse(
                 eq(courseId),
-                any(CourseRequest.class),
+                any(CourseWithOutUrlRequest.class),
                 isNull()
         )).willReturn(CourseWithFullScheduleResponse.from(testCourse));
 
@@ -275,7 +276,7 @@ class CourseControllerTest {
 
         // verify + captor
         ArgumentCaptor<Long> idCaptor = ArgumentCaptor.forClass(Long.class);
-        ArgumentCaptor<CourseRequest> reqCaptor = ArgumentCaptor.forClass(CourseRequest.class);
+        ArgumentCaptor<CourseWithOutUrlRequest> reqCaptor = ArgumentCaptor.forClass(CourseWithOutUrlRequest.class);
         verify(courseService).updateCourse(
                 idCaptor.capture(),
                 reqCaptor.capture(),
@@ -309,7 +310,7 @@ class CourseControllerTest {
         // 2) service stub
         given(courseService.updateCourse(
                 eq(courseId),
-                any(CourseRequest.class),
+                any(CourseWithOutUrlRequest.class),
                 any(MultipartFile.class))
         ).willReturn(CourseWithFullScheduleResponse.from(courseWithNewAttachment));
 
@@ -336,7 +337,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.coursePlanAttachment").value(newUrl));
 
         then(courseService).should()
-                .updateCourse(eq(courseId), any(CourseRequest.class), any(MultipartFile.class));
+                .updateCourse(eq(courseId), any(CourseWithOutUrlRequest.class), any(MultipartFile.class));
     }
 
     @Test
