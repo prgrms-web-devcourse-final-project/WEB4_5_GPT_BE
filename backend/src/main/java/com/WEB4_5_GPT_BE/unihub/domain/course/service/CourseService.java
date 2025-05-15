@@ -2,14 +2,21 @@ package com.WEB4_5_GPT_BE.unihub.domain.course.service;
 
 import com.WEB4_5_GPT_BE.unihub.domain.course.dto.*;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
+import com.WEB4_5_GPT_BE.unihub.domain.course.entity.CourseSchedule;
+import com.WEB4_5_GPT_BE.unihub.domain.course.exception.CourseNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.course.exception.FileUploadException;
+import com.WEB4_5_GPT_BE.unihub.domain.course.exception.LocationScheduleConflictException;
+import com.WEB4_5_GPT_BE.unihub.domain.course.exception.ProfessorScheduleConflictException;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseScheduleRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
+import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.ProfessorProfileNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
+import com.WEB4_5_GPT_BE.unihub.domain.university.exception.MajorNotFoundException;
+import com.WEB4_5_GPT_BE.unihub.domain.university.exception.UniversityNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.MajorRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.UniversityRepository;
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
@@ -71,23 +78,22 @@ public class CourseService {
      * @return 생성된 강의의 {@link CourseWithFullScheduleResponse} DTO
      */
     public CourseWithFullScheduleResponse createCourse(CourseRequest courseRequest) {
-        // TODO: DRY?
         University u = universityRepository.findByName(courseRequest.university()).orElseThrow(
-                () -> new UnihubException(String.valueOf(HttpStatus.BAD_REQUEST.value()), "존재하지 않는 대학교입니다.")
+                UniversityNotFoundException::new
         );
         Major m = majorRepository.findByUniversityIdAndName(u.getId(), courseRequest.major()).orElseThrow(
-                () -> new UnihubException(String.valueOf(HttpStatus.BAD_REQUEST.value()), "존재하지 않는 전공입니다.")
+                MajorNotFoundException::new
         );
         if (doesLocationScheduleConflict(courseRequest.schedule(), u.getId(), courseRequest.location())) {
-            throw new UnihubException(String.valueOf(HttpStatus.CONFLICT.value()), "강의 장소가 이미 사용 중입니다.");
+            throw new LocationScheduleConflictException();
         }
         Professor p = courseRequest.employeeId() == null ?
                 null :
                 professorRepository.findByUniversityIdAndEmployeeId(u.getId(), courseRequest.employeeId()).orElseThrow(
-                        () -> new UnihubException(String.valueOf(HttpStatus.BAD_REQUEST.value()), "존재하지 않는 교수입니다.")
+                        ProfessorProfileNotFoundException::new
                 );
-        if (p != null && doesProfScheduleConflict(courseRequest.schedule(), p.getEmployeeId())) {
-            throw new UnihubException(String.valueOf(HttpStatus.CONFLICT.value()), "강사/교수가 이미 수업 중입니다.");
+        if (p != null && doesProfScheduleConflict(courseRequest.schedule(), u.getId(), p.getEmployeeId())) {
+            throw new ProfessorScheduleConflictException();
         }
         Course res = courseRequest.toEntity(m, 0, p);
         return CourseWithFullScheduleResponse.from(courseRepository.save(res));
@@ -122,23 +128,23 @@ public class CourseService {
      */
     public CourseWithFullScheduleResponse updateCourse(Long courseId, CourseRequest courseRequest) {
         Course orig = courseRepository.findById(courseId).orElseThrow(
-                () -> new UnihubException(String.valueOf(HttpStatus.NOT_FOUND.value()), "해당 강의가 존재하지 않습니다."));
+                CourseNotFoundException::new);
         University u = universityRepository.findByName(courseRequest.university()).orElseThrow(
-                () -> new UnihubException(String.valueOf(HttpStatus.BAD_REQUEST.value()), "존재하지 않는 대학교입니다.")
+                UniversityNotFoundException::new
         );
         Major m = majorRepository.findByUniversityIdAndName(u.getId(), courseRequest.major()).orElseThrow(
-                () -> new UnihubException(String.valueOf(HttpStatus.BAD_REQUEST.value()), "존재하지 않는 전공입니다.")
+                MajorNotFoundException::new
         );
         if (doesLocationScheduleConflictExcludingCourse(courseRequest.schedule(), u.getId(), courseRequest.location(), courseId)) {
-            throw new UnihubException(String.valueOf(HttpStatus.CONFLICT.value()), "강의 장소가 이미 사용 중입니다.");
+            throw new LocationScheduleConflictException();
         }
         Professor p = courseRequest.employeeId() == null ?
                 null :
                 professorRepository.findByUniversityIdAndEmployeeId(u.getId(), courseRequest.employeeId()).orElseThrow(
-                        () -> new UnihubException(String.valueOf(HttpStatus.BAD_REQUEST.value()), "존재하지 않는 교수입니다.")
+                        ProfessorProfileNotFoundException::new
                 );
-        if (p != null && doesProfScheduleConflictExcludingCourse(courseRequest.schedule(), p.getEmployeeId(), courseId)) {
-            throw new UnihubException(String.valueOf(HttpStatus.CONFLICT.value()), "강사/교수가 이미 수업 중입니다.");
+        if (p != null && doesProfScheduleConflictExcludingCourse(courseRequest.schedule(), u.getId(), p.getEmployeeId(), courseId)) {
+            throw new ProfessorScheduleConflictException();
         }
         Course res = courseRequest.toEntity(m, orig.getEnrolled(), p);
         res.setId(orig.getId());
@@ -170,7 +176,7 @@ public class CourseService {
      */
     public void deleteCourse(Long courseId) {
         Course course = courseRepository.findById(courseId).orElseThrow(
-                () -> new UnihubException(String.valueOf(HttpStatus.NOT_FOUND.value()), "해당 강의가 존재하지 않습니다.")
+                CourseNotFoundException::new
         );
 
         // s3에 업로드된 강의계획서 파일 삭제
@@ -244,7 +250,7 @@ public class CourseService {
     }
 
     /**
-     * 주어진 필터링/페이지네이션 정보를 바탕으로, 인증되어 있는 유저의 소속 대학에서 제공되고 있는 강의 목록을 반환한다(강의 목록 조회시).
+     * 주어진 필터링/페이지네이션 정보를 바탕으로, 인증되어 있는 유저의 소속 대학에서 제공되고 있는 강의 목록을 반환한다(시간표 조회시).
      *
      * @param title     강의 이름 필터링 문자열
      * @param profName  교수 이름 필터링 문자열
@@ -263,12 +269,11 @@ public class CourseService {
     }
 
     /**
-     * 주어진 {@link SecurityUser}로부터 소속 대학 ID를 추출한다.
+     * 주어진 {@link SecurityUser}로부터 소속 대학 ID를 추출한다. 소속 대학이 없을 경우, 예외를 던진다.
      *
      * @param principal 대학 ID를 추출할 인증 유저 정보
      * @return 대학 ID
      */
-    // TODO: 관리자가 강의 목록을 조회했을때 대응 추가
     // TODO: 회원 도메인 변경으로 인한 리팩토링 고려
     private Long getUnivIdFromPrincipal(SecurityUser principal) {
         GrantedAuthority authRole = principal.getAuthorities().stream().findFirst().orElseThrow(
@@ -276,11 +281,11 @@ public class CourseService {
         );
         return switch (authRole.getAuthority()) {
             case "ROLE_STUDENT" -> studentRepository.findById(principal.getId()).orElseThrow(
-                            () -> new UnihubException(String.valueOf(HttpStatus.BAD_REQUEST.value()), "인증된 학생이 존재하지 않습니다.")
+                            () -> new UnihubException(String.valueOf(HttpStatus.INTERNAL_SERVER_ERROR.value()), "인증된 학생이 존재하지 않습니다.")
                     )
                     .getUniversity().getId();
             case "ROLE_PROFESSOR" -> professorRepository.findById(principal.getId()).orElseThrow(
-                            () -> new UnihubException(String.valueOf(HttpStatus.BAD_REQUEST.value()), "인증된 교수가 존재하지 않습니다.")
+                            () -> new UnihubException(String.valueOf(HttpStatus.INTERNAL_SERVER_ERROR.value()), "인증된 교수가 존재하지 않습니다.")
                     )
                     .getUniversity().getId();
             default ->
@@ -292,34 +297,30 @@ public class CourseService {
      * 주어진 사번에 해당하는 교수의 스케줄이 주어진 스케줄과 겹치는지 검증.
      *
      * @param cs     검증할 스케줄
+     * @param univId 검증할 교수의 소속 대학 ID
      * @param profId 검증할 교수의 사번
      * @return 스케줄이 겹치면 {@code true}, 아닐시 {@code false}
      */
-    // TODO: 교수 정보를 사번 대신 고유 ID로 조회하게 변경. CourseSchedule의 수정도 필요할 것으로 사료됨.
-    private boolean doesProfScheduleConflict(List<CourseScheduleDto> cs, String profId) {
-        return cs.stream().anyMatch(csd -> courseScheduleRepository.existsByProfEmpIdAndDayOfWeek(
-                profId,
-                csd.day(),
-                LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime())
-        ));
+    private boolean doesProfScheduleConflict(List<CourseScheduleDto> cs, Long univId, String profId) {
+        return doScheduleSetsIntersect(
+                cs,
+                courseScheduleRepository.findByUniversityIdAndProfessorEmployeeId(univId, profId)
+        );
     }
 
     /**
      * 강의의 스케줄을 제외하고, 주어진 사번에 해당하는 교수의 스케줄이 주어진 스케줄과 겹치는지 검증.
      *
      * @param cs     검증할 스케줄
+     * @param univId 검증할 교수의 소속 대학 ID
      * @param profId 검증할 교수의 사번
      * @return 스케줄이 겹치면 {@code true}, 아닐시 {@code false}
      */
-    private boolean doesProfScheduleConflictExcludingCourse(List<CourseScheduleDto> cs, String profId, Long courseId) {
-        return cs.stream().anyMatch(csd -> courseScheduleRepository.existsByProfEmpIdAndDayOfWeekExcludingCourse(
-                profId,
-                csd.day(),
-                LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime()),
-                courseId
-        ));
+    private boolean doesProfScheduleConflictExcludingCourse(List<CourseScheduleDto> cs, Long univId, String profId, Long courseId) {
+        return doScheduleSetsIntersect(
+                cs,
+                courseScheduleRepository.findByUniversityIdAndProfessorEmployeeIdExcludingCourse(univId, profId, courseId)
+        );
     }
 
     /**
@@ -331,13 +332,10 @@ public class CourseService {
      * @return 스케줄이 겹치면 {@code true}, 아닐시 {@code false}
      */
     private boolean doesLocationScheduleConflict(List<CourseScheduleDto> cs, Long univId, String location) {
-        return cs.stream().anyMatch(csd -> courseScheduleRepository.existsByUnivIdAndLocationAndDayOfWeek(
-                univId,
-                location,
-                csd.day(),
-                LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime())
-        ));
+        return doScheduleSetsIntersect(
+                cs,
+                courseScheduleRepository.findByUniversityIdAndLocation(univId, location)
+        );
     }
 
     /**
@@ -349,13 +347,29 @@ public class CourseService {
      * @return 스케줄이 겹치면 {@code true}, 아닐시 {@code false}
      */
     private boolean doesLocationScheduleConflictExcludingCourse(List<CourseScheduleDto> cs, Long univId, String location, Long courseId) {
-        return cs.stream().anyMatch(csd -> courseScheduleRepository.existsByUnivIdAndLocationAndDayOfWeekExcludingCourse(
-                univId,
-                location,
-                csd.day(),
-                LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime()),
-                courseId
-        ));
+        return doScheduleSetsIntersect(
+                cs,
+                courseScheduleRepository.findByUniversityIdAndLocationExcludingCourse(univId, location, courseId)
+        );
+    }
+
+    /**
+     * 두 스케줄 목록 사이에 겹치는 스케줄이 있는지 검증.
+     * @param proposed 검증할 스케줄 목록
+     * @param existing 기존 스케줄 목록
+     * @return 스케줄이 겹치면 {@code true}, 아닐시 {@code false}
+     */
+    private boolean doScheduleSetsIntersect(List<CourseScheduleDto> proposed, List<CourseSchedule> existing) {
+        return existing.stream()
+                .anyMatch(e ->
+                        proposed.stream()
+                                .anyMatch(p ->
+                                    {
+                                        Boolean a = LocalTime.parse(p.startTime()).compareTo(e.getStartTime()) <= 0;
+                                        Boolean b = e.getStartTime().compareTo(LocalTime.parse(p.endTime())) < 0;
+                                        Boolean c = LocalTime.parse(p.startTime()).compareTo(e.getEndTime()) < 0;
+                                        Boolean d = e.getEndTime().compareTo(LocalTime.parse(p.endTime())) <= 0;
+                                        return ((a && b) || (c && d)) && e.getDay() == p.day();
+                                    }));
     }
 }
