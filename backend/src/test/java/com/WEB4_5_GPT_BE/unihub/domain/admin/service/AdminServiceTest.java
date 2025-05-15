@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -49,6 +50,8 @@ public class AdminServiceTest {
   @Mock private UniversityRepository universityRepository;
   
   @Mock private EmailService emailService;
+
+  @Mock private PasswordEncoder passwordEncoder;
 
   @InjectMocks private AdminService adminService;
 
@@ -204,7 +207,7 @@ public class AdminServiceTest {
         .id(1L)
         .name("관리자")
         .email("admin@example.com")
-        .password("changeme")
+            .password(passwordEncoder.encode("changeme"))
         .build();
     when(adminRepository.save(any(Admin.class))).thenReturn(savedAdmin);
     
