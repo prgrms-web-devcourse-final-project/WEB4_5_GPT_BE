@@ -55,7 +55,7 @@ public class S3Service {
 
         // 3) S3에 업로드할 키 생성
         String timestamp = String.valueOf(System.currentTimeMillis());
-        String key = "%s/%s-%s".formatted(activeProfile, timestamp, encoded); // ex) dev/1684092000000-자료구조_강의계획서.png
+        String key = "%s/%s-%s".formatted(activeProfile, timestamp, replacedSpaces); // ex) dev/1684092000000-자료구조_강의계획서.png
 
         // 4) S3에 파일 업로드 (KEY, FILE)
         s3Client.putObject(
