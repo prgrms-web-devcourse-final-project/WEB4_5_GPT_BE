@@ -8,8 +8,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface TimetableItemRepository extends JpaRepository<TimetableItem, Long> {
-
-    // 2단계: schedules를 효율적으로 조회
+    
     @Query("SELECT ti FROM TimetableItem ti " +
             "LEFT JOIN FETCH ti.schedules " +
             "WHERE ti.timetable.id = :timetableId")
