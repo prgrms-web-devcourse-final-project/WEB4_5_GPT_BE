@@ -299,7 +299,7 @@ public class InitTestData {
     /**
      * 시간표 생성 메서드
      */
-    private void initTimeTable(Member student) {
-        helper.createTimetable(student, 2025, 1);
+    private void initTimeTable(Member member) {
+        helper.createTimetable(member, 2025, 1);
     }
 }
