@@ -25,7 +25,7 @@ public class Timetable extends BaseTimeEntity {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    @Column(nullable = false)
+    @Column(name = "`year`", nullable = false)
     private Integer year; // 연도
 
     @Column(nullable = false)

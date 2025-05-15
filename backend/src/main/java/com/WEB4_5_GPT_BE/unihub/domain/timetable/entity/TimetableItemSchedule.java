@@ -1,10 +1,10 @@
 package com.WEB4_5_GPT_BE.unihub.domain.timetable.entity;
 
 import com.WEB4_5_GPT_BE.unihub.domain.common.entity.BaseTimeEntity;
+import com.WEB4_5_GPT_BE.unihub.domain.common.enums.DayOfWeek;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.DayOfWeek;
 import java.time.LocalTime;
 
 @Entity
@@ -25,7 +25,7 @@ public class TimetableItemSchedule extends BaseTimeEntity {
     private TimetableItem timetableItem;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 3, nullable = false)
+    @Column(name = "`day`", nullable = false, length = 3)
     private DayOfWeek day; // MON, TUE, ...
 
     @Column(name = "start_time", nullable = false)
