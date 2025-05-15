@@ -7,6 +7,15 @@ import jakarta.persistence.GenerationType;
 import lombok.*;
 
 @Entity
+@Table(
+        name = "notice",
+        indexes = {
+                @Index(
+                        name = "idx_notice_is_deleted_created_at",
+                        columnList = "is_deleted, created_at DESC"
+                )
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
