@@ -1,6 +1,7 @@
 package com.WEB4_5_GPT_BE.unihub.domain.course.entity;
 
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.DayOfWeek;
+import com.WEB4_5_GPT_BE.unihub.domain.course.exception.CourseScheduleStartsLaterThanEndsException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -51,7 +52,7 @@ class CourseScheduleTest {
         );
 
         assertThat(thrown)
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(CourseScheduleStartsLaterThanEndsException.class)
                 .hasMessage("수업 시작 시각이 종료 시각보다 늦습니다.");
     }
 }
