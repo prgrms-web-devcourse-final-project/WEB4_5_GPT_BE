@@ -102,7 +102,8 @@ public class TimetableController {
     })
     @GetMapping("/share/{shareKey}")
     public RsData<?> getSharedTimetable(@PathVariable String shareKey) {
-        var response = timetableService.getSharedTimetable(shareKey);
+        Member member = rq.getActor();
+        var response = timetableService.getSharedTimetable(shareKey, member);
         return new RsData<>("200", "공유된 시간표 조회 성공", response);
     }
 }

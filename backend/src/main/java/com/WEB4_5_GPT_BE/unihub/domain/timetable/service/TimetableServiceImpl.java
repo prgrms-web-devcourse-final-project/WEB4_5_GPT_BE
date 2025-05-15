@@ -119,11 +119,11 @@ public class TimetableServiceImpl implements TimetableService {
     }
 
     @Override
-    public TimetableSharedViewResponse getSharedTimetable(String shareKey) {
+    public TimetableSharedViewResponse getSharedTimetable(String shareKey, Member currentUser) {
         Map<Object,Object> entries = fetchAndValidateRedisEntry(shareKey);
         Long timetableId = parseTimetableId(entries);
-        checkVisibility(entries);
         Timetable timetable = loadTimetableWithItems(timetableId);
+        checkVisibilityWithOwner(entries, timetable, currentUser);
         return toSharedViewResponse(timetable);
     }
 
@@ -146,10 +146,14 @@ public class TimetableServiceImpl implements TimetableService {
         }
     }
 
-    private void checkVisibility(Map<Object,Object> entries) {
+    private void checkVisibilityWithOwner(Map<Object,Object> entries, Timetable timetable, Member currentUser) {
         Visibility vis = Visibility.valueOf((String) entries.get(TIMETABLE_VIS));
+
         if (vis == Visibility.PRIVATE) {
-            throw new TimetablePrivateException();
+            // 비공개면 본인만 볼 수 있음
+            if (!timetable.getMember().getId().equals(currentUser.getId())) {
+                throw new TimetablePrivateException();
+            }
         }
     }
 

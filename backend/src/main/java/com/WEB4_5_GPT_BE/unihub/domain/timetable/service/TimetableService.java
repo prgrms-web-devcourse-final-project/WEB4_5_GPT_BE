@@ -19,5 +19,5 @@ public interface TimetableService {
     TimetableShareLinkResponse createShareLink(Member member, TimetableShareLinkRequest request, String clientBaseUrl);
 
     // 공유된 시간표 조회
-    TimetableSharedViewResponse getSharedTimetable(String shareKey);
+    TimetableSharedViewResponse getSharedTimetable(String shareKey, Member currentUser);
 }

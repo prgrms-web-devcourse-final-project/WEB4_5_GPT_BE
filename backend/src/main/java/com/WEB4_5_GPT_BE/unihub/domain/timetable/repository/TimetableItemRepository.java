@@ -8,7 +8,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface TimetableItemRepository extends JpaRepository<TimetableItem, Long> {
-    
+
     @Query("SELECT ti FROM TimetableItem ti " +
             "LEFT JOIN FETCH ti.schedules " +
             "WHERE ti.timetable.id = :timetableId")
