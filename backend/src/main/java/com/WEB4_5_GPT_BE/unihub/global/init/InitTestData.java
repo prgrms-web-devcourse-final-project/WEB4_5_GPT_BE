@@ -76,6 +76,8 @@ public class InitTestData {
         //공지사항 초기 데이터 추가
         helper.createNotice("필독 공지", "수강신청 일정 공지",null);
 
+        // 초기 시간표 생성
+        initTimeTable(student);
     }
 
     /**
@@ -249,5 +251,12 @@ public class InitTestData {
         // 자료구조, 운영체제 수업과 시간표가 겹침
         helper.createCourseScheduleAndAssociateWithCourse(conflict, DayOfWeek.MON, "10:00:00", "11:00:00");
         helper.createCourseScheduleAndAssociateWithCourse(conflict, DayOfWeek.TUE, "10:00:00", "11:00:00");
+    }
+
+    /**
+     * 시간표 생성 메서드
+     */
+    private void initTimeTable(Member student) {
+        helper.createTimetable(student, 2025, 1);
     }
 }

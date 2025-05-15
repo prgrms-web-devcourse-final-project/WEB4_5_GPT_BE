@@ -27,6 +27,8 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.service.EmailService;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.MemberService;
 import com.WEB4_5_GPT_BE.unihub.domain.notice.entity.Notice;
 import com.WEB4_5_GPT_BE.unihub.domain.notice.repository.NoticeRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.timetable.entity.Timetable;
+import com.WEB4_5_GPT_BE.unihub.domain.timetable.repository.TimetableRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.MajorRepository;
@@ -55,6 +57,7 @@ public class InitDataHelper {
     private final EnrollmentRepository enrollmentRepository;
     private final EnrollmentPeriodRepository enrollmentPeriodRepository;
     private final NoticeRepository noticeRepository;
+    private final TimetableRepository timetableRepository;
 
     public University createUniversity(String name, String emailDomain) {
         return universityRepository.save(University.builder().name(name).emailDomain(emailDomain).build());
@@ -187,6 +190,15 @@ public class InitDataHelper {
                 .isDeleted(false)
                 .build();
         return noticeRepository.save(notice);
+    }
+
+    public Timetable createTimetable(Member member, int year, int semester) {
+        Timetable timetable = Timetable.builder()
+                .member(member)
+                .year(year)
+                .semester(semester)
+                .build();
+        return timetableRepository.save(timetable);
     }
 
 }
