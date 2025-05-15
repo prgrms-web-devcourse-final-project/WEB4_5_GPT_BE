@@ -2,6 +2,7 @@ package com.WEB4_5_GPT_BE.unihub.domain.course.entity;
 
 import com.WEB4_5_GPT_BE.unihub.domain.common.entity.BaseTimeEntity;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.DayOfWeek;
+import com.WEB4_5_GPT_BE.unihub.domain.course.exception.CourseScheduleStartsLaterThanEndsException;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -43,7 +44,7 @@ public class CourseSchedule extends BaseTimeEntity {
   public static class CourseScheduleBuilder {
       public CourseSchedule build() {
           if (startTime.isAfter(endTime)) {
-              throw new IllegalArgumentException("수업 시작 시각이 종료 시각보다 늦습니다.");
+              throw new CourseScheduleStartsLaterThanEndsException();
           }
           return new CourseSchedule(id, course, universityId, location, professorProfileEmployeeId, day, startTime, endTime);
       }
