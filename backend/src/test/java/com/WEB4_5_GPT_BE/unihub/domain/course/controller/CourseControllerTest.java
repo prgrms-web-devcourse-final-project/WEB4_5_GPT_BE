@@ -46,6 +46,7 @@ import static org.mockito.BDDMockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@DisplayName("강의 도메인 컨트롤러 레이어 테스트")
 @Import({CourseService.class,
         Rq.class,
         CustomAuthenticationFilter.class,
@@ -361,7 +362,6 @@ class CourseControllerTest {
     @Test
     @DisplayName("강의 목록 조회 요청시 성공.")
     void givenQueryParams_whenRequestingCourseList_thenReturnCourseList() throws Exception {
-        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
 
         //SecurityUser 목 생성
         SecurityUser mockUser = mock(SecurityUser.class);
@@ -379,7 +379,7 @@ class CourseControllerTest {
                 any(),          // grade
                 any(),          // semester
                 any(SecurityUser.class), // principal
-                pageableCaptor.capture()
+                any(Pageable.class)
         )).willReturn(new PageImpl<>(List.of()));
 
         //요청 수행
@@ -387,7 +387,6 @@ class CourseControllerTest {
                 get("/api/courses?mode=FULL&title=프로그래밍&profName=김교수&majorId=1&grade=2&semester=1&sort=credit,desc")
         );
 
-        Pageable captured = pageableCaptor.getValue();
 
         //응답 검증
         resultActions
