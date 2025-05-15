@@ -7,16 +7,25 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
+import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
+import com.WEB4_5_GPT_BE.unihub.global.infra.s3.S3Service;
 import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 
+@Slf4j
 @Component
 @Profile({"stg", "prod"}) // 테스트, 운영 서버 환경에서만 동작하는 테스트 데이터 초기화
 @RequiredArgsConstructor
@@ -24,6 +33,7 @@ public class InitProdOrStgData {
 
     private final InitDataHelper helper;
     private final PasswordEncoder passwordEncoder;
+    private final S3Service s3Service;
 
     @PostConstruct
     @Transactional
@@ -217,16 +227,33 @@ public class InitProdOrStgData {
         }
     }
     private void initNotices() {
-
-
         helper.createNotice("필독 공지", "수강신청 일정 공지", null);
         helper.createNotice("시스템 점검 안내",
                 "안녕하세요.\n더 나은 서비스를 제공하기 위해 시스템 점검이 예정되어 있습니다.",
                 null
         );
+
+        String summerUrl;
+        try {
+            // classpath의 static/notice-summer.jpg 파일을 읽어 MultipartFile로 변환
+            ClassPathResource resource = new ClassPathResource("static/notice-summer.jpg");
+            MultipartFile file = new MockMultipartFile(
+                    "file",
+                    resource.getFilename(),
+                    MediaType.IMAGE_JPEG_VALUE,
+                    resource.getInputStream()
+            );
+            // S3에 업로드하고 URL 받기
+            summerUrl = s3Service.upload(file);
+        } catch (IOException e) {
+            log.error("테스트용 공지사항 이미지 업로드 중 오류 발생", e);
+            throw new UnihubException("500", "테스트 데이터용 공지사항 이미지 업로드 실패");
+        }
+        log.info("테스트용 공지 이미지 업로드 URL = {}", summerUrl);
+        // 업로드한 URL을 사용해 공지사항 생성
         helper.createNotice("여름학기 수강신청 안내",
                 "여름학기 수강신청이 시작됩니다.",
-                null
+                summerUrl
         );
     }
 }
