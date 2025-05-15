@@ -182,8 +182,54 @@ class TimetableControllerTest {
     }
 
     @Test
-    @DisplayName("공유된 시간표 조회 - 비공개 링크 403")
-    void getSharedTimetable_privateKey_returns403() throws Exception {
+    @DisplayName("공유된 시간표 조회 - 다른 사용자가 비공개 링크 접근시 403")
+    void getSharedTimetable_privateKeyByOtherUser_returns403() throws Exception {
+        // 1. 첫 번째 사용자의 시간표 ID 얻기
+        Member owner = memberRepository.findByEmail(studentEmail_1).orElseThrow();
+        Long timetableId = timetableRepository
+                .findByMemberIdAndYearAndSemester(owner.getId(), 2025, 1)
+                .orElseThrow()
+                .getId();
+
+        // 2. 첫 번째 사용자가 비공개 공유 링크 생성
+        TimetableShareLinkRequest req = new TimetableShareLinkRequest(timetableId, Visibility.PRIVATE);
+        String responseJson = mockMvc.perform(post("/api/timetables/share/link")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .header("X-Client-Base-Url", "https://auni.ac.kr")
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        String shareUrl = objectMapper.readTree(responseJson).path("data").path("shareUrl").asText();
+        String shareKey = shareUrl.substring(shareUrl.lastIndexOf('/') + 1);
+
+        // 3. 다른 사용자로 로그인
+        String otherUserEmail = "teststudent2@auni.ac.kr";  // 다른 사용자
+        MemberLoginRequest otherLoginRequest = new MemberLoginRequest(otherUserEmail, studentPassword);
+
+        String otherResponseBody = mockMvc.perform(post("/api/members/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(otherLoginRequest)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        String otherAccessToken = objectMapper.readTree(otherResponseBody)
+                .path("data")
+                .path("accessToken")
+                .asText();
+
+        // 4. 다른 사용자가 비공개 공유 시간표 조회 (403 기대)
+        mockMvc.perform(get("/api/timetables/share/{shareKey}", shareKey)
+                        .header("Authorization", "Bearer " + otherAccessToken))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("403"))
+                .andExpect(jsonPath("$.message").value("비공개 시간표는 본인만 열람할 수 있습니다."));
+    }
+
+    @Test
+    @DisplayName("공유된 시간표 조회 - 본인이 자신의 비공개 링크 접근시 200")
+    void getSharedTimetable_privateKeyByOwner_returns200() throws Exception {
         // 1. 시간표 ID 얻기
         Member member = memberRepository.findByEmail(studentEmail_1).orElseThrow();
         Long timetableId = timetableRepository
@@ -204,11 +250,12 @@ class TimetableControllerTest {
         String shareUrl = objectMapper.readTree(responseJson).path("data").path("shareUrl").asText();
         String shareKey = shareUrl.substring(shareUrl.lastIndexOf('/') + 1);
 
-        // 3. 비공개 공유 시간표 조회 (403 기대)
+        // 3. 본인이 자신의 비공개 공유 시간표 조회 (200 기대)
         mockMvc.perform(get("/api/timetables/share/{shareKey}", shareKey)
                         .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("403"))
-                .andExpect(jsonPath("$.message").value("해당 시간표는 비공개입니다."));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200"))
+                .andExpect(jsonPath("$.message").value("공유된 시간표 조회 성공"))
+                .andExpect(jsonPath("$.data.timetableId").value(timetableId));
     }
 }

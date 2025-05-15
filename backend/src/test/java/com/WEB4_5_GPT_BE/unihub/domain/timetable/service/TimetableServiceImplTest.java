@@ -52,6 +52,9 @@ class TimetableServiceImplTest {
     @Mock
     private TimetableItemRepository timetableItemRepository;
 
+    // 테스트에서 사용할 MockMember 추가
+    private Member mockCurrentUser;
+
     private Member student(long memberId, String name, String email) {
         return Student.builder()
                 .id(memberId)
@@ -200,8 +203,10 @@ class TimetableServiceImplTest {
         String badKey = "nope1234";
         when(redisTemplate.hasKey(badKey)).thenReturn(false);
 
+        mockCurrentUser = student(1L, "테스터", "tester@auni.ac.kr");
+
         // when / then
-        assertThatThrownBy(() -> timetableService.getSharedTimetable(badKey))
+        assertThatThrownBy(() -> timetableService.getSharedTimetable(badKey, mockCurrentUser))
                 .isInstanceOf(TimetableShareLinkInvalidException.class)
                 .hasMessage("공유 링크가 만료되었거나 존재하지 않습니다.");
     }
@@ -218,15 +223,17 @@ class TimetableServiceImplTest {
         when(redisTemplate.opsForHash()).thenReturn(hashOps);
         when(hashOps.entries(key)).thenReturn(Collections.emptyMap());
 
+        mockCurrentUser = student(1L, "테스터", "tester@auni.ac.kr");
+
         // when / then
-        assertThatThrownBy(() -> timetableService.getSharedTimetable(key))
+        assertThatThrownBy(() -> timetableService.getSharedTimetable(key, mockCurrentUser))
                 .isInstanceOf(TimetableShareLinkInvalidException.class)
                 .hasMessage("공유 링크가 만료되었거나 존재하지 않습니다.");
     }
 
     @Test
-    @DisplayName("visibility=PRIVATE 면 TimetablePrivateException 발생")
-    void whenVisibilityPrivate_thenThrowPrivateException() {
+    @DisplayName("비공개 시간표를 다른 사용자가 접근하면 TimetablePrivateException 발생")
+    void whenPrivateTimetableAccessedByOtherUser_thenThrowPrivateException() {
         // given
         String key = "priv0001";
         when(redisTemplate.hasKey(key)).thenReturn(true);
@@ -240,15 +247,67 @@ class TimetableServiceImplTest {
         entries.put("visibility", "PRIVATE");
         when(hashOps.entries(key)).thenReturn(entries);
 
+        // 시간표 소유자 설정 (ID: 999)
+        Member owner = student(999L, "김하늘", "owner@auni.ac.kr");
+        Timetable mockTt = mock(Timetable.class);
+        when(mockTt.getMember()).thenReturn(owner);
+        when(timetableRepository.findWithItemsById(10L)).thenReturn(Optional.of(mockTt));
+
+        // 다른 사용자로 접근 시도 (ID: 1)
+        mockCurrentUser = student(1L, "김다른", "other@auni.ac.kr");
+
         // when / then
-        assertThatThrownBy(() -> timetableService.getSharedTimetable(key))
+        assertThatThrownBy(() -> timetableService.getSharedTimetable(key, mockCurrentUser))
                 .isInstanceOf(TimetablePrivateException.class)
-                .hasMessage("해당 시간표는 비공개입니다.");
+                .hasMessage("비공개 시간표는 본인만 열람할 수 있습니다.");
     }
 
     @Test
-    @DisplayName("정상적인 shareKey면 TimetableSharedViewResponse 반환")
-    void whenValidShareKey_thenReturnsSharedView() {
+    @DisplayName("비공개 시간표를 본인이 접근하면 정상 조회")
+    void whenPrivateTimetableAccessedByOwner_thenReturnsSharedView() {
+        // given
+        String key = "priv0002";
+        when(redisTemplate.hasKey(key)).thenReturn(true);
+
+        @SuppressWarnings("unchecked")
+        HashOperations<String, Object, Object> hashOps = mock(HashOperations.class);
+        when(redisTemplate.opsForHash()).thenReturn(hashOps);
+
+        Map<Object,Object> entries = new HashMap<>();
+        entries.put("timetableId", "10");
+        entries.put("visibility", "PRIVATE");
+        when(hashOps.entries(key)).thenReturn(entries);
+
+        // 시간표 소유자 설정
+        Member owner = student(999L, "김하늘", "haneul@auni.ac.kr");
+        Timetable mockTt = mock(Timetable.class);
+        when(mockTt.getId()).thenReturn(10L);
+        when(mockTt.getYear()).thenReturn(2025);
+        when(mockTt.getSemester()).thenReturn(1);
+        when(mockTt.getMember()).thenReturn(owner);
+        when(mockTt.getItems()).thenReturn(Collections.emptyList());
+
+        when(timetableRepository.findWithItemsById(10L)).thenReturn(Optional.of(mockTt));
+        when(timetableItemRepository.findWithSchedulesByTimetableId(10L))
+                .thenReturn(Collections.emptyList());
+
+        // 본인이 접근 (owner와 같은 ID)
+        mockCurrentUser = student(999L, "김하늘", "haneul@auni.ac.kr");
+
+        // when
+        TimetableSharedViewResponse dto = timetableService.getSharedTimetable(key, mockCurrentUser);
+
+        // then
+        assertThat(dto.timetableId()).isEqualTo(10L);
+        assertThat(dto.year()).isEqualTo(2025);
+        assertThat(dto.semester()).isEqualTo(1);
+        assertThat(dto.ownerName()).isEqualTo("김하늘");
+        assertThat(dto.timetables()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("공개 시간표는 누구나 조회 가능")
+    void whenPublicTimetable_thenAnyUserCanAccess() {
         // given
         String key = "goodkey1";
         when(redisTemplate.hasKey(key)).thenReturn(true);
@@ -262,7 +321,7 @@ class TimetableServiceImplTest {
         entries.put("visibility", "PUBLIC");
         when(hashOps.entries(key)).thenReturn(entries);
 
-        // stub timetableRepository
+        // 시간표 설정
         Timetable mockTt = mock(Timetable.class);
         when(mockTt.getId()).thenReturn(10L);
         when(mockTt.getYear()).thenReturn(2025);
@@ -270,10 +329,14 @@ class TimetableServiceImplTest {
         when(mockTt.getMember()).thenReturn(student(999L, "김하늘", "haneul@auni.ac.kr"));
         when(mockTt.getItems()).thenReturn(Collections.emptyList());
         when(timetableRepository.findWithItemsById(10L)).thenReturn(Optional.of(mockTt));
-        when(timetableItemRepository.findWithSchedulesByTimetableId(10L)).thenReturn(Collections.emptyList());
+        when(timetableItemRepository.findWithSchedulesByTimetableId(10L))
+                .thenReturn(Collections.emptyList());
+
+        // 다른 사용자가 접근
+        mockCurrentUser = student(1L, "김다른", "other@auni.ac.kr");
 
         // when
-        TimetableSharedViewResponse dto = timetableService.getSharedTimetable(key);
+        TimetableSharedViewResponse dto = timetableService.getSharedTimetable(key, mockCurrentUser);
 
         // then
         assertThat(dto.timetableId()).isEqualTo(10L);
