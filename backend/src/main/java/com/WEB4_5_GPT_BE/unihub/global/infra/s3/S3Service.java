@@ -39,17 +39,19 @@ public class S3Service {
      */
     public String upload(MultipartFile file) throws IOException {
 
-        // 1) 임시 파일 생성
-        String filename = file.getOriginalFilename();
-        String encoded = URLEncoder.encode(filename, StandardCharsets.UTF_8);
+        // 1) 한글 인코딩 처리 및 공백을 "_"(언더바)로 대체
+        String filename = file.getOriginalFilename();                                  // "자료구조 강의계획서.png"
+        String replacedSpaces = filename.replaceAll("\\s+", "_"); // "자료구조_강의계획서.png"
+        String encoded = URLEncoder.encode(replacedSpaces, StandardCharsets.UTF_8);
 
+        // 2) 파일을 임시 디렉토리에 저장
         Path filePath = Files.createTempFile("up-", "-" + encoded);
         file.transferTo(filePath.toFile());
 
-        // 2) S3에 저장할 키 생성
+        // 3) S3에 업로드할 키 생성
         String key = System.currentTimeMillis() + "_" + file.getOriginalFilename();
 
-        // S3에 파일 업로드 (KEY, FILE)
+        // 4) S3에 파일 업로드 (KEY, FILE)
         s3Client.putObject(
                 PutObjectRequest.builder()
                         .bucket(bucketName)
