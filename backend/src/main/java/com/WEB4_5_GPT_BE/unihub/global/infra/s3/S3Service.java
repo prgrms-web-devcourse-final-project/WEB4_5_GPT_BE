@@ -10,6 +10,8 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -38,7 +40,10 @@ public class S3Service {
     public String upload(MultipartFile file) throws IOException {
 
         // 1) 임시 파일 생성
-        Path filePath = Files.createTempFile("up-", "-" + file.getOriginalFilename());
+        String filename = file.getOriginalFilename();
+        String encoded = URLEncoder.encode(filename, StandardCharsets.UTF_8);
+
+        Path filePath = Files.createTempFile("up-", "-" + encoded);
         file.transferTo(filePath.toFile());
 
         // 2) S3에 저장할 키 생성
