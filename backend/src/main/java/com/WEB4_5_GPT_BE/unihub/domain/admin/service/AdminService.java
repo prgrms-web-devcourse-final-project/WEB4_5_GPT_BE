@@ -22,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +39,7 @@ public class AdminService {
     private final EnrollmentPeriodRepository enrollmentPeriodRepository;
     private final UniversityRepository universityRepository;
     private final EmailService emailService;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * 학생 회원 목록 조회
@@ -257,7 +259,7 @@ public class AdminService {
                 Admin.builder()
                         .name(request.adminName())
                         .email(request.email())
-                        .password("changeme")
+                        .password(passwordEncoder.encode("changeme"))
                         .build();
 
         Member savedAdmin = adminRepository.save(admin);
