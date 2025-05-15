@@ -34,6 +34,7 @@ class S3ServiceTest {
     void setUp() {
         // 테스트용 버킷 이름 설정
         ReflectionTestUtils.setField(s3Service, "bucketName", "test-bucket");
+        ReflectionTestUtils.setField(s3Service, "activeProfile", "test");
     }
 
     @Test
@@ -59,22 +60,23 @@ class S3ServiceTest {
         PutObjectRequest actualReq = reqCaptor.getValue();
         Path actualPath = pathCaptor.getValue();
 
-        // bucket 이름 검증
+        // 1) bucket 이름 검증
         assertThat(actualReq.bucket()).isEqualTo("test-bucket");
 
-        // key 검증: 타임스탬프_prefix_test.pdf 형태
+        // 2) 키 검증: "dev/타임스탬프-test.pdf" 형태
         String key = actualReq.key();
-        assertThat(key).endsWith("_test.pdf");
-        assertThat(key).matches("\\d+_test\\.pdf");
+        assertThat(key).startsWith("test/");
+        assertThat(key).endsWith("-test.pdf");
+        // 전체 패턴 매칭 (dev/1234567890123-test.pdf)
+        assertThat(key).matches("test/\\d+-test\\.pdf");
 
-        // URL 에 key 포함 및 형식 검증
+        // 3) URL 에 key 포함 및 형식 검증
         assertThat(url).startsWith("https://test-bucket.s3.ap-northeast-2.amazonaws.com/");
-        assertThat(url).contains(key);
+        assertThat(url).contains("/" + key);
 
-        // 임시 파일 실제 생성 여부
+        // 4) 임시 파일 실제 생성 여부
         assertTrue(actualPath.toFile().exists(), "임시 PDF 파일이 생성되어야 합니다");
     }
-
 
     @Test
     @DisplayName("deleteByKey 호출 시 S3Client.deleteObject에 올바른 요청 전달")
