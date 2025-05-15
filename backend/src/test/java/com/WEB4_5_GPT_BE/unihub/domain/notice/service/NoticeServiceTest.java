@@ -61,7 +61,7 @@ class NoticeServiceTest {
     @Test
     @DisplayName("공지사항 생성 성공 - 파일 없음")
     void createNotice_success() {
-        NoticeCreateRequest request = new NoticeCreateRequest("제목", "내용", null);
+        NoticeCreateRequest request = new NoticeCreateRequest("제목", "내용");
         when(memberRepository.findById(admin.getId())).thenReturn(Optional.of(admin));
 
         NoticeCreateResponse response = noticeService.createNotice(admin.getId(), request, null);
@@ -72,7 +72,7 @@ class NoticeServiceTest {
     @Test
     @DisplayName("공지사항 생성 성공 - 파일 포함")
     void createNotice_withFile_success() throws Exception {
-        NoticeCreateRequest request = new NoticeCreateRequest("제목", "내용", null);
+        NoticeCreateRequest request = new NoticeCreateRequest("제목", "내용");
         MockMultipartFile file = new MockMultipartFile(
                 "file", "test.pdf", "application/pdf", "dummy content".getBytes()
         );
@@ -89,7 +89,7 @@ class NoticeServiceTest {
     @Test
     @DisplayName("공지사항 생성 실패 - 관리자 권한 아님")
     void createNotice_forbidden() {
-        NoticeCreateRequest request = new NoticeCreateRequest("제목", "내용", null);
+        NoticeCreateRequest request = new NoticeCreateRequest("제목", "내용");
         when(memberRepository.findById(student.getId())).thenReturn(Optional.of(student));
 
         assertThatThrownBy(() -> noticeService.createNotice(student.getId(), request, null))
@@ -120,7 +120,7 @@ class NoticeServiceTest {
     @Test
     @DisplayName("공지사항 수정 성공 - 파일 없음")
     void updateNotice_success() {
-        NoticeUpdateRequest request = new NoticeUpdateRequest("수정된 제목", "수정된 내용", null);
+        NoticeUpdateRequest request = new NoticeUpdateRequest("수정된 제목", "수정된 내용");
         Notice notice = Notice.builder().id(1L).title("기존 제목").content("기존 내용").build();
 
         when(memberRepository.findById(admin.getId())).thenReturn(Optional.of(admin));
@@ -134,7 +134,7 @@ class NoticeServiceTest {
     @Test
     @DisplayName("공지사항 수정 성공 - 새 파일 포함")
     void updateNotice_withFile_success() throws Exception {
-        NoticeUpdateRequest request = new NoticeUpdateRequest("수정제목", "수정내용", null);
+        NoticeUpdateRequest request = new NoticeUpdateRequest("수정제목", "수정내용");
         Notice notice = Notice.builder()
                 .id(1L)
                 .title("기존 제목")
