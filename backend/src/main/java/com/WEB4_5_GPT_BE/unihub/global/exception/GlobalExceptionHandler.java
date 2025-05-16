@@ -19,6 +19,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -137,5 +138,12 @@ public class GlobalExceptionHandler {
     }
 
     return handleUnihubException( new UnihubException("400", ex.getMessage()) );
+  }
+
+  @ExceptionHandler(AsyncRequestNotUsableException.class)
+  public ResponseEntity<RsData<Void>> handleAsyncNotUsable(AsyncRequestNotUsableException e) {
+    return ResponseEntity
+            .status(HttpStatus.SERVICE_UNAVAILABLE)
+            .body(new RsData<>("503", "서비스를 일시적으로 사용할 수 없습니다.", null));
   }
 }
