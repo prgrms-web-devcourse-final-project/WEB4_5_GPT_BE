@@ -68,6 +68,8 @@ dependencies {
     testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.testcontainers:mysql'
+    implementation 'org.springframework:spring-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
     // Spring Boot Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
@@ -81,10 +83,10 @@ dependencies {
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
     // sentry 실행시 예외 전송용
-    implementation 'io.sentry:sentry-spring-boot-starter:6.30.0'
+    implementation 'io.sentry:sentry-spring-boot-starter:8.11.1'
 
-    // AWS S3 (필요 시 주석 해제)
-    // implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.3.0'
+    // AWS S3
+    implementation("io.awspring.cloud:spring-cloud-aws-starter-s3:3.3.0")
 }
 
 

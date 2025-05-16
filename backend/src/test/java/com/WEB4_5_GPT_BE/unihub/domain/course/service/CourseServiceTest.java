@@ -7,6 +7,9 @@ import com.WEB4_5_GPT_BE.unihub.domain.course.dto.CourseScheduleDto;
 import com.WEB4_5_GPT_BE.unihub.domain.course.dto.CourseWithFullScheduleResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.CourseSchedule;
+import com.WEB4_5_GPT_BE.unihub.domain.course.exception.CourseNotFoundException;
+import com.WEB4_5_GPT_BE.unihub.domain.course.exception.LocationScheduleConflictException;
+import com.WEB4_5_GPT_BE.unihub.domain.course.exception.ProfessorScheduleConflictException;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseScheduleRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
@@ -16,6 +19,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.MajorRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.UniversityRepository;
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
+import com.WEB4_5_GPT_BE.unihub.global.infra.s3.S3Service;
 import com.WEB4_5_GPT_BE.unihub.global.security.SecurityUser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,6 +30,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.time.LocalTime;
@@ -33,6 +38,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.BDDAssertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
@@ -55,9 +61,10 @@ class CourseServiceTest {
     private UniversityRepository universityRepository;
 
     @Mock
-
     private ProfessorRepository professorRepository;
 
+    @Mock
+    private S3Service s3Service;
 
     @InjectMocks
     private CourseService courseService;
@@ -174,22 +181,12 @@ class CourseServiceTest {
         given(universityRepository.findByName(testUniversity1.getName())).willReturn(Optional.of(testUniversity1));
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest3.major()))
                 .willReturn(Optional.of(testCourse2.getMajor()));
-        CourseScheduleDto csd = testCourseRequest3.schedule().getFirst();
         given(professorRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
                 .willReturn(Optional.of(testProfessorProfile1));
-        given(courseScheduleRepository.existsByUnivIdAndLocationAndDayOfWeek(
+        given(courseScheduleRepository.findByUniversityIdAndProfessorEmployeeId(
                 testUniversity1.getId(),
-                testCourseRequest3.location(),
-                csd.day(),
-                LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime())))
-                .willReturn(false);
-        given(courseScheduleRepository.existsByProfEmpIdAndDayOfWeek(
-                testProfessorProfile1.getEmployeeId(),
-                csd.day(),
-                LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime())))
-                .willReturn(false);
+                testProfessorProfile1.getEmployeeId()))
+                .willReturn(testCourse1.getSchedules());
         given(courseRepository.save(any(Course.class))).willReturn(testCourseRequest3.toEntity(testMajor2, 0, testProfessorProfile1));
 
         CourseWithFullScheduleResponse result = courseService.createCourse(testCourseRequest3);
@@ -199,12 +196,11 @@ class CourseServiceTest {
         assertThat(result.schedule().size()).isEqualTo(testCourseRequest3.schedule().size());
         then(universityRepository).should().findByName(testUniversity1.getName());
         then(majorRepository).should().findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest3.major());
-        then(courseScheduleRepository).should().existsByUnivIdAndLocationAndDayOfWeek(
+        then(professorRepository).should().findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId());
+        then(courseScheduleRepository).should().findByUniversityIdAndProfessorEmployeeId(
                 testUniversity1.getId(),
-                testCourseRequest3.location(),
-                csd.day(),
-                LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime()));
+                testProfessorProfile1.getEmployeeId());
+        then(courseRepository).should().save(any(Course.class));
     }
 
     @Test
@@ -213,28 +209,21 @@ class CourseServiceTest {
         given(universityRepository.findByName(testUniversity1.getName())).willReturn(Optional.of(testUniversity1));
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest1.major()))
                 .willReturn(Optional.of(testCourse2.getMajor()));
-        CourseScheduleDto csd = testCourseRequest1.schedule().getFirst();
-        given(courseScheduleRepository.existsByUnivIdAndLocationAndDayOfWeek(
+        given(courseScheduleRepository.findByUniversityIdAndLocation(
                 testUniversity1.getId(),
-                testCourseRequest1.location(),
-                csd.day(),
-                LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime())))
-                .willReturn(true);
+                testCourseRequest1.location()))
+                .willReturn(testCourse1.getSchedules());
 
         Throwable result = catchThrowable(() -> courseService.createCourse(testCourseRequest1));
 
         assertThat(result)
-                .isInstanceOf(UnihubException.class)
+                .isInstanceOf(LocationScheduleConflictException.class)
                 .hasMessage("강의 장소가 이미 사용 중입니다.");
         then(universityRepository).should().findByName(testUniversity1.getName());
         then(majorRepository).should().findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest1.major());
-        then(courseScheduleRepository).should().existsByUnivIdAndLocationAndDayOfWeek(
+        then(courseScheduleRepository).should().findByUniversityIdAndLocation(
                 testUniversity1.getId(),
-                testCourseRequest1.location(),
-                csd.day(),
-                LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime()));
+                testCourseRequest1.location());
     }
 
     @Test
@@ -243,17 +232,12 @@ class CourseServiceTest {
         given(universityRepository.findByName(testUniversity1.getName())).willReturn(Optional.of(testUniversity1));
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest2.major()))
                 .willReturn(Optional.of(testCourse2.getMajor()));
-        CourseScheduleDto csd = testCourseRequest2.schedule().getFirst();
-
         given(professorRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
                 .willReturn(Optional.of(testProfessorProfile1));
-        given(courseScheduleRepository.existsByProfEmpIdAndDayOfWeek(
-                testCourseRequest2.employeeId(),
-                csd.day(),
-                LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime())))
-                .willReturn(true);
-
+        given(courseScheduleRepository.findByUniversityIdAndProfessorEmployeeId(
+                testUniversity1.getId(),
+                testCourseRequest2.employeeId()))
+                .willReturn(testCourse1.getSchedules());
 
         Throwable result = catchThrowable(() -> courseService.createCourse(testCourseRequest2));
 
@@ -262,11 +246,10 @@ class CourseServiceTest {
                 .hasMessage("강사/교수가 이미 수업 중입니다.");
         then(universityRepository).should().findByName(testUniversity1.getName());
         then(majorRepository).should().findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest1.major());
-        then(courseScheduleRepository).should().existsByProfEmpIdAndDayOfWeek(
-                testCourseRequest2.employeeId(),
-                csd.day(),
-                LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime()));
+        then(professorRepository).should().findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId());
+        then(courseScheduleRepository).should().findByUniversityIdAndProfessorEmployeeId(
+                testUniversity1.getId(),
+                testCourseRequest2.employeeId());
     }
 
     @Test
@@ -278,7 +261,7 @@ class CourseServiceTest {
                 () -> courseService.updateCourse(1234567L, testCourseRequest1));
 
         assertThat(thrown)
-                .isInstanceOf(UnihubException.class)
+                .isInstanceOf(CourseNotFoundException.class)
                 .hasMessage("해당 강의가 존재하지 않습니다.");
         then(courseRepository).should().findById(1234567L);
     }
@@ -301,8 +284,11 @@ class CourseServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.title()).isEqualTo(testCourseRequest.title());
         assertThat(result.schedule().size()).isEqualTo(testCourseRequest.schedule().size());
+        then(courseRepository).should().findById(1L);
         then(universityRepository).should().findByName(testUniversity1.getName());
         then(majorRepository).should().findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest.major());
+        then(professorRepository).should().findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId());
+        then(courseRepository).should().save(any(Course.class));
     }
 
     @Test
@@ -314,22 +300,16 @@ class CourseServiceTest {
                 .willReturn(Optional.of(testCourse2.getMajor()));
         given(professorRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
                 .willReturn(Optional.of(testProfessorProfile1));
-        CourseScheduleDto csd = testCourseRequest3.schedule().getFirst();
-        given(courseScheduleRepository.existsByUnivIdAndLocationAndDayOfWeekExcludingCourse(
+        given(courseScheduleRepository.findByUniversityIdAndLocationExcludingCourse(
                 testUniversity1.getId(),
                 testCourseRequest3.location(),
-                csd.day(),
-                LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime()),
                 1L))
-                .willReturn(false);
-        given(courseScheduleRepository.existsByProfEmpIdAndDayOfWeekExcludingCourse(
+                .willReturn(testCourse1.getSchedules());
+        given(courseScheduleRepository.findByUniversityIdAndProfessorEmployeeIdExcludingCourse(
+                testUniversity1.getId(),
                 testProfessorProfile1.getEmployeeId(),
-                csd.day(),
-                LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime()),
                 1L))
-                .willReturn(false);
+                .willReturn(testCourse1.getSchedules());
         given(courseRepository.save(any(Course.class))).willReturn(testCourseRequest3.toEntity(testMajor2, 0, testProfessorProfile1));
 
         CourseWithFullScheduleResponse result = courseService.updateCourse(1L, testCourseRequest3);
@@ -341,18 +321,13 @@ class CourseServiceTest {
         then(universityRepository).should().findByName(testUniversity1.getName());
         then(majorRepository).should().findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest3.major());
         then(professorRepository).should().findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId());
-        then(courseScheduleRepository).should().existsByUnivIdAndLocationAndDayOfWeekExcludingCourse(
+        then(courseScheduleRepository).should().findByUniversityIdAndLocationExcludingCourse(
                 testUniversity1.getId(),
                 testCourseRequest3.location(),
-                csd.day(),
-                LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime()),
                 1L);
-        then(courseScheduleRepository).should().existsByProfEmpIdAndDayOfWeekExcludingCourse(
+        then(courseScheduleRepository).should().findByUniversityIdAndProfessorEmployeeIdExcludingCourse(
+                testUniversity1.getId(),
                 testProfessorProfile1.getEmployeeId(),
-                csd.day(),
-                LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime()),
                 1L);
         then(courseRepository).should().save(any(Course.class));
     }
@@ -364,30 +339,23 @@ class CourseServiceTest {
         given(universityRepository.findByName(testUniversity1.getName())).willReturn(Optional.of(testUniversity1));
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest1.major()))
                 .willReturn(Optional.of(testCourse2.getMajor()));
-        CourseScheduleDto csd = testCourseRequest1.schedule().getFirst();
-        given(courseScheduleRepository.existsByUnivIdAndLocationAndDayOfWeekExcludingCourse(
+        given(courseScheduleRepository.findByUniversityIdAndLocationExcludingCourse(
                 testUniversity1.getId(),
                 testCourseRequest1.location(),
-                csd.day(),
-                LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime()),
                 testCourse1.getId()))
-                .willReturn(true);
+                .willReturn(testCourse1.getSchedules());
 
         Throwable result = catchThrowable(() -> courseService.updateCourse(testCourse1.getId(), testCourseRequest1));
 
         assertThat(result)
-                .isInstanceOf(UnihubException.class)
+                .isInstanceOf(LocationScheduleConflictException.class)
                 .hasMessage("강의 장소가 이미 사용 중입니다.");
         then(courseRepository).should().findById(testCourse1.getId());
         then(universityRepository).should().findByName(testUniversity1.getName());
         then(majorRepository).should().findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest1.major());
-        then(courseScheduleRepository).should().existsByUnivIdAndLocationAndDayOfWeekExcludingCourse(
+        then(courseScheduleRepository).should().findByUniversityIdAndLocationExcludingCourse(
                 testUniversity1.getId(),
                 testCourseRequest1.location(),
-                csd.day(),
-                LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime()),
                 testCourse1.getId());
     }
 
@@ -398,30 +366,26 @@ class CourseServiceTest {
         given(universityRepository.findByName(testUniversity1.getName())).willReturn(Optional.of(testUniversity1));
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest2.major()))
                 .willReturn(Optional.of(testCourse2.getMajor()));
-        CourseScheduleDto csd = testCourseRequest2.schedule().getFirst();
         given(professorRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
                 .willReturn(Optional.of(testProfessorProfile1));
-        given(courseScheduleRepository.existsByProfEmpIdAndDayOfWeekExcludingCourse(
+        given(courseScheduleRepository.findByUniversityIdAndProfessorEmployeeIdExcludingCourse(
+                testUniversity1.getId(),
                 testCourseRequest2.employeeId(),
-                csd.day(),
-                LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime()),
                 testCourse1.getId()))
-                .willReturn(true);
+                .willReturn(testCourse1.getSchedules());
 
         Throwable result = catchThrowable(() -> courseService.updateCourse(testCourse1.getId(), testCourseRequest2));
 
         assertThat(result)
-                .isInstanceOf(UnihubException.class)
+                .isInstanceOf(ProfessorScheduleConflictException.class)
                 .hasMessage("강사/교수가 이미 수업 중입니다.");
         then(courseRepository).should().findById(testCourse1.getId());
         then(universityRepository).should().findByName(testUniversity1.getName());
         then(majorRepository).should().findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest1.major());
-        then(courseScheduleRepository).should().existsByProfEmpIdAndDayOfWeekExcludingCourse(
+        then(professorRepository).should().findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId());
+        then(courseScheduleRepository).should().findByUniversityIdAndProfessorEmployeeIdExcludingCourse(
+                testUniversity1.getId(),
                 testCourseRequest2.employeeId(),
-                csd.day(),
-                LocalTime.parse(csd.startTime()),
-                LocalTime.parse(csd.endTime()),
                 testCourse1.getId());
     }
 
@@ -483,5 +447,51 @@ class CourseServiceTest {
         then(courseRepository).should().findWithFilters(
                 anyLong(), anyString(), anyString(), any(), any(), any(), any(Pageable.class)
         );
+    }
+
+    @Test
+    @DisplayName("존재하는 강의는 S3 파일 삭제 후 DB에서 삭제된다")
+    void deleteCourse_withAttachment_deletesFileAndCourse() {
+        // given
+        Long courseId = 42L;
+        // dummy Major/University 객체 생성
+        University uni = new University(1L, "U", "u.ac.kr");
+        Major maj = new Major(2L, uni, "DummyMajor");
+        // 빌더를 이용해 coursePlanAttachment 만 지정
+        Course course = Course.builder()
+                .id(courseId)
+                .title("삭제용 강의")
+                .major(maj)
+                .location("TestRoom")
+                .capacity(10)
+                .enrolled(5)
+                .credit(3)
+                .professor(null)
+                .grade(1)
+                .semester(1)
+                .coursePlanAttachment("/some/bucket/path.pdf")
+                .build();
+
+        given(courseRepository.findById(courseId)).willReturn(Optional.of(course));
+
+        // when
+        courseService.deleteCourse(courseId);
+
+        // then
+        then(s3Service).should().deleteByUrl("/some/bucket/path.pdf");
+        then(courseRepository).should().delete(course);
+    }
+
+    @Test
+    @DisplayName("강의가 존재하지 않으면 404 예외 발생")
+    void deleteCourse_notFound_throwsException() {
+        given(courseRepository.findById(anyLong())).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> courseService.deleteCourse(99L))
+                .isInstanceOfSatisfying(UnihubException.class, ex ->
+                        assertThat(ex.getCode())
+                                .isEqualTo(String.valueOf(HttpStatus.NOT_FOUND.value()))
+                );
     }
 }
