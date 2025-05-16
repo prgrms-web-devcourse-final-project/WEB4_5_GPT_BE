@@ -15,18 +15,16 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Admin;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
+
+import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
-import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.AdminRepository;
+
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.EmailService;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.MemberService;
-import com.WEB4_5_GPT_BE.unihub.domain.notice.entity.Notice;
-import com.WEB4_5_GPT_BE.unihub.domain.notice.repository.NoticeRepository;
-import com.WEB4_5_GPT_BE.unihub.domain.timetable.entity.Timetable;
-import com.WEB4_5_GPT_BE.unihub.domain.timetable.repository.TimetableRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.MajorRepository;
@@ -54,8 +52,6 @@ public class InitDataHelper {
     private final CourseScheduleRepository courseScheduleRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final EnrollmentPeriodRepository enrollmentPeriodRepository;
-    private final NoticeRepository noticeRepository;
-    private final TimetableRepository timetableRepository;
 
     public University createUniversity(String name, String emailDomain) {
         return universityRepository.save(University.builder().name(name).emailDomain(emailDomain).build());
@@ -180,22 +176,4 @@ public class InitDataHelper {
         enrollmentPeriodRepository.save(period);
     }
 
-    public Notice createNotice(String title, String content, String attachmentUrl) {
-        Notice notice = Notice.builder()
-                .title(title)
-                .content(content)
-                .attachmentUrl(attachmentUrl)
-                .isDeleted(false)
-                .build();
-        return noticeRepository.save(notice);
-    }
-
-    public void createTimetable(Member member, int year, int semester) {
-        Timetable timetable = Timetable.builder()
-                .member(member)
-                .year(year)
-                .semester(semester)
-                .build();
-        timetableRepository.save(timetable);
-    }
 }

@@ -7,9 +7,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.UpdateEmailRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.UpdateMajorRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.UpdatePasswordRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.VerifyPasswordRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageAdminResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Admin;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
@@ -35,7 +33,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -527,83 +524,6 @@ class MemberServiceImplTest {
         // 비밀번호가 일치하면 예외가 발생하지 않고 정상적으로 처리되므로, 별도의 검증 없이 끝납니다.
     }
 
-    @DisplayName("관리자 마이페이지 조회에 성공한다")
-    @Test
-    void givenAdminRole_whenGetAdminMyPage_thenReturnAdminInfo() {
-        // given
-        Admin admin = Admin.builder()
-                .id(1L)
-                .email("admin@unihub.com")
-                .name("관리자")
-                .role(Role.ADMIN)
-                .isDeleted(false)
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        when(memberRepository.findById(1L)).thenReturn(Optional.of(admin));
-
-        // when
-        MyPageAdminResponse response = memberService.getAdminMyPage(1L);
-
-        // then
-        assertThat(response.email()).isEqualTo("admin@unihub.com");
-        assertThat(response.name()).isEqualTo("관리자");
-        assertThat(response.role()).isEqualTo(Role.ADMIN);
-    }
-
-    @DisplayName("관리자 권한이 아닌 사용자가 관리자 마이페이지 조회 시 실패한다")
-    @Test
-    void givenNonAdminRole_whenGetAdminMyPage_thenThrowException() {
-        // given
-        Student member = Student.builder()
-                .id(2L)
-                .email("student@unihub.com")
-                .name("학생")
-                .role(Role.STUDENT)
-                .isDeleted(false)
-                .build();
-
-        when(memberRepository.findById(2L)).thenReturn(Optional.of(member));
-
-        // when / then
-        assertThatThrownBy(() -> memberService.getAdminMyPage(2L))
-                .isInstanceOf(UnihubException.class)
-                .hasMessageContaining("관리자만 접근할 수 있습니다.");
-    }
-    @DisplayName("관리자 비밀번호 변경에 성공한다")
-    @Test
-    void givenCorrectCurrentPassword_whenUpdatePassword_thenPasswordIsUpdated() {
-        // given
-        Admin admin = Admin.builder().id(1L).password("encodedOld").build();
-        when(memberRepository.findById(1L)).thenReturn(Optional.of(admin));
-        when(passwordEncoder.matches("oldPassword", "encodedOld")).thenReturn(true);
-        when(passwordEncoder.encode("newPassword")).thenReturn("encodedNew");
-
-        UpdatePasswordRequest request = new UpdatePasswordRequest("oldPassword", "newPassword");
-
-        // when
-        memberService.updatePassword(1L, request);
-
-        // then
-        assertThat(admin.getPassword()).isEqualTo("encodedNew");
-    }
-    @DisplayName("관리자 회원 탈퇴에 성공한다")
-    @Test
-    void givenAdmin_whenDeleteMember_thenMemberIsMarkedDeleted() {
-        // given
-        Admin admin = Admin.builder()
-                .id(1L)
-                .isDeleted(false)
-                .build();
-        when(memberRepository.findById(1L)).thenReturn(Optional.of(admin));
-
-        // when
-        memberService.deleteMember(1L);
-
-        // then
-        assertThat(admin.isDeleted()).isTrue();
-        assertThat(admin.getDeletedAt()).isNotNull();
-    }
 
 
 }

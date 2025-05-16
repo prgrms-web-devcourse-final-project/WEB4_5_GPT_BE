@@ -2,7 +2,6 @@ package com.WEB4_5_GPT_BE.unihub.domain.course.entity;
 
 import com.WEB4_5_GPT_BE.unihub.domain.common.entity.BaseTimeEntity;
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.DayOfWeek;
-import com.WEB4_5_GPT_BE.unihub.domain.course.exception.CourseScheduleStartsLaterThanEndsException;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,6 +22,7 @@ public class CourseSchedule extends BaseTimeEntity {
   @JoinColumn(name = "course_id", nullable = false)
   private Course course;
 
+  // 조회 성능을 위한 반정규화
   @Column(nullable = false)
   private Long universityId;
 
@@ -40,13 +40,4 @@ public class CourseSchedule extends BaseTimeEntity {
 
   @Column(name = "end_time", nullable = false)
   private LocalTime endTime;
-
-  public static class CourseScheduleBuilder {
-      public CourseSchedule build() {
-          if (startTime.isAfter(endTime)) {
-              throw new CourseScheduleStartsLaterThanEndsException();
-          }
-          return new CourseSchedule(id, course, universityId, location, professorProfileEmployeeId, day, startTime, endTime);
-      }
-  }
 }

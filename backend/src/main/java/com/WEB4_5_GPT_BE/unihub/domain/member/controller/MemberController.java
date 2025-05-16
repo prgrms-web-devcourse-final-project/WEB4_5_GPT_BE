@@ -4,7 +4,10 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.AdminLoginResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.MemberLoginResponse;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.*;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageProfessorResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageStudentResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.ProfessorCourseResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.UpdateMajorResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.AuthService;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.MemberService;
@@ -185,20 +188,6 @@ public class MemberController {
     public RsData<MyPageProfessorResponse> getProfessorMyPage(@AuthenticationPrincipal SecurityUser user) {
         return new RsData<>("200", "교수 마이페이지 조회 성공", memberService.getProfessorMyPage(user.getId()));
     }
-
-    @Operation(summary = "관리자 마이페이지 조회", description = "현재 로그인한 관리자의 프로필 정보를 조회합니다.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "관리자 마이페이지 조회 성공"),
-            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
-            @ApiResponse(responseCode = "403", description = "관리자 권한이 없습니다."),
-            @ApiResponse(responseCode = "404", description = "회원 정보를 찾을 수 없습니다.")
-    })
-    @GetMapping("/me/admin")
-    public RsData<MyPageAdminResponse> getAdminMyPage(@AuthenticationPrincipal SecurityUser user) {
-        MyPageAdminResponse response = memberService.getAdminMyPage(user.getId());
-        return new RsData<>("200", "관리자 마이페이지 조회 성공", response);
-    }
-
 
     @Operation(
             summary = "교수 강의 목록 조회",

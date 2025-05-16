@@ -13,7 +13,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -73,16 +72,5 @@ public class GlobalExceptionHandler {
   public ResponseEntity<RsData<Void>> handleAccessTokenExpiredException(AccessTokenExpiredException e) {
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
             .body(new RsData<>("401-1", e.getMessage(), null));
-  }
-
-  @ExceptionHandler(MissingRequestHeaderException.class)
-  public ResponseEntity<RsData<Void>> handleMissingHeader(MissingRequestHeaderException ex) {
-    if ("X-Client-Base-Url".equals(ex.getHeaderName())) {
-      return handleUnihubException(
-              new UnihubException("400", "X-Client-Base-Url 헤더가 필요합니다.")
-      );
-    }
-
-    return handleUnihubException( new UnihubException("400", ex.getMessage()) );
   }
 }

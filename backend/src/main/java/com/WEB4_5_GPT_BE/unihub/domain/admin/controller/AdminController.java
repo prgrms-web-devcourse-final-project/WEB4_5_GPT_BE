@@ -109,23 +109,6 @@ public class AdminController {
             @RequestParam(required = false) String endDateTo,
             @PageableDefault Pageable pageable) {
 
-        // 모든 파라미터가 필수값으로 설정되어 있지만, 추가 유효성 검사를 수행
-        if (universityName == null || universityName.isBlank()) {
-            return new RsData<>("400", "대학 이름은 필수 입력값입니다.");
-        }
-        if (startDateFrom == null || startDateFrom.isBlank()) {
-            return new RsData<>("400", "시작 날짜(From)는 필수 입력값입니다.");
-        }
-        if (startDateTo == null || startDateTo.isBlank()) {
-            return new RsData<>("400", "시작 날짜(To)는 필수 입력값입니다.");
-        }
-        if (endDateFrom == null || endDateFrom.isBlank()) {
-            return new RsData<>("400", "종료 날짜(From)는 필수 입력값입니다.");
-        }
-        if (endDateTo == null || endDateTo.isBlank()) {
-            return new RsData<>("400", "종료 날짜(To)는 필수 입력값입니다.");
-        }
-
         EnrollmentPeriodSearchRequest searchRequest =
                 new EnrollmentPeriodSearchRequest(
                         universityName, startDateFrom, startDateTo, endDateFrom, endDateTo);

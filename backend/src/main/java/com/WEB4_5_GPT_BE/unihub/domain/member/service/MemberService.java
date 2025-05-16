@@ -5,7 +5,10 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.PasswordResetConfirmat
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.*;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageProfessorResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageStudentResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.ProfessorCourseResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.UpdateMajorResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
 
@@ -39,7 +42,7 @@ public interface MemberService {
     UpdateMajorResponse updateMajor(Long memberId, UpdateMajorRequest request);
     void verifyPassword(Long memberId, VerifyPasswordRequest request);
     void deleteMember(Long memberId);
-    MyPageAdminResponse getAdminMyPage(Long memberId);
+    
     // 모든 학생의 학기와 학년 정보를 업데이트
     void updateAllStudentSemesters();
 

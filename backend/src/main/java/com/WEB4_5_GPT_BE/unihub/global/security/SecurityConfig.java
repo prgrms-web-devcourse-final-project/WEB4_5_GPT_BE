@@ -37,6 +37,8 @@ public class SecurityConfig {
         .authorizeHttpRequests(
             (authorizeHttpRequests) ->
                 authorizeHttpRequests
+                    .requestMatchers("/h2-console/**")
+                    .permitAll()
                     .requestMatchers(AUTH_WHITELIST.toArray(String[]::new))
                     .permitAll()
                     .anyRequest()

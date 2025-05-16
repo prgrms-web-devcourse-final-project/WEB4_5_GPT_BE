@@ -1,6 +1,5 @@
 package com.WEB4_5_GPT_BE.unihub.domain.enrollment.service;
 
-import com.WEB4_5_GPT_BE.unihub.domain.course.dto.TimetableCourseResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.CourseSchedule;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.EnrollmentPeriod;
@@ -17,7 +16,6 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
 import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.StudentProfileNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
-import com.WEB4_5_GPT_BE.unihub.global.security.SecurityUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,29 +56,6 @@ public class EnrollmentService {
                 .findAllByStudent(profile)
                 .stream()
                 .map(MyEnrollmentResponse::from)
-                .toList();
-    }
-
-    /**
-     * 시간표 등록용 내 수강 목록 조회
-     *
-     * @param student 로그인 인증된 학생 정보
-     * @return 수강신청 내역에 해당하는 {@link MyEnrollmentResponse} DTO 리스트
-     */
-    @Transactional
-    public List<TimetableCourseResponse> getMyEnrollmentsForTimetable(SecurityUser student, int year, Integer semester) {
-
-        // student → StudentProfile
-        Student profile = studentRepository.getReferenceById(student.getId());
-
-        ensureEnrollmentPeriodActive(profile);
-
-        // 해당 학생의 수강신청 목록을 조회하고, DTO로 변환하여 반환
-        return enrollmentRepository
-                .findAllByStudent(profile)
-                .stream()
-                .filter(it -> it.getCourse().getSemester().equals(semester) && it.getCourse().getCreatedAt().getYear() == year)
-                .map(TimetableCourseResponse::from)
                 .toList();
     }
 
