@@ -1,6 +1,19 @@
 package com.WEB4_5_GPT_BE.unihub.domain.admin.service;
 
-import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.request.*;
+import java.time.LocalDate;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.request.AdminInviteRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.request.EnrollmentPeriodRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.request.EnrollmentPeriodSearchRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.request.ProfessorApprovalRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.request.ProfessorSearchRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.request.StudentSearchRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.response.EnrollmentPeriodResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.response.ProfessorResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.admin.dto.response.StudentResponse;
@@ -19,14 +32,6 @@ import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.UniversityRepository;
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDate;
 
 @Service
 @RequiredArgsConstructor
@@ -107,6 +112,7 @@ public class AdminService {
     /**
      * 수강신청 기간 조회
      */
+    @Transactional(readOnly = true)
     public Page<EnrollmentPeriodResponse> getEnrollmentPeriods(
             EnrollmentPeriodSearchRequest searchRequest, Pageable pageable) {
         LocalDate startDateFrom =
