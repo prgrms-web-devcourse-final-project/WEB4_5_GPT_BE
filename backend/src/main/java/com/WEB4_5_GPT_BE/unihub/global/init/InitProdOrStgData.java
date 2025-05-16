@@ -108,6 +108,7 @@ public class InitProdOrStgData {
         );
 
         initConflictCourses((Professor) professor2, majorSW);
+
         //공지사항 생성
         initNotices();
     }
