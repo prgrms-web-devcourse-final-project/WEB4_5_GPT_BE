@@ -3,9 +3,16 @@ package com.WEB4_5_GPT_BE.unihub.domain.timetable.controller;
 
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.timetable.dto.request.TimetableCreateRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.timetable.dto.request.item.TimetableBulkRegisterRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.timetable.dto.request.item.TimetableCourseAddRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.timetable.dto.request.item.TimetableItemNormalCreateRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.timetable.dto.request.item.TimetableItemUpdateRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.timetable.dto.request.share.TimetableShareLinkRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.timetable.dto.response.TimetableDetailResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.timetable.dto.response.item.TimetableItemDetailResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.timetable.dto.response.share.TimetableShareLinkResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.timetable.dto.response.share.TimetableSharedViewResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.timetable.service.TimetableItemService;
 import com.WEB4_5_GPT_BE.unihub.domain.timetable.service.TimetableService;
 import com.WEB4_5_GPT_BE.unihub.global.Rq;
 import com.WEB4_5_GPT_BE.unihub.global.response.Empty;
@@ -27,6 +34,7 @@ import org.springframework.web.bind.annotation.*;
 public class TimetableController {
 
     private final TimetableService timetableService;
+    private final TimetableItemService timetableItemService;
     private final Rq rq;
 
     @Operation(
@@ -90,10 +98,10 @@ public class TimetableController {
     @Operation(
             summary = "공유된 시간표 조회",
             description = """
-                공유 링크(shareKey)를 통해 공개된 시간표를 조회합니다.<br>
-                - 비공개인 경우 403 반환<br>
-                - 만료되었거나 존재하지 않는 경우 404 반환
-            """
+                    공유 링크(shareKey)를 통해 공개된 시간표를 조회합니다.<br>
+                            - 비공개인 경우 403 반환<br>
+                            - 만료되었거나 존재하지 않는 경우 404 반환
+                        """
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "공유된 시간표 조회 성공"),
@@ -101,9 +109,106 @@ public class TimetableController {
             @ApiResponse(responseCode = "404", description = "만료되었거나 존재하지 않는 공유 링크"),
     })
     @GetMapping("/share/{shareKey}")
-    public RsData<?> getSharedTimetable(@PathVariable String shareKey) {
+    public RsData<TimetableSharedViewResponse> getSharedTimetable(@PathVariable String shareKey) {
         Member member = rq.getActor();
         var response = timetableService.getSharedTimetable(shareKey, member);
         return new RsData<>("200", "공유된 시간표 조회 성공", response);
+    }
+
+    @Operation(
+            summary = "시간표 수정 항목 등록",
+            description = "시간표에 일반 항목(사용자 정의 항목)을 추가합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "항목 등록 성공"),
+            @ApiResponse(responseCode = "403", description = "본인의 시간표가 아님"),
+            @ApiResponse(responseCode = "404", description = "시간표가 존재하지 않음")
+    })
+    @PostMapping("/normal")
+    public RsData<Empty> createNormalItem(@RequestBody TimetableItemNormalCreateRequest request) {
+        Member actor = rq.getActor();
+        timetableItemService.createNormalItem(actor, request);
+        return new RsData<>("201", "시간표 일정이 성공적으로 등록되었습니다.");
+    }
+
+    @Operation(
+            summary = "시간표에 강의 등록",
+            description = "시간표에 강의 항목을 추가합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "강의 항목 등록 성공"),
+            @ApiResponse(responseCode = "403", description = "본인의 시간표가 아님"),
+            @ApiResponse(responseCode = "404", description = "시간표 또는 강의가 존재하지 않음"),
+            @ApiResponse(responseCode = "409", description = "이미 등록된 강의"
+            )
+    })
+    @PostMapping("/course")
+    public RsData<Empty> addCourseItem(@RequestBody TimetableCourseAddRequest request) {
+        Member actor = rq.getActor();
+        timetableItemService.addCourseItem(actor, request);
+        return new RsData<>("201", "강의가 시간표에 성공적으로 등록되었습니다.");
+    }
+
+    @Operation(
+            summary = "내 강의 목록으로 시간표 일괄 등록",
+            description = "내 수강신청 정보를 기반으로 시간표에 강의 항목을 일괄 등록합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "일괄 등록 성공"),
+            @ApiResponse(responseCode = "404", description = "시간표가 존재하지 않음")
+    })
+    @PostMapping("/bulk")
+    public RsData<Empty> bulkRegisterFromEnrollment(@RequestBody TimetableBulkRegisterRequest request) {
+        Member member = rq.getActor();
+        timetableItemService.bulkRegisterFromEnrollment(member, request);
+        return new RsData<>("201", "시간표에 반영되었습니다.");
+    }
+
+    @Operation(
+            summary = "시간표 항목 단건 조회",
+            description = "시간표 항목을 단건 조회합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "항목 조회 성공"),
+            @ApiResponse(responseCode = "403", description = "본인의 시간표가 아님"),
+            @ApiResponse(responseCode = "404", description = "항목이 존재하지 않음")
+    })
+    @GetMapping("/{timetableItemId}")
+    public RsData<TimetableItemDetailResponse> getItemDetail(@PathVariable Long timetableItemId) {
+        Member actor = rq.getActor();
+        TimetableItemDetailResponse response = timetableItemService.getItemDetail(actor, timetableItemId);
+        return new RsData<>("200", "시간표 항목 조회 성공", response);
+    }
+
+    @Operation(
+            summary = "시간표 항목 수정",
+            description = "시간표 항목을 수정합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "항목 수정 성공"),
+            @ApiResponse(responseCode = "403", description = "본인의 시간표가 아님"),
+            @ApiResponse(responseCode = "404", description = "항목이 존재하지 않음")
+    })
+    @PutMapping("/{timetableItemId}")
+    public RsData<TimetableItemUpdateRequest> updateItem(@PathVariable Long timetableItemId, @RequestBody TimetableItemUpdateRequest request) {
+        Member actor = rq.getActor();
+        timetableItemService.updateItem(actor, timetableItemId, request);
+        return null;
+    }
+
+    @Operation(
+            summary = "시간표 항목 삭제",
+            description = "시간표 항목을 삭제합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "항목 삭제 성공"),
+            @ApiResponse(responseCode = "403", description = "본인의 시간표가 아님"),
+            @ApiResponse(responseCode = "404", description = "항목이 존재하지 않음")
+    })
+    @DeleteMapping("/{timetableItemId}")
+    public RsData<Empty> deleteItem(@PathVariable Long timetableItemId) {
+        Member actor = rq.getActor();
+        timetableItemService.deleteItem(actor, timetableItemId);
+        return new RsData<>("200", "시간표가 성공적으로 삭제되었습니다.");
     }
 }
