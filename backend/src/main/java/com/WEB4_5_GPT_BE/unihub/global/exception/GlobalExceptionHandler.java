@@ -4,10 +4,13 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.exception.auth.AccessTokenExpiredE
 import com.WEB4_5_GPT_BE.unihub.global.alert.AlertNotifier;
 import com.WEB4_5_GPT_BE.unihub.global.response.RsData;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.LazyInitializationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
@@ -17,6 +20,7 @@ import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -25,6 +29,7 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
   private final AlertNotifier alertNotifier;
+  private final HttpServletRequest request;
 
   @ExceptionHandler(UnihubException.class)
   public ResponseEntity<RsData<Void>> handleUnihubException(UnihubException e) {
@@ -64,9 +69,57 @@ public class GlobalExceptionHandler {
   @ExceptionHandler({ LazyInitializationException.class, RuntimeException.class, Exception.class })
   public ResponseEntity<RsData<Void>> handleServerError(Exception e) {
     log.error("🔥 500 Internal Server Error", e);
-    alertNotifier.notifyError("500 서버 내부 오류", e);
+
+    // ① 요청 메서드·경로
+    String method = request.getMethod();
+    String path   = request.getRequestURI();
+
+    // ② 파라미터 JSON (body나 쿼리)
+    String paramJson = extractParams(request); // 아래 유틸 참조
+
+    alertNotifier.notifyError(
+            "500 서버 내부 오류",
+            e,
+            method,
+            path,
+            paramJson
+    );
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(new RsData<>("500", "서버 오류가 발생했습니다.", null));
+  }
+
+  private String extractParams(HttpServletRequest req) {
+    String contentType = req.getContentType() == null ? "" : req.getContentType();
+
+    // 1) application/json
+    if (contentType.contains(MediaType.APPLICATION_JSON_VALUE)) {
+      String json = (String) req.getAttribute("cachedRequestBody");
+      return (json != null)
+              ? StringUtils.abbreviate(json, 300)
+              : "(빈 JSON 바디)";
+    }
+
+    // 2) GET 요청 → 쿼리스트링
+    if ("GET".equalsIgnoreCase(req.getMethod())) {
+      String qs = req.getQueryString();
+      return (qs != null && !qs.isBlank())
+              ? qs
+              : "(쿼리스트링 없음)";
+    }
+
+    // 3) 폼데이터 (x-www-form-urlencoded or multipart/form-data)
+    Map<String, String[]> map = req.getParameterMap();
+    if (!map.isEmpty()) {
+      return map.entrySet().stream()
+              .map(e -> {
+                String key = e.getKey();
+                String[] vals = e.getValue();
+                return key + ":" + String.join(",", vals);
+              })
+              .collect(Collectors.joining("\n"));
+    }
+
+    return "(파라미터 없음)";
   }
 
   @ExceptionHandler(AccessTokenExpiredException.class)
