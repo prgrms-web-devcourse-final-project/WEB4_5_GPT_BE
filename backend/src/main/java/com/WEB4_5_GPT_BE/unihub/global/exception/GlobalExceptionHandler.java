@@ -3,12 +3,14 @@ package com.WEB4_5_GPT_BE.unihub.global.exception;
 import com.WEB4_5_GPT_BE.unihub.domain.member.exception.auth.AccessTokenExpiredException;
 import com.WEB4_5_GPT_BE.unihub.global.alert.AlertNotifier;
 import com.WEB4_5_GPT_BE.unihub.global.response.RsData;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.LazyInitializationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.Arrays;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -75,14 +78,32 @@ public class GlobalExceptionHandler {
             .body(new RsData<>("401-1", e.getMessage(), null));
   }
 
-  @ExceptionHandler(MissingRequestHeaderException.class)
-  public ResponseEntity<RsData<Void>> handleMissingHeader(MissingRequestHeaderException ex) {
-    if ("X-Client-Base-Url".equals(ex.getHeaderName())) {
-      return handleUnihubException(
-              new UnihubException("400", "X-Client-Base-Url 헤더가 필요합니다.")
-      );
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<RsData<Void>> handleMissingHeader(MissingRequestHeaderException ex) {
+        if ("X-Client-Base-Url".equals(ex.getHeaderName())) {
+            return handleUnihubException(
+                    new UnihubException("400", "X-Client-Base-Url 헤더가 필요합니다.")
+            );
+        }
+
+        return handleUnihubException(new UnihubException("400", ex.getMessage()));
     }
 
-    return handleUnihubException( new UnihubException("400", ex.getMessage()) );
-  }
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<RsData<Void>> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+        String errorMessage = "잘못된 입력값입니다.";
+
+        if (ex.getCause() instanceof InvalidFormatException) {
+            InvalidFormatException cause = (InvalidFormatException) ex.getCause();
+            if (cause.getTargetType() != null && cause.getTargetType().isEnum()) {
+                errorMessage = String.format("'%s'는 유효한 %s 값이 아닙니다. 허용되는 값: %s",
+                        cause.getValue(),
+                        cause.getTargetType().getSimpleName(),
+                        Arrays.toString(cause.getTargetType().getEnumConstants()));
+            }
+        }
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new RsData<>("400", errorMessage, null));
+    }
 }
