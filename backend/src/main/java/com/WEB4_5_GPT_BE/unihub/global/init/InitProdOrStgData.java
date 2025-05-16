@@ -119,7 +119,7 @@ public class InitProdOrStgData {
     private List<Course> initCoursesForSw(Professor professor, Major major) {
 
         // 자료구조
-        String url1 = uploadCourseImageToS3("static/강의계획서_양식.png");
+        String url1 = uploadCourseImageToS3("static/Syllabus_example.png");
         Course dataStructure = helper.createCourse(
                 "자료구조", major, "교육관 401호",
                 30, 0, 3,
@@ -130,7 +130,7 @@ public class InitProdOrStgData {
         helper.createCourseScheduleAndAssociateWithCourse(dataStructure, DayOfWeek.FRI, "14:00:00", "15:30:00");
 
         // 운영체제
-        String url2 = uploadCourseImageToS3("static/강의계획서_양식.png");
+        String url2 = uploadCourseImageToS3("static/Syllabus_example.png");
         Course os = helper.createCourse(
                 "운영체제", major, "교육관 402호",
                 30, 0, 2,
@@ -141,7 +141,7 @@ public class InitProdOrStgData {
         helper.createCourseScheduleAndAssociateWithCourse(os, DayOfWeek.THU, "14:00:00", "15:30:00");
 
         // 네트워크
-        String url3 = uploadCourseImageToS3("static/강의계획서_양식.png");
+        String url3 = uploadCourseImageToS3("static/Syllabus_example.png");
         Course network = helper.createCourse(
                 "네트워크", major, "교육관 403호",
                 25, 0, 3,
@@ -151,7 +151,7 @@ public class InitProdOrStgData {
         helper.createCourseScheduleAndAssociateWithCourse(network, DayOfWeek.WED, "10:00:00", "11:30:00");
         helper.createCourseScheduleAndAssociateWithCourse(network, DayOfWeek.FRI, "16:00:00", "17:30:00");
 
-        String url4 = uploadCourseImageToS3("static/강의계획서_양식.png");
+        String url4 = uploadCourseImageToS3("static/Syllabus_example.png");
         Course javaCourse = helper.createCourse(
                 "자바 프로그래밍", major, "교육관 301호",
                 40, 0, 3,
@@ -168,7 +168,7 @@ public class InitProdOrStgData {
      */
     private List<Course> initCoursesForCS(Professor professor, Major major) {
 
-        String url1 = uploadCourseImageToS3("static/강의계획서_양식.png");
+        String url1 = uploadCourseImageToS3("static/Syllabus_example.png");
         Course algo = helper.createCourse(
                 "알고리즘", major, "공학관 201호",
                 30, 0, 3, professor,
@@ -177,7 +177,7 @@ public class InitProdOrStgData {
         helper.createCourseScheduleAndAssociateWithCourse(algo, DayOfWeek.MON, "10:00:00", "11:30:00");
         helper.createCourseScheduleAndAssociateWithCourse(algo, DayOfWeek.WED, "13:00:00", "14:30:00");
 
-        String url2 = uploadCourseImageToS3("static/강의계획서_양식.png");
+        String url2 = uploadCourseImageToS3("static/Syllabus_example.png");
         Course db = helper.createCourse(
                 "데이터베이스", major, "공학관 202호",
                 35, 0, 3, professor,
@@ -186,7 +186,7 @@ public class InitProdOrStgData {
         helper.createCourseScheduleAndAssociateWithCourse(db, DayOfWeek.TUE, "09:00:00", "10:30:00");
         helper.createCourseScheduleAndAssociateWithCourse(db, DayOfWeek.THU, "14:00:00", "15:30:00");
 
-        String url3 = uploadCourseImageToS3("static/강의계획서_양식.png");
+        String url3 = uploadCourseImageToS3("static/Syllabus_example.png");
         Course ai = helper.createCourse(
                 "인공지능", major, "공학관 203호",
                 25, 0, 3, professor,
@@ -199,7 +199,7 @@ public class InitProdOrStgData {
 
     private void initConflictCourses(Professor professor, Major major) {
         // 1) 정원초과 강좌 (capacity=30, 이미 enrolled=30 신청함)
-        String url1 = uploadCourseImageToS3("static/강의계획서_양식.png");
+        String url1 = uploadCourseImageToS3("static/Syllabus_example.png");
         Course full = helper.createCourse(
                 "정원초과강좌", major, "OO동 104호",
                 30, 30,
@@ -212,7 +212,7 @@ public class InitProdOrStgData {
         );
 
         // 2) 학점초과 강좌 (21학점짜리, 신청 시 반드시 초과)
-        String url2 = uploadCourseImageToS3("static/강의계획서_양식.png");
+        String url2 = uploadCourseImageToS3("static/Syllabus_example.png");
         Course heavy = helper.createCourse(
                 "학점초과강좌", major, "OO동 105호",
                 30, 0,                      // capacity=30, enrolled=0
@@ -224,7 +224,7 @@ public class InitProdOrStgData {
                 heavy, DayOfWeek.THU, "13:00:00", "15:00:00"
         );
         // 3) 시간표충돌 강좌 (모든 요일, 하루종일 스케줄)
-        String url3 = uploadCourseImageToS3("static/강의계획서_양식.png");
+        String url3 = uploadCourseImageToS3("static/Syllabus_example.png");
         Course conflict = helper.createCourse(
                 "충돌강좌", major, "OO동 106호",
                 30, 0, 3,
