@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,4 +19,7 @@ public interface NoticeRepository extends JpaRepository<Notice, Long> {
 
     // 상세 조회 (삭제되지 않은 것만)
     Optional<Notice> findByIdAndIsDeletedFalse(Long id);
+
+    // 삭제된 공지사항 중 modifiedAt이 before 이전인 엔티티를 조회 (PurgeScheduler 용)
+    List<Notice> findAllByIsDeletedTrueAndModifiedAtBefore(LocalDateTime before);
 }
