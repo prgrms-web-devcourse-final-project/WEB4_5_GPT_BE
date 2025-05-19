@@ -5,6 +5,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.common.enums.DayOfWeek;
 import com.WEB4_5_GPT_BE.unihub.domain.course.dto.CourseRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.course.dto.CourseScheduleDto;
 import com.WEB4_5_GPT_BE.unihub.domain.course.dto.CourseWithFullScheduleResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.course.dto.CourseWithOutUrlRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.CourseSchedule;
 import com.WEB4_5_GPT_BE.unihub.domain.course.exception.CourseNotFoundException;
@@ -32,8 +33,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
@@ -498,5 +502,108 @@ class CourseServiceTest {
                         assertThat(ex.getCode())
                                 .isEqualTo(String.valueOf(HttpStatus.NOT_FOUND.value()))
                 );
+    }
+
+    @Test
+    @DisplayName("강의 수정시, 파일이 있으면 기존 S3 URL 삭제 후 새로 업로드된 URL이 반환된다")
+    void givenFile_whenUpdatingCourse_thenUploadNewAndDeleteOldAttachment() throws IOException {
+        // given
+        Long courseId = 1L;
+        String oldUrl = "/old/bucket/plan.pdf";
+        String newUrl = "https://bucket-1.s3.ap-northeast-2.amazonaws.com/12345_new_plan.pdf";
+
+        // 원본 Course 엔티티(기존 URL 세팅)
+        Course origin = Course.builder()
+                .id(courseId)
+                .title("originalTitle")
+                .major(testMajor1)
+                .location("origLocation")
+                .capacity(30)
+                .enrolled(10)
+                .credit(3)
+                .professor(testProfessorProfile1)
+                .grade(1)
+                .semester(1)
+                .coursePlanAttachment(oldUrl)
+                .build();
+        origin.getSchedules().addAll(testCourse1.getSchedules()); // 스케줄은 충돌 없음
+
+        given(courseRepository.findById(courseId)).willReturn(Optional.of(origin));
+        given(s3Service.upload(any(MultipartFile.class))).willReturn(newUrl);
+
+        // 충돌 검사: 모두 비어있어야 통과
+        given(courseScheduleRepository.findByUniversityIdAndLocationExcludingCourse(
+                eq(testUniversity1.getId()),
+                anyString(),
+                eq(courseId))
+        ).willReturn(List.of());
+        given(courseScheduleRepository.findByUniversityIdAndProfessorEmployeeIdExcludingCourse(
+                eq(testUniversity1.getId()),
+                anyString(),
+                eq(courseId))
+        ).willReturn(List.of());
+
+        // 대학/전공/교수 조회
+        given(universityRepository.findByName(testUniversity1.getName()))
+                .willReturn(Optional.of(testUniversity1));
+        given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testMajor1.getName()))
+                .willReturn(Optional.of(testMajor1));
+        given(professorRepository.findByUniversityIdAndEmployeeId(
+                testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
+                .willReturn(Optional.of(testProfessorProfile1));
+
+        // save 후에 coursePlanAttachment가 newUrl인 객체 리턴
+        Course saved = Course.builder()
+                .id(courseId)
+                .title(origin.getTitle())
+                .major(origin.getMajor())
+                .location(origin.getLocation())
+                .capacity(origin.getCapacity())
+                .enrolled(origin.getEnrolled())
+                .credit(origin.getCredit())
+                .professor(origin.getProfessor())
+                .grade(origin.getGrade())
+                .semester(origin.getSemester())
+                .coursePlanAttachment(newUrl)
+                .build();
+        saved.getSchedules().addAll(origin.getSchedules());
+        given(courseRepository.save(any(Course.class))).willReturn(saved);
+
+        // request DTO 준비 (기존 데이터를 그대로 담고, attachment 필드만 바꿀 준비)
+        CourseWithOutUrlRequest req = new CourseWithOutUrlRequest(
+                origin.getTitle(),
+                origin.getMajor().getName(),
+                origin.getMajor().getUniversity().getName(),
+                origin.getLocation(),
+                origin.getCapacity(),
+                origin.getCredit(),
+                origin.getProfessor().getEmployeeId(),
+                origin.getGrade(),
+                origin.getSemester(),
+                origin.getSchedules().stream()
+                        .map(CourseScheduleDto::from)
+                        .toList()
+        );
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "new_plan.pdf",
+                "application/pdf",
+                "dummy-content".getBytes()
+        );
+
+        // when
+        CourseWithFullScheduleResponse result = courseService.updateCourse(courseId, req, file);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.coursePlanAttachment()).isEqualTo(newUrl);
+
+        // 기존 URL 삭제, 새 파일 업로드 호출 검증
+        then(s3Service).should().upload(file);
+        then(s3Service).should().deleteByUrl(oldUrl);
+
+        // 최종 저장까지 호출됐는지 확인
+        then(courseRepository).should().save(any(Course.class));
     }
 }
