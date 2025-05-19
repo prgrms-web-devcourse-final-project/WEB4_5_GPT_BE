@@ -1,5 +1,6 @@
 package com.WEB4_5_GPT_BE.unihub.global.exception;
 
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.NoSessionException;
 import com.WEB4_5_GPT_BE.unihub.domain.member.exception.auth.AccessTokenExpiredException;
 import com.WEB4_5_GPT_BE.unihub.global.alert.AlertNotifier;
 import com.WEB4_5_GPT_BE.unihub.global.response.RsData;
@@ -129,6 +130,12 @@ public class GlobalExceptionHandler {
                 .body(new RsData<>("401-1", e.getMessage(), null));
     }
 
+    @ExceptionHandler(NoSessionException.class)
+    public ResponseEntity<RsData<Void>> handleNoSessionException(NoSessionException e) {
+        return ResponseEntity.status(e.getStatus())
+                .body(new RsData<>("403-1", e.getMessage(), null));
+    }
+
     @ExceptionHandler(MissingRequestHeaderException.class)
     public ResponseEntity<RsData<Void>> handleMissingHeader(MissingRequestHeaderException ex) {
         if ("X-Client-Base-Url".equals(ex.getHeaderName())) {
@@ -137,7 +144,7 @@ public class GlobalExceptionHandler {
             );
         }
 
-        return handleUnihubException( new UnihubException("400", ex.getMessage()) );
+        return handleUnihubException(new UnihubException("400", ex.getMessage()));
     }
 
     @ExceptionHandler(AsyncRequestNotUsableException.class)

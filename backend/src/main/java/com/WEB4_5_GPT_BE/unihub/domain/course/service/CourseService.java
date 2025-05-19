@@ -3,12 +3,10 @@ package com.WEB4_5_GPT_BE.unihub.domain.course.service;
 import com.WEB4_5_GPT_BE.unihub.domain.course.dto.*;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.CourseSchedule;
-import com.WEB4_5_GPT_BE.unihub.domain.course.exception.CourseNotFoundException;
-import com.WEB4_5_GPT_BE.unihub.domain.course.exception.FileUploadException;
-import com.WEB4_5_GPT_BE.unihub.domain.course.exception.LocationScheduleConflictException;
-import com.WEB4_5_GPT_BE.unihub.domain.course.exception.ProfessorScheduleConflictException;
+import com.WEB4_5_GPT_BE.unihub.domain.course.exception.*;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseScheduleRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.repository.EnrollmentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
 import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.ProfessorProfileNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorRepository;
@@ -57,6 +55,8 @@ public class CourseService {
     private final ProfessorRepository professorRepository;
 
     private final S3Service s3Service;
+
+    private final EnrollmentRepository enrollmentRepository;
 
     /**
      * 주어진 ID에 해당하는 강의 정보를 반환한다.
@@ -146,9 +146,6 @@ public class CourseService {
         Course res = courseRequest.toEntity(m, orig.getEnrolled(), p);
         res.setId(orig.getId());
 
-        // 기존 강의의 스케줄 s3 삭제, 실패 시에도 강의 수정은 정상 진행되도록 구현하고 log에 남김
-        deleteS3AttachmentIfExistsAndLog(orig.getCoursePlanAttachment());
-
         return CourseWithFullScheduleResponse.from(courseRepository.save(res));
     }
 
@@ -161,17 +158,28 @@ public class CourseService {
      * @return 입력한 file을 업로드 및 강의계획서 URL을 업데이트하여 기존 updateCourse(courseId, courseRequest) 호출
      */
     public CourseWithFullScheduleResponse updateCourse(Long courseId, CourseWithOutUrlRequest req, MultipartFile file) {
-        String url = null;
+
+        // 1) 원본 url 조회
+        Course origin = courseRepository.findById(courseId).orElseThrow(CourseNotFoundException::new);
+        // 2) url 초기값을 기존 URL로 설정
+        String url = origin.getCoursePlanAttachment();
+
         try {
+            // 3) 새 파일이 있으면 업로드 + 기존 파일 삭제
             if (file != null && !file.isEmpty()) {
-                url = s3Service.upload(file); // 사용자가 등록한 파일이 존재한다면 s3 업로드 url 발급
+                String newUrl = s3Service.upload(file);
+                deleteS3AttachmentIfExistsAndLog(origin.getCoursePlanAttachment());
+                url = newUrl;
             }
+            // 4) 기존 URL이거나, 새로 업로드된 URL을 끼워 넣음
             CourseRequest courseRequest = req.withCoursePlanAttachment(url);
-            return updateCourse(courseId, courseRequest); // 기존 updateCourse(courseId, courseRequest) 호출
+            return updateCourse(courseId, courseRequest);
         } catch (IOException e) {
             throw new FileUploadException();
         } catch (UnihubException ex) {
-            deleteS3AttachmentIfExistsAndLog(url); // 실패 시 업로드 롤백
+            if (file != null && !file.isEmpty()) {
+                deleteS3AttachmentIfExistsAndLog(url);
+            }
             throw ex;
         }
     }
@@ -192,9 +200,13 @@ public class CourseService {
      * @param courseId 삭제하고자 하는 강의의 ID
      */
     public void deleteCourse(Long courseId) {
-        Course course = courseRepository.findById(courseId).orElseThrow(
-                CourseNotFoundException::new
-        );
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(CourseNotFoundException::new);
+
+        // 수강신청이 하나라도 있으면 삭제 금지
+        if (enrollmentRepository.existsByCourseId(courseId)) {
+            throw new CourseDeletionException();
+        }
         // s3에 업로드된 강의계획서 파일 삭제, 실패 시에도 강의 삭제는 정상 진행되도록 구현하고 log 남김
         deleteS3AttachmentIfExistsAndLog(course.getCoursePlanAttachment());
 

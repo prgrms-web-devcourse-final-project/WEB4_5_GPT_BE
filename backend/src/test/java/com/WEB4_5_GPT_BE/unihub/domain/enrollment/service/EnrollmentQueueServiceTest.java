@@ -50,7 +50,7 @@ public class EnrollmentQueueServiceTest {
     @DisplayName("사용자가 즉시 접속이 허용되는 경우 테스트")
     public void testAddToQueueWithImmediateAccess() {
         // Given
-        when(valueOperations.increment(ACTIVE_USERS_KEY, 0)).thenReturn(500L); // 활성 사용자가 한계보다 적음
+        when(valueOperations.increment(ACTIVE_USERS_KEY, 0)).thenReturn(2L); // 활성 사용자가 한계보다 적음
         when(redisTemplate.hasKey(SESSION_PREFIX + TEST_MEMBER_ID)).thenReturn(false);
         when(listOperations.range(WAITING_QUEUE_KEY, 0, -1)).thenReturn(Collections.emptyList());
 
@@ -87,6 +87,43 @@ public class EnrollmentQueueServiceTest {
         // 대기열에 추가 확인
         verify(listOperations).rightPush(WAITING_QUEUE_KEY, TEST_MEMBER_ID);
         verify(sseEmitterService).sendQueueStatus(eq(TEST_MEMBER_ID), any(QueueStatusDto.class));
+    }
+
+    @Test
+    @DisplayName("최대 접속자 3명 제한 도달 시 새 사용자가 대기열로 이동하는 테스트")
+    public void testMaxConcurrentUsers() {
+        // 테스트용 객체 생성
+        EnrollmentQueueService testService = new EnrollmentQueueService(redisTemplate, sseEmitterService) {
+            @Override
+            public int getPositionInQueue(String memberId) {
+                // 여기서는 직접 3번째 위치에 있다고 가정
+                return 3;
+            }
+
+            @Override
+            public boolean isUserInQueue(String memberId) {
+                // 처음에는 대기열에 없다고 가정
+                return false;
+            }
+        };
+
+        // Given
+        String newUserId = "999";
+        // 활성 사용자가 3명으로 제한에 도달
+        when(valueOperations.increment(ACTIVE_USERS_KEY, 0)).thenReturn(3L);
+        when(redisTemplate.hasKey(SESSION_PREFIX + newUserId)).thenReturn(false);
+
+        // When
+        QueueStatusDto result = testService.addToQueue(newUserId);
+
+        // Then
+        // 결과 확인
+        assertFalse(result.isAllowed(), "접속이 허용되지 않아야 합니다.");
+        assertEquals(3, result.getPosition(), "대기열 순서가 3번째여야 합니다.");
+        assertTrue(result.getEstimatedWaitTime() > 0, "대기 시간이 0보다 커야 합니다.");
+
+        // 리스트에 추가되었는지 확인
+        verify(listOperations).rightPush(WAITING_QUEUE_KEY, newUserId);
     }
 
     @Test
@@ -133,7 +170,7 @@ public class EnrollmentQueueServiceTest {
     public void testReleaseSession() {
         // Given
         when(redisTemplate.hasKey(SESSION_PREFIX + TEST_MEMBER_ID)).thenReturn(true);
-        when(valueOperations.increment(ACTIVE_USERS_KEY, 0)).thenReturn(999L); // 여유 공간 있음
+        when(valueOperations.increment(ACTIVE_USERS_KEY, 0)).thenReturn(2L); // 여유 공간 있음
         when(listOperations.leftPop(WAITING_QUEUE_KEY)).thenReturn("2"); // 다음 대기자
 
         // When
@@ -158,7 +195,7 @@ public class EnrollmentQueueServiceTest {
                 .thenReturn(Arrays.asList("2", "3", "4"));
 
         // processNextInQueue를 통해 sendQueueStatusMessages 호출 트리거
-        when(valueOperations.increment(ACTIVE_USERS_KEY, 0)).thenReturn(999L);
+        when(valueOperations.increment(ACTIVE_USERS_KEY, 0)).thenReturn(2L);
         when(listOperations.leftPop(WAITING_QUEUE_KEY)).thenReturn("5");
 
         // When
