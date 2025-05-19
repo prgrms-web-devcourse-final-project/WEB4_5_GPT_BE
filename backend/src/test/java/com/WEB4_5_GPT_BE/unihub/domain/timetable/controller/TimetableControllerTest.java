@@ -27,10 +27,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
-@Transactional
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @RedisTestContainerConfig
+@Transactional
 class TimetableControllerTest {
 
     @Autowired private MockMvc mockMvc;
@@ -257,5 +257,56 @@ class TimetableControllerTest {
                 .andExpect(jsonPath("$.code").value("200"))
                 .andExpect(jsonPath("$.message").value("공유된 시간표 조회 성공"))
                 .andExpect(jsonPath("$.data.timetableId").value(timetableId));
+    }
+
+
+    @Test
+    @DisplayName("시간표에 강의 등록 - 성공")
+    void addCourseItem_success() throws Exception {
+        // 테스트 설정 - 더미 데이터 사용
+
+        // 1. 더미 시간표 ID 생성
+        long timetableId = 1L;
+
+        // 2. 강의 항목 생성 요청 준비
+        String requestJson = "{" +
+                "\"timetableId\": " + timetableId + "," +
+                "\"courseId\": 1," +
+                "\"color\": \"#EA4335\"," +
+                "\"memo\": \"중간고사 5/10\"" +
+                "}";
+
+        // 3. 요청 실행
+        mockMvc.perform(post("/api/timetables/course")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .content(requestJson))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.code").value("201"))
+                .andExpect(jsonPath("$.message").value("강의가 시간표에 성공적으로 등록되었습니다."));
+    }
+
+    @Test
+    @DisplayName("내 강의 목록으로 시간표 일괄 등록 - 성공")
+    void bulkRegisterFromEnrollment_success() throws Exception {
+        // 테스트 설정 - 더미 데이터 사용
+
+        // 1. 더미 시간표 ID 생성
+        long timetableId = 1L;
+
+        // 2. 일괄 등록 요청 준비
+        String requestJson = "{" +
+                "\"timetableId\": " + timetableId + "," +
+                "\"courseIds\": [1, 2, 3]" +
+                "}";
+
+        // 3. 요청 실행
+        mockMvc.perform(post("/api/timetables/bulk")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .content(requestJson))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.code").value("201"))
+                .andExpect(jsonPath("$.message").value("시간표에 반영되었습니다."));
     }
 }
