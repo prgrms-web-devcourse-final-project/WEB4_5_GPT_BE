@@ -119,44 +119,40 @@ public class InitProdOrStgData {
     private List<Course> initCoursesForSw(Professor professor, Major major) {
 
         // 자료구조
-        String url1 = uploadCourseImageToS3("static/Syllabus_example.png");
         Course dataStructure = helper.createCourse(
                 "자료구조", major, "교육관 401호",
                 30, 0, 3,
                 professor,
-                3, 2, url1
+                3, 2, "/plans/data-structure.pdf"
         );
         helper.createCourseScheduleAndAssociateWithCourse(dataStructure, DayOfWeek.MON, "09:00:00", "10:30:00");
         helper.createCourseScheduleAndAssociateWithCourse(dataStructure, DayOfWeek.FRI, "14:00:00", "15:30:00");
 
         // 운영체제
-        String url2 = uploadCourseImageToS3("static/Syllabus_example.png");
         Course os = helper.createCourse(
                 "운영체제", major, "교육관 402호",
                 30, 0, 2,
                 professor,
-                3, 2, url2
+                3, 2, "/plans/os.pdf"
         );
         helper.createCourseScheduleAndAssociateWithCourse(os, DayOfWeek.TUE, "09:00:00", "10:30:00");
         helper.createCourseScheduleAndAssociateWithCourse(os, DayOfWeek.THU, "14:00:00", "15:30:00");
 
         // 네트워크
-        String url3 = uploadCourseImageToS3("static/Syllabus_example.png");
         Course network = helper.createCourse(
                 "네트워크", major, "교육관 403호",
                 25, 0, 3,
                 professor,
-                3, 2, url3
+                3, 2, "/plans/network.pdf"
         );
         helper.createCourseScheduleAndAssociateWithCourse(network, DayOfWeek.WED, "10:00:00", "11:30:00");
         helper.createCourseScheduleAndAssociateWithCourse(network, DayOfWeek.FRI, "16:00:00", "17:30:00");
 
-        String url4 = uploadCourseImageToS3("static/Syllabus_example.png");
         Course javaCourse = helper.createCourse(
                 "자바 프로그래밍", major, "교육관 301호",
                 40, 0, 3,
                 professor,
-                1, 1, url4
+                1, 1, "/plans/java.pdf"
         );
         helper.createCourseScheduleAndAssociateWithCourse(javaCourse, DayOfWeek.MON, "09:00", "11:00");
 
@@ -167,30 +163,26 @@ public class InitProdOrStgData {
      * 컴퓨터공학전공 강좌 생성 메서드
      */
     private List<Course> initCoursesForCS(Professor professor, Major major) {
-
-        String url1 = uploadCourseImageToS3("static/Syllabus_example.png");
         Course algo = helper.createCourse(
                 "알고리즘", major, "공학관 201호",
                 30, 0, 3, professor,
-                2, 1, url1
+                2, 1, "/plans/algorithm.pdf"
         );
         helper.createCourseScheduleAndAssociateWithCourse(algo, DayOfWeek.MON, "10:00:00", "11:30:00");
         helper.createCourseScheduleAndAssociateWithCourse(algo, DayOfWeek.WED, "13:00:00", "14:30:00");
 
-        String url2 = uploadCourseImageToS3("static/Syllabus_example.png");
         Course db = helper.createCourse(
                 "데이터베이스", major, "공학관 202호",
                 35, 0, 3, professor,
-                2, 1, url2
+                2, 1, "/plans/database.pdf"
         );
         helper.createCourseScheduleAndAssociateWithCourse(db, DayOfWeek.TUE, "09:00:00", "10:30:00");
         helper.createCourseScheduleAndAssociateWithCourse(db, DayOfWeek.THU, "14:00:00", "15:30:00");
 
-        String url3 = uploadCourseImageToS3("static/Syllabus_example.png");
         Course ai = helper.createCourse(
                 "인공지능", major, "공학관 203호",
                 25, 0, 3, professor,
-                2, 1, url3
+                2, 1, "/plans/ai.pdf"
         );
         helper.createCourseScheduleAndAssociateWithCourse(ai, DayOfWeek.FRI, "11:00:00", "12:30:00");
 
@@ -199,37 +191,34 @@ public class InitProdOrStgData {
 
     private void initConflictCourses(Professor professor, Major major) {
         // 1) 정원초과 강좌 (capacity=30, 이미 enrolled=30 신청함)
-        String url1 = uploadCourseImageToS3("static/Syllabus_example.png");
         Course full = helper.createCourse(
                 "정원초과강좌", major, "OO동 104호",
                 30, 30,
                 3,                          // credit
                 professor,
-                1, 1, url1
+                1, 1, "/plans/full.pdf"
         );
         helper.createCourseScheduleAndAssociateWithCourse(
                 full, DayOfWeek.FRI, "09:00:00", "10:00:00"
         );
 
         // 2) 학점초과 강좌 (21학점짜리, 신청 시 반드시 초과)
-        String url2 = uploadCourseImageToS3("static/Syllabus_example.png");
         Course heavy = helper.createCourse(
                 "학점초과강좌", major, "OO동 105호",
                 30, 0,                      // capacity=30, enrolled=0
                 21,                         // credit=20
                 professor,
-                1, 1, url2
+                1, 1, "/plans/heavy.pdf"
         );
         helper.createCourseScheduleAndAssociateWithCourse(
                 heavy, DayOfWeek.THU, "13:00:00", "15:00:00"
         );
         // 3) 시간표충돌 강좌 (모든 요일, 하루종일 스케줄)
-        String url3 = uploadCourseImageToS3("static/Syllabus_example.png");
         Course conflict = helper.createCourse(
                 "충돌강좌", major, "OO동 106호",
                 30, 0, 3,
                 professor,
-                1, 1, url3
+                1, 1, "/plans/conflict.pdf"
         );
         // 모든 DayOfWeek 에 00:00~23:59 스케줄 추가
         for (DayOfWeek day : DayOfWeek.values()) {
@@ -267,25 +256,5 @@ public class InitProdOrStgData {
                 "여름학기 수강신청이 시작됩니다.",
                 summerUrl
         );
-    }
-
-    private String uploadCourseImageToS3(String filePath) {
-        String url;
-
-        try {
-            ClassPathResource resource = new ClassPathResource(filePath);
-            MultipartFile file = new MockMultipartFile(
-                    "file",
-                    resource.getFilename(),
-                    MediaType.IMAGE_PNG_VALUE,
-                    resource.getInputStream()
-            );
-            // S3에 업로드하고 URL 받기
-            url = s3Service.upload(file);
-        } catch (IOException e) {
-            log.error("테스트용 공지사항 이미지 업로드 중 오류 발생", e);
-            throw new UnihubException("500", "테스트 데이터용 공지사항 이미지 업로드 실패");
-        }
-        return url;
     }
 }
