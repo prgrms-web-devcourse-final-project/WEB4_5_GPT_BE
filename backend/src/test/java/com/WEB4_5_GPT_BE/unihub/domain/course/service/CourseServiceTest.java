@@ -31,6 +31,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.redisson.api.RAtomicLong;
+import org.redisson.api.RedissonClient;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockMultipartFile;
@@ -48,6 +50,7 @@ import static org.assertj.core.api.BDDAssertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.*;
 
 @DisplayName("강의 도메인 서비스 레이어 테스트")
 @ExtendWith(MockitoExtension.class)
@@ -73,6 +76,9 @@ class CourseServiceTest {
 
     @Mock
     private EnrollmentRepository enrollmentRepository;
+
+    @Mock
+    private RedissonClient redisson;
 
     @InjectMocks
     private CourseService courseService;
@@ -165,6 +171,11 @@ class CourseServiceTest {
     @Test
     @DisplayName("스케줄이 없는 강의를 생성할때 정상 생성된다.")
     void givenCourseWithoutSchedule_whenCreatingCourse_thenSaveCourse() {
+
+        RAtomicLong dummyCounter = mock(RAtomicLong.class);
+        lenient().when(redisson.getAtomicLong(anyString())).thenReturn(dummyCounter);
+        doNothing().when(dummyCounter).set(anyLong());
+
         CourseRequest testCourseRequest = new CourseRequest("testCourseRequest3", testMajor2.getName(), testUniversity1.getName(),
                 "nonexistentLocation", 40, 3, testProfessorProfile1.getEmployeeId(), 4, 2, null, List.of());
         given(universityRepository.findByName(testUniversity1.getName())).willReturn(Optional.of(testUniversity1));
@@ -186,6 +197,11 @@ class CourseServiceTest {
     @Test
     @DisplayName("스케줄이 중복되지 않는 강의를 생성할때 정상 생성된다.")
     void givenCourseWithNonconflictingSchedule_whenCreatingCourse_thenSaveCourse() {
+
+        RAtomicLong dummyCounter = mock(RAtomicLong.class);
+        lenient().when(redisson.getAtomicLong(anyString())).thenReturn(dummyCounter);
+        doNothing().when(dummyCounter).set(anyLong());
+
         given(universityRepository.findByName(testUniversity1.getName())).willReturn(Optional.of(testUniversity1));
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest3.major()))
                 .willReturn(Optional.of(testCourse2.getMajor()));
