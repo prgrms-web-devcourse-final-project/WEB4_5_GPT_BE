@@ -22,6 +22,7 @@ import com.WEB4_5_GPT_BE.unihub.global.infra.s3.S3Service;
 import com.WEB4_5_GPT_BE.unihub.global.security.SecurityUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RedissonClient;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -57,6 +58,8 @@ public class CourseService {
     private final S3Service s3Service;
 
     private final EnrollmentRepository enrollmentRepository;
+
+    private final RedissonClient redisson;
 
     /**
      * 주어진 ID에 해당하는 강의 정보를 반환한다.
@@ -97,7 +100,16 @@ public class CourseService {
             throw new ProfessorScheduleConflictException();
         }
         Course res = courseRequest.toEntity(m, 0, p);
-        return CourseWithFullScheduleResponse.from(courseRepository.save(res));
+        Course saved = courseRepository.save(res);
+
+        String keyEnrolled = "course:" + saved.getId() + ":enrolled"; // ex) course:1:enrolled
+        String keyCapacity = "course:" + saved.getId() + ":capacity"; // ex) course:1:capacity
+
+        // 원하는 값으로 다시 세팅
+        redisson.getAtomicLong(keyCapacity).set(saved.getCapacity());
+        redisson.getAtomicLong(keyEnrolled).set(saved.getEnrolled());
+
+        return CourseWithFullScheduleResponse.from(saved);
     }
 
     public CourseWithFullScheduleResponse createCourse(CourseWithOutUrlRequest req, MultipartFile file) {

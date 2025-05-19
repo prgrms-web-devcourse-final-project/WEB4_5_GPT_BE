@@ -292,7 +292,7 @@ public class InitDevData {
                 "동시성과목", majorSW, "동시관 401호",
                 30, 0, 3,
                 professor,
-                1, 1, "/plans/data-structure.pdf"
+                4, 1, "/plans/data-structure.pdf"
         );
         helper.createCourseScheduleAndAssociateWithCourse(dataStructure, DayOfWeek.MON, "09:00:00", "10:30:00");
 

@@ -32,6 +32,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.MajorRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.UniversityRepository;
 import lombok.RequiredArgsConstructor;
+import org.redisson.api.RedissonClient;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -56,6 +57,7 @@ public class InitDataHelper {
     private final EnrollmentPeriodRepository enrollmentPeriodRepository;
     private final NoticeRepository noticeRepository;
     private final TimetableRepository timetableRepository;
+    private final RedissonClient redisson;
 
     public University createUniversity(String name, String emailDomain) {
         return universityRepository.save(University.builder().name(name).emailDomain(emailDomain).build());
@@ -73,7 +75,8 @@ public class InitDataHelper {
     public Course createCourse(String title, Major major, String location,
                                Integer capacity, Integer enrolled, Integer credit, Professor professor,
                                Integer grade, Integer semester, String coursePlanAttachment) {
-        return courseRepository.save(
+
+        Course saved = courseRepository.save(
                 Course.builder()
                         .title(title)
                         .major(major)
@@ -86,6 +89,19 @@ public class InitDataHelper {
                         .semester(semester)
                         .coursePlanAttachment(coursePlanAttachment)
                         .build());
+
+        String keyEnrolled = "course:" + saved.getId() + ":enrolled";
+        String keyCapacity = "course:" + saved.getId() + ":capacity";
+
+        // 이전 값(남아 있는 값)을 완전히 지우고
+        redisson.getAtomicLong(keyEnrolled).delete();
+        redisson.getAtomicLong(keyCapacity).delete();
+
+        // 원하는 값으로 다시 세팅
+        redisson.getAtomicLong(keyCapacity).set(saved.getCapacity());
+        redisson.getAtomicLong(keyEnrolled).set(saved.getEnrolled());
+
+        return saved;
     }
 
     public CourseSchedule createCourseScheduleAndAssociateWithCourse(Course course, DayOfWeek day, String startTime, String endTime) {
