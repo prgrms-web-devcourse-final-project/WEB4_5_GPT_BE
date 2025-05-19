@@ -12,6 +12,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response.StudentEnrollment
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.entity.Enrollment;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.*;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.repository.EnrollmentRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.EnrollmentCommand;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
 import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.StudentProfileNotFoundException;
@@ -21,6 +22,9 @@ import com.WEB4_5_GPT_BE.unihub.global.concurrent.ConcurrencyGuard;
 import com.WEB4_5_GPT_BE.unihub.global.security.SecurityUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RAtomicLong;
+import org.redisson.api.RBlockingQueue;
+import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,7 +45,12 @@ public class EnrollmentService {
     private final EnrollmentPeriodRepository enrollmentPeriodRepository; // 수강신청 기간 Repository
     private final StudentRepository studentRepository;
     private final CourseRepository courseRepository; // 강좌 Repository
+
+    private final RedissonClient redisson; // 동시성 처리를 위한 RedissonClient
+    private final RBlockingQueue<EnrollmentCommand> enrollQueue; // 수강신청 요청을 저장하는 Queue
+
     private final int MAXIMUM_CREDIT = 21; // 최대 학점 상수 (21학점)
+    private final EnrollmentQueueService enrollmentQueueService; // 수강신청 대기열 큐 TODO: 테스트 후 제거
 
     /**
      * 학생의 수강신청 내역을 조회하는 메서드입니다.
@@ -49,7 +58,7 @@ public class EnrollmentService {
      * @param student 로그인 인증된 학생 정보
      * @return 수강신청 내역에 해당하는 {@link MyEnrollmentResponse} DTO 리스트
      */
-    @Transactional
+    @Transactional(readOnly = true)
     public List<MyEnrollmentResponse> getMyEnrollmentList(Member student) {
 
         // student → StudentProfile
@@ -118,7 +127,7 @@ public class EnrollmentService {
 
     /**
      * 수강신청, 취소 가능 기간인지 검증한다.
-     * <p>
+     *
      * 1) 해당 학생의 (학교·연도·학년·학기) 수강신청 기간을 조회하고,
      * 2) 그 기간에 오늘이 포함되는지 검증한다.
      *
@@ -188,16 +197,6 @@ public class EnrollmentService {
     }
 
     /**
-     * 수강 취소 후 해당 강좌의 현재 수강인원을 감소시킵니다.
-     *
-     * @param course 수강 취소된 강좌
-     */
-    private void decrementEnrolled(Course course) {
-        course.decrementEnrolled();
-        courseRepository.save(course);
-    }
-
-    /**
      * 수강 신청 후 해당 강좌의 현재 수강인원을 증가시킵니다.
      *
      * @param course 수강 취소된 강좌
@@ -208,14 +207,25 @@ public class EnrollmentService {
     }
 
     /**
-     * 수강 신청을 처리하는 메서드입니다.
+     * 수강 취소 후 해당 강좌의 현재 수강인원을 감소시킵니다.
+     *
+     * @param course 수강 취소된 강좌
+     */
+    private void decrementEnrolled(Course course) {
+        course.decrementEnrolled();
+        courseRepository.save(course);
+    }
+
+    /**
+     * 비동기 수강 신청을 처리하는 메서드입니다.
+     *
      * 여러 예외 상황을 검증한 후 수강 신청을 진행합니다.
-     * 수강 신청 완료 후 해당 강좌의 현재 수강인원을 증가시킵니다.
+     * redis의 AtomicLong을 사용하여 수강인원 카운트를 관리하며 원자성을 보장합니다.
+     * 실제 DB 저장에 저장하는 로직은 redisson queue를 통해 순차적으로 처리합니다.
+     * DB 저장은 별도의 트랜잭션으로 처리하고 사용자의 요청을 redis의 AtomicLong을 통해 바로바로 처리하기 때문에 빠른 응답을 보장합니다.
      *
-     * @ConcurrencyGuard(lockName = "course") 분산 락으로 동시 수강신청을 방지합니다.
-     *
-     * @param student  로그인 인증된 학생 정보
-     * @param courseId 신청할 강좌의 ID
+     * @param studentId 로그인 인증된 학생 ID
+     * @param courseId  신청할 강좌의 ID
      * @throws CourseNotFoundException           강좌 정보가 없는 경우
      * @throws EnrollmentPeriodNotFoundException 수강신청 기간 정보가 없는 경우
      * @throws EnrollmentPeriodClosedException   수강신청 기간 외 요청인 경우
@@ -224,42 +234,34 @@ public class EnrollmentService {
      * @throws CreditLimitExceededException      최대 학점 초과 시
      * @throws ScheduleConflictException         기존 신청한 강좌와 시간표가 겹치는 경우
      */
+    @Transactional(readOnly = true)
     @ConcurrencyGuard(lockName = "course")
-    public void enrollment(Member student, Long courseId) {
-        // Member → StudentProfile 추출
-        Student profile = studentRepository.findById(student.getId())
-                .orElseThrow(StudentProfileNotFoundException::new);
+    public void enrollment(Long studentId, Long courseId) {
 
-        // 수강 신청 가능 기간인지 검증
-        ensureEnrollmentPeriodActive(profile);
+        // 동시성 테스트를 위해 임시로 대기열 제거
+        enrollmentQueueService.addToQueue(String.valueOf(studentId)); // TODO: 테스트 후 제거
 
-        // 신청하려는 강좌 정보 조회
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(CourseNotFoundException::new);
 
+        ensureCapacityAvailable(courseId); // 정원 초과 시 예외 처리
+
+        // Member → StudentProfile 추출
+        Student profile = studentRepository.findById(studentId)
+                .orElseThrow(StudentProfileNotFoundException::new);
+
         ensureEnrollmentAllowed(profile, course); // 수강 신청이 가능한지 여러 예외상황 검증
 
-        // 수강 신청 정보 생성 및 저장
-        Enrollment enrollment = Enrollment.builder()
-                .student(profile)
-                .course(course)
-                .build();
-        enrollmentRepository.save(enrollment);
-        log.info("수강 신청이 완료되었습니다. 학생: {}, 강좌: {}",
-                profile.getStudentCode(), course.getEnrolled());
+        tryReserveSeat(studentId, courseId); // Redis AtomicLong로 자리 확보
 
-        // 수강 신청 후 해당 강좌의 현재 수강인원 증가
-        incrementEnrolled(enrollment.getCourse());
-
-        log.info("현재 수강인원 변경이 완료되었습니다. 학생: {}, 강좌: {}",
-                profile.getStudentCode(), course.getEnrolled());
     }
 
     /**
      * 수강 신청이 가능한지 여러 예외 상황을 검증합니다.
      */
     private void ensureEnrollmentAllowed(Student profile, Course course) {
-        ensureCapacityAvailable(course); // 정원 초과 시 예외 처리
+        ensureEnrollmentPeriodActive(profile); // 수강 신청 가능 기간인지 검증
+
         ensureNotAlreadyEnrolled(profile, course); // 동일강좌 중복 신청 방지
 
         List<Enrollment> enrollmentList = enrollmentRepository.findAllByStudent(profile); // 학생 기존 수강 신청 내역
@@ -269,14 +271,42 @@ public class EnrollmentService {
     }
 
     /**
-     * 강좌의 남은 좌석이 1개 이상인지 확인한다.
+     * Redis 카운터를 가져와 남은 자리가 강좌의 남은 좌석이 1개 이상인지 확인한다.
      *
-     * @throws CourseCapacityExceededException 좌석이 없으면
+     * @param courseId 강의 ID
+     * @throws CourseCapacityExceededException 정원 초과 시
      */
-    private void ensureCapacityAvailable(Course course) {
-        if (course.getAvailableSeats() <= 0) {
+    private void ensureCapacityAvailable(Long courseId) {
+
+        long capacity = redisson.getAtomicLong("course:" + courseId + ":capacity").get();   // 전체 정원
+        long enrolled = redisson.getAtomicLong("course:" + courseId + ":enrolled").get();   // 현재까지 예약된 수
+
+        if (enrolled >= capacity) {
             throw new CourseCapacityExceededException();
         }
+    }
+
+    /**
+     * 실제 수강신청을 처리하는 메서드입니다.
+     * Redis AtomicLong을 증가시켜 강의 자리를 확보 후 Queue를 통해 DB에 순차적으로 저장합니다.
+     *
+     * @param studentId 학생 ID
+     * @param courseId  강좌 ID
+     * @throws CourseCapacityExceededException 정원 초과 시
+     */
+    private void tryReserveSeat(Long studentId, Long courseId) {
+        // 2) Redis AtomicLong로 자리 확보
+        RAtomicLong enrolled = redisson.getAtomicLong("course:" + courseId + ":enrolled");
+        RAtomicLong capacity = redisson.getAtomicLong("course:" + courseId + ":capacity");
+
+        long newCount = enrolled.incrementAndGet();
+        if (newCount > capacity.get()) {
+            enrolled.decrementAndGet(); // 정원초과 시 즉시 복구
+            throw new CourseCapacityExceededException();
+        }
+
+        // 3) DB 저장을 비동기화: EnrollmentCommand 큐에 넣고 바로 리턴
+        enrollQueue.add(new EnrollmentCommand(studentId, courseId));
     }
 
     /**

@@ -130,9 +130,7 @@ public class EnrollmentController {
         // 세션 유효성 검증
         validateEnrollmentSession(user);
 
-        Student actor = Student.builder().id(user.getId()).build();
-        enrollmentService.enrollment(actor, request.courseId()); // 해당 강좌에 대한 수강 신청 요청
-
+        enrollmentService.enrollment(user.getId(), request.courseId()); // 해당 강좌에 대한 수강 신청 요청
         return new RsData<>("200", "수강 신청이 완료되었습니다.");
     }
 

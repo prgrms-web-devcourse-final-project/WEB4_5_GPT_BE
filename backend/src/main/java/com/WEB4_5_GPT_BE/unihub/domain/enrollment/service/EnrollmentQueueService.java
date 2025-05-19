@@ -17,7 +17,7 @@ public class EnrollmentQueueService {
     private static final String WAITING_QUEUE_KEY = "enrollment:waiting-queue";
     private static final String ACTIVE_USERS_KEY = "enrollment:active-users";
     private static final String SESSION_PREFIX = "enrollment:session:";
-    private static final int MAX_CONCURRENT_USERS = 3;
+    private static final int MAX_CONCURRENT_USERS = 200; // TODO: 동시성 테스트 후 기존 3으로 변경 필요
     private static final Duration SESSION_TIMEOUT = Duration.ofMinutes(10);
     private final StringRedisTemplate redisTemplate;
     private final SseEmitterService sseEmitterService;
