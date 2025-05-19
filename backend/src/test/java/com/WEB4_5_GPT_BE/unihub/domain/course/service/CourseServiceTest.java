@@ -12,6 +12,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.course.exception.LocationScheduleConflict
 import com.WEB4_5_GPT_BE.unihub.domain.course.exception.ProfessorScheduleConflictException;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseScheduleRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.repository.EnrollmentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
@@ -65,6 +66,9 @@ class CourseServiceTest {
 
     @Mock
     private S3Service s3Service;
+
+    @Mock
+    private EnrollmentRepository enrollmentRepository;
 
     @InjectMocks
     private CourseService courseService;
@@ -454,10 +458,8 @@ class CourseServiceTest {
     void deleteCourse_withAttachment_deletesFileAndCourse() {
         // given
         Long courseId = 42L;
-        // dummy Major/University 객체 생성
         University uni = new University(1L, "U", "u.ac.kr");
         Major maj = new Major(2L, uni, "DummyMajor");
-        // 빌더를 이용해 coursePlanAttachment 만 지정
         Course course = Course.builder()
                 .id(courseId)
                 .title("삭제용 강의")
@@ -473,6 +475,8 @@ class CourseServiceTest {
                 .build();
 
         given(courseRepository.findById(courseId)).willReturn(Optional.of(course));
+        // ↳ 수강신청이 하나도 없다고 강제
+        given(enrollmentRepository.existsByCourseId(courseId)).willReturn(false);
 
         // when
         courseService.deleteCourse(courseId);
@@ -481,6 +485,7 @@ class CourseServiceTest {
         then(s3Service).should().deleteByUrl("/some/bucket/path.pdf");
         then(courseRepository).should().delete(course);
     }
+
 
     @Test
     @DisplayName("강의가 존재하지 않으면 404 예외 발생")

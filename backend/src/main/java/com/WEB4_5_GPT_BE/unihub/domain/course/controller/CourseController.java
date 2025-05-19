@@ -135,6 +135,8 @@ public class CourseController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "삭제 성공",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "400", description = "삭제 실패; 수강신청이 한 개라도 되어있는 강의는 삭제할 수 없습니다.",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = RsData.class))),
             @ApiResponse(responseCode = "404", description = "삭제 실패; 주어진 ID에 해당하는 강의가 존재하지 않습니다.",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = RsData.class)))
     })
