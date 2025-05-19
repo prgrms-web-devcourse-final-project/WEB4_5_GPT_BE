@@ -146,9 +146,6 @@ public class CourseService {
         Course res = courseRequest.toEntity(m, orig.getEnrolled(), p);
         res.setId(orig.getId());
 
-        // 기존 강의의 스케줄 s3 삭제, 실패 시에도 강의 수정은 정상 진행되도록 구현하고 log에 남김
-        deleteS3AttachmentIfExistsAndLog(orig.getCoursePlanAttachment());
-
         return CourseWithFullScheduleResponse.from(courseRepository.save(res));
     }
 
