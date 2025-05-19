@@ -190,10 +190,10 @@ public class TimetableController {
             @ApiResponse(responseCode = "404", description = "항목이 존재하지 않음")
     })
     @PutMapping("/{timetableItemId}")
-    public RsData<TimetableItemUpdateRequest> updateItem(@PathVariable Long timetableItemId, @RequestBody TimetableItemUpdateRequest request) {
+    public RsData<Empty> updateItem(@PathVariable Long timetableItemId, @RequestBody TimetableItemUpdateRequest request) {
         Member actor = rq.getActor();
         timetableItemService.updateItem(actor, timetableItemId, request);
-        return null;
+        return new RsData<>("200", "시간표 항목이 성공적으로 수정되었습니다.");
     }
 
     @Operation(
