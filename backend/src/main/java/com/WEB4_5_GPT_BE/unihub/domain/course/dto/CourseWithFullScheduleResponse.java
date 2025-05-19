@@ -29,8 +29,7 @@ public record CourseWithFullScheduleResponse(
                 course.getCapacity(),
                 course.getEnrolled(),
                 course.getCredit(),
-                // TODO
-                course.getProfessor() != null ? course.getProfessor().getMember().getName() : null, //
+                course.getProfessor() != null ? course.getProfessor().getName() : null,
                 course.getGrade(),
                 course.getSemester(),
                 course.getCoursePlanAttachment() != null ? course.getCoursePlanAttachment() : null,

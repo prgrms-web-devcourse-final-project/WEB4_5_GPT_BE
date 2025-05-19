@@ -1,15 +1,22 @@
 package com.WEB4_5_GPT_BE.unihub.domain.member.controller;
 
 import com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.*;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
+import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.MemberLoginRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.PasswordResetConfirmationRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.UpdateEmailRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.UpdateMajorRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.UpdatePasswordRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.VerifyPasswordRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.EmailService;
 import com.WEB4_5_GPT_BE.unihub.global.config.RedisTestContainerConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,16 +25,19 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @Transactional
@@ -45,9 +55,13 @@ public class MemberControllerTest {
         @Bean
         public EmailService emailService() {
             EmailService mock = mock(EmailService.class);
-            when(mock.isAlreadyVerified(anyString())).thenReturn(true);
-            doNothing().when(mock).sendVerificationCode(anyString());
-            doNothing().when(mock).markEmailAsVerified(anyString());
+            when(mock.isAlreadyVerified(anyString(), any(VerificationPurpose.class))).thenReturn(true);
+
+
+            doNothing().when(mock).sendVerificationCode(anyString(), any(VerificationPurpose.class));
+
+
+            doNothing().when(mock).markEmailAsVerified(anyString(), any(VerificationPurpose.class));
             return mock;
         }
     }
@@ -55,7 +69,7 @@ public class MemberControllerTest {
     @Test
     @DisplayName("학생 회원가입 - 성공")
     void signUpStudent_success() throws Exception {
-        emailService.markEmailAsVerified("haneulkim@auni.ac.kr");
+        emailService.markEmailAsVerified("haneulkim@auni.ac.kr",VerificationPurpose.SIGNUP);
 
         StudentSignUpRequest request = new StudentSignUpRequest(
                 "haneulkim@auni.ac.kr", "password", "김하늘", "20250001", 1L, 1L, 1, 1, Role.STUDENT);
@@ -71,7 +85,7 @@ public class MemberControllerTest {
     @Test
     @DisplayName("교직원 회원가입 - 성공")
     void signUpProfessor_success() throws Exception {
-        emailService.markEmailAsVerified("kim@auni.ac.kr");
+        emailService.markEmailAsVerified("kim@auni.ac.kr",VerificationPurpose.SIGNUP);
 
         ProfessorSignUpRequest request = new ProfessorSignUpRequest(
                 "kim@auni.ac.kr", "password", "김교수", "20250001", 1L, 1L, Role.PROFESSOR);
@@ -95,7 +109,7 @@ public class MemberControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("로그인에 성공했습니다."))
                 .andExpect(jsonPath("$.data.accessToken").exists())
-                .andExpect(jsonPath("$.data.refreshToken").exists());
+                .andExpect(header().string("Set-Cookie", Matchers.containsString("refreshToken=")));;
     }
 
     @Test
@@ -120,14 +134,23 @@ public class MemberControllerTest {
     void refreshToken_success() throws Exception {
         MemberLoginRequest loginRequest = new MemberLoginRequest("teststudent@auni.ac.kr", "password");
 
-        String loginResponse = mockMvc.perform(post("/api/members/login")
+        MockHttpServletResponse loginResponse = mockMvc.perform(post("/api/members/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
-                .andReturn().getResponse().getContentAsString();
+                .andReturn()
+                .getResponse();
 
-        String refreshToken = objectMapper.readTree(loginResponse).path("data").path("refreshToken").asText();
+        Cookie refreshTokenCookie = Arrays.stream(loginResponse.getCookies())
+                .filter(cookie -> "refreshToken".equals(cookie.getName()))
+                .findFirst()
+                .orElse(null);
 
-        mockMvc.perform(post("/api/members/refresh").cookie(new Cookie("refreshToken", refreshToken)))
+        assertThat(refreshTokenCookie)
+                .as("refreshToken 쿠키가 응답에 포함되어야 합니다.")
+                .isNotNull();
+
+        mockMvc.perform(post("/api/members/refresh")
+                        .cookie(refreshTokenCookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("새로운 토큰이 발급되었습니다."))
                 .andExpect(jsonPath("$.data.accessToken").exists());
@@ -136,8 +159,30 @@ public class MemberControllerTest {
     @Test
     @DisplayName("비밀번호 재설정 성공")
     void resetPassword_success() throws Exception {
-        PasswordResetConfirmationRequest request =
-                new PasswordResetConfirmationRequest("teststudent2@auni.ac.kr", "123456");
+        String email = "teststudent2@auni.ac.kr";
+        String code = "123456"; // 인증 코드 예시
+
+        // 1. 로그인하여 accessToken 확보
+        MemberLoginRequest loginRequest = new MemberLoginRequest("teststudent2@auni.ac.kr", "password");
+
+        String loginResponse = mockMvc.perform(post("/api/members/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andReturn().getResponse().getContentAsString();
+
+        String accessToken = objectMapper.readTree(loginResponse).path("data").path("accessToken").asText();
+
+        // 2. 이메일 인증
+        EmailCodeVerificationRequest verificationRequest = new EmailCodeVerificationRequest(email, code);
+        mockMvc.perform(post("/api/members/email/PASSWORD_RESET/verify")
+                        .header("Authorization", "Bearer " + accessToken) // 로그인된 사용자의 토큰 추가
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(verificationRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("이메일 인증이 완료되었습니다."));
+
+        // 3. 비밀번호 재설정
+        PasswordResetConfirmationRequest request = new PasswordResetConfirmationRequest(email, "newpassword123");
 
         mockMvc.perform(post("/api/members/password-reset/confirm")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -161,7 +206,7 @@ public class MemberControllerTest {
     @Test
     @DisplayName("이메일 인증 없이 학생 회원가입 시 실패한다")
     void signUpStudent_withoutEmailVerification_thenFail() throws Exception {
-        when(emailService.isAlreadyVerified("unverified@auni.ac.kr")).thenReturn(false);
+        when(emailService.isAlreadyVerified("unverified@auni.ac.kr", VerificationPurpose.SIGNUP)).thenReturn(false);
 
         StudentSignUpRequest request = new StudentSignUpRequest(
                 "unverified@auni.ac.kr", "password", "학생", "20251234", 1L, 1L, 1, 1, Role.STUDENT);
@@ -177,7 +222,7 @@ public class MemberControllerTest {
     @DisplayName("학생 회원가입 실패 - 이메일 도메인이 학교와 일치하지 않음")
     void signUpStudent_invalidEmailDomain_thenFail() throws Exception {
         String email = "wrong@notmatched.com";
-        when(emailService.isAlreadyVerified(email)).thenReturn(true);
+        when(emailService.isAlreadyVerified(email,VerificationPurpose.SIGNUP)).thenReturn(true);
 
         StudentSignUpRequest request = new StudentSignUpRequest(
                 email, "password", "학생", "20251234", 1L, 1L, 1, 1, Role.STUDENT);
@@ -304,6 +349,7 @@ public class MemberControllerTest {
     @Test
     @DisplayName("이메일 변경 성공")
     void updateEmail_success() throws Exception {
+        // 1. 로그인 요청
         MemberLoginRequest loginRequest = new MemberLoginRequest("teststudent@auni.ac.kr", "password");
         String loginResponse = mockMvc.perform(post("/api/members/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -311,10 +357,21 @@ public class MemberControllerTest {
                 .andReturn().getResponse().getContentAsString();
         String accessToken = objectMapper.readTree(loginResponse).path("data").path("accessToken").asText();
 
+        // 2. 이메일 인증 코드 발송
+        EmailCodeVerificationRequest verificationRequest = new EmailCodeVerificationRequest("newemail@auni.ac.kr", "123456");
+        mockMvc.perform(post("/api/members/email/EMAIL_CHANGE/verify")  // EMAIL_CHANGE로 수정
+                        .header("Authorization", "Bearer " + accessToken)  // 로그인된 사용자의 토큰 추가
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(verificationRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("이메일 인증이 완료되었습니다."));
+
+        // 3. 이메일 변경 요청
         UpdateEmailRequest request = new UpdateEmailRequest("newemail@auni.ac.kr");
 
+        // 4. 이메일 변경 API 호출
         mockMvc.perform(patch("/api/members/me/email")
-                        .header("Authorization", "Bearer " + accessToken)
+                        .header("Authorization", "Bearer " + accessToken)  // Bearer token 포함
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -339,5 +396,86 @@ public class MemberControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("비밀번호 검증 성공"));
+    }
+
+    @Test
+    @DisplayName("관리자 마이페이지 조회 성공")
+    void getAdminMyPage_success() throws Exception {
+        MemberLoginRequest loginRequest = new MemberLoginRequest("adminmaster@auni.ac.kr", "adminPw");
+
+        String response = mockMvc.perform(post("/api/members/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andReturn().getResponse().getContentAsString();
+
+        String accessToken = objectMapper.readTree(response).path("data").path("accessToken").asText();
+
+        mockMvc.perform(get("/api/members/me/admin")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("관리자 마이페이지 조회 성공"))
+                .andExpect(jsonPath("$.data.email").value("adminmaster@auni.ac.kr"));
+    }
+
+    @Test
+    @DisplayName("관리자 이메일 변경 성공")
+    void updateAdminEmail_success() throws Exception {
+        MemberLoginRequest loginRequest = new MemberLoginRequest("adminmaster@auni.ac.kr", "adminPw");
+        String response = mockMvc.perform(post("/api/members/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andReturn().getResponse().getContentAsString();
+
+        String accessToken = objectMapper.readTree(response).path("data").path("accessToken").asText();
+
+        // 이메일 인증 완료된 것으로 처리
+        emailService.markEmailAsVerified("newadmin@auni.ac.kr", VerificationPurpose.EMAIL_CHANGE);
+
+        UpdateEmailRequest request = new UpdateEmailRequest("newadmin@auni.ac.kr");
+
+        mockMvc.perform(patch("/api/members/me/email")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("이메일 변경 성공"));
+    }
+
+    @Test
+    @DisplayName("관리자 비밀번호 변경 성공")
+    void updateAdminPassword_success() throws Exception {
+        MemberLoginRequest loginRequest = new MemberLoginRequest("adminmaster@auni.ac.kr", "adminPw");
+        String response = mockMvc.perform(post("/api/members/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andReturn().getResponse().getContentAsString();
+
+        String accessToken = objectMapper.readTree(response).path("data").path("accessToken").asText();
+
+        UpdatePasswordRequest request = new UpdatePasswordRequest("adminPw", "newAdminPw");
+
+        mockMvc.perform(patch("/api/members/me/password")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("비밀번호 변경 성공"));
+    }
+
+    @Test
+    @DisplayName("관리자 회원 탈퇴 성공")
+    void deleteAdmin_success() throws Exception {
+        MemberLoginRequest loginRequest = new MemberLoginRequest("adminmaster@auni.ac.kr", "adminPw");
+        String response = mockMvc.perform(post("/api/members/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andReturn().getResponse().getContentAsString();
+
+        String accessToken = objectMapper.readTree(response).path("data").path("accessToken").asText();
+
+        mockMvc.perform(delete("/api/members/me")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("회원 탈퇴 성공"));
     }
 }

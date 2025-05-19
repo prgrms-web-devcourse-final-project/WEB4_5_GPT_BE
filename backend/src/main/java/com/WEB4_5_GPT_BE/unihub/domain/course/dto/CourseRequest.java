@@ -1,7 +1,7 @@
 package com.WEB4_5_GPT_BE.unihub.domain.course.dto;
 
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
@@ -33,7 +33,7 @@ public record CourseRequest(
         @Schema(description = "강의 스케줄")
         List<CourseScheduleDto> schedule
 ) {
-    public Course toEntity(Major major, Integer enrolled, ProfessorProfile professorProfile) {
+    public Course toEntity(Major major, Integer enrolled, Professor professorProfile) {
         Course res = new Course(
                 null,
                 title,

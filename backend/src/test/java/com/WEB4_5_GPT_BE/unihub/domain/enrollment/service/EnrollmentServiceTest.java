@@ -8,12 +8,13 @@ import com.WEB4_5_GPT_BE.unihub.domain.course.exception.CourseNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.EnrollmentPeriodRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response.MyEnrollmentResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response.StudentEnrollmentPeriodResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.entity.Enrollment;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.*;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.repository.EnrollmentRepository;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
+import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,38 +48,36 @@ class EnrollmentServiceTest {
     @Mock
     private CourseRepository courseRepository;
 
+    @Mock
+    private StudentRepository studentRepository;
+
     @InjectMocks
     private EnrollmentService enrollmentService;
 
-    private Member studentMember;
-    private StudentProfile profile;
+    private Student profile;
     private final Long COURSE_ID = 100L;
 
     @BeforeEach
     void setUp() {
-        // Member ↔ StudentProfile ↔ University 연결
-        studentMember = Member.builder()
-                .email("stud@uni.ac.kr")
-                .password("pw")
-                .name("테스트학생")
-                .build();
-
-        profile = StudentProfile.builder()
-                .id(1L)
-                .member(studentMember)
-                .studentCode("S20250001")
-                .grade(2)
-                .semester(1)
-                .build();
-
-        // 학생 소속 대학 세팅
+        // 학생 소속 대학
         University uni = University.builder()
                 .id(10L)
                 .name("테스트대학")
                 .build();
-        profile.setUniversity(uni);
+        // Member ↔ StudentProfile ↔ University 연결
+        profile = Student.builder()
+                .id(1L)
+                .email("stud@uni.ac.kr")
+                .password("pw")
+                .name("테스트학생")
+                .studentCode("S20250001")
+                .university(uni)
+                .grade(2)
+                .semester(1)
+                .build();
 
-        studentMember.setStudentProfile(profile);
+        when(studentRepository.findById(profile.getId()))
+                .thenReturn(Optional.ofNullable(profile));
     }
 
     @Test
@@ -87,14 +86,10 @@ class EnrollmentServiceTest {
         // --- 준비: Course, ProfessorProfile, Schedule, Enrollment 셋업 ---
         Major major = Major.builder().name("컴퓨터공학과").build();
 
-        Member profMember = Member.builder()
+        Professor profMember = Professor.builder()
                 .email("prof@uni.ac.kr")
                 .password("pw")
                 .name("김교수")
-                .role(null)
-                .build();
-        ProfessorProfile profProfile = ProfessorProfile.builder()
-                .member(profMember)
                 .build();
 
         Course course = Course.builder()
@@ -105,7 +100,7 @@ class EnrollmentServiceTest {
                 .capacity(30)
                 .enrolled(27)    // availableSeats = 3
                 .credit(3)
-                .professor(profProfile)
+                .professor(profMember)
                 .grade(3)
                 .semester(2)
                 .build();
@@ -135,9 +130,9 @@ class EnrollmentServiceTest {
                 .thenReturn(List.of(enrollment));
 
         // --- 실행 ---
-        List<MyEnrollmentResponse> result = enrollmentService.getMyEnrollmentList(studentMember);
+        List<MyEnrollmentResponse> result = enrollmentService.getMyEnrollmentList(profile);
 
-// --- 검증 ---
+        // --- 검증 ---
         assertThat(result).hasSize(1);
         MyEnrollmentResponse dto = result.get(0);
 
@@ -176,6 +171,19 @@ class EnrollmentServiceTest {
                 .build();
     }
 
+    private EnrollmentPeriod createNotYetPeriod(int StartDate, int endDate) {
+        LocalDate today = LocalDate.now();
+
+        return EnrollmentPeriod.builder()
+                .university(profile.getUniversity())
+                .year(today.getYear())
+                .grade(profile.getGrade())
+                .semester(profile.getSemester())
+                .startDate(today.plusDays(StartDate))   // 시작일이 내일
+                .endDate(today.plusDays(endDate))     // 종료일이 모레
+                .build();
+    }
+
     private void stubEnrollmentPeriod(EnrollmentPeriod period) {
         LocalDate today = LocalDate.now();
         when(enrollmentPeriodRepository
@@ -192,8 +200,8 @@ class EnrollmentServiceTest {
 
         Major major = Major.builder().id(1L).name("전공").build();
 
-        ProfessorProfile profProfile = ProfessorProfile.builder()
-                .member(Member.builder().name("교수님").build())
+        Professor profProfile = Professor.builder()
+                .name("교수님")
                 .build();
 
         Course course = Course.builder()
@@ -226,18 +234,31 @@ class EnrollmentServiceTest {
         stubEnrollmentPeriod(period);
 
         // 2) 기존 수강신청 내역 조회 stub
+        Course course = Course.builder()
+                .id(COURSE_ID)
+                .title("테스트강좌")
+                .capacity(30)
+                .enrolled(10)  // 취소 전 인원
+                .build();
         Enrollment enrollment = Enrollment.builder()
                 .id(42L)
                 .student(profile)
+                .course(course)
                 .build();
         when(enrollmentRepository.findByCourseIdAndStudentId(COURSE_ID, profile.getId()))
                 .thenReturn(Optional.of(enrollment));
 
         // 3) 실행 (예외 없이 정상 종료)
-        enrollmentService.cancelMyEnrollment(studentMember, COURSE_ID);
+        enrollmentService.cancelMyEnrollment(profile, COURSE_ID);
 
         // 4) delete 호출 검증
         verify(enrollmentRepository).delete(enrollment);
+
+        // 5) Course.enrolled가 9로 감소했는지 검증
+        ArgumentCaptor<Course> captor = ArgumentCaptor.forClass(Course.class);
+        verify(courseRepository).save(captor.capture());
+        Course saved = captor.getValue();
+        assertThat(saved.getEnrolled()).isEqualTo(9);
     }
 
     @Test
@@ -257,7 +278,7 @@ class EnrollmentServiceTest {
 
         // 실행 및 예외 검증
         assertThatThrownBy(() ->
-                enrollmentService.cancelMyEnrollment(studentMember, COURSE_ID)
+                enrollmentService.cancelMyEnrollment(profile, COURSE_ID)
         ).isInstanceOf(EnrollmentPeriodNotFoundException.class);
 
         // enrollmentRepository는 호출되지 않아야 함
@@ -270,21 +291,14 @@ class EnrollmentServiceTest {
         LocalDate today = LocalDate.now();
 
         // enrollmentPeriodRepository에서 today가 기간 밖인 EnrollmentPeriod 반환
-        EnrollmentPeriod period = EnrollmentPeriod.builder()
-                .university(profile.getUniversity())
-                .year(today.getYear())
-                .grade(profile.getGrade())
-                .semester(profile.getSemester())
-                .startDate(today.plusDays(1))   // 시작일이 내일
-                .endDate(today.plusDays(2))     // 종료일이 모레
-                .build();
+        EnrollmentPeriod period = createNotYetPeriod(1, 2);
 
         // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
         stubEnrollmentPeriod(period);
 
         // 실행 및 예외 검증
         assertThatThrownBy(() ->
-                enrollmentService.cancelMyEnrollment(studentMember, COURSE_ID)
+                enrollmentService.cancelMyEnrollment(profile, COURSE_ID)
         ).isInstanceOf(EnrollmentPeriodClosedException.class);
 
         // enrollmentRepository는 호출되지 않아야 함
@@ -306,7 +320,7 @@ class EnrollmentServiceTest {
 
         // 실행 및 예외 검증
         assertThatThrownBy(() ->
-                enrollmentService.cancelMyEnrollment(studentMember, COURSE_ID))
+                enrollmentService.cancelMyEnrollment(profile, COURSE_ID))
                 .isInstanceOf(EnrollmentNotFoundException.class);
 
         // delete가 호출되지 않아야 함
@@ -323,7 +337,7 @@ class EnrollmentServiceTest {
         // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
         stubEnrollmentPeriod(period);
 
-        // 2) 강좌 조회 stub (잔여좌석 5, 학점 3)
+        // 2) 강좌 조회 stub (최대인원 10, 현재수강인원 5, 학점 3)
         Course course = stubCourse(10, 5, 3);
 
         // 3) 중복 신청 없음
@@ -336,16 +350,21 @@ class EnrollmentServiceTest {
 
         // 5) 실행 (예외 없이 정상)
         assertThatCode(() ->
-                enrollmentService.enrollment(studentMember, COURSE_ID)
+                enrollmentService.enrollment(profile, COURSE_ID)
         ).doesNotThrowAnyException();
 
         // 6) save 호출 검증
-        ArgumentCaptor<Enrollment> captor = ArgumentCaptor.forClass(Enrollment.class);
-        verify(enrollmentRepository).save(captor.capture());
+        ArgumentCaptor<Enrollment> enrollCaptor = ArgumentCaptor.forClass(Enrollment.class);
+        verify(enrollmentRepository).save(enrollCaptor.capture());
 
-        Enrollment saved = captor.getValue();
-        assertThat(saved.getStudent()).isEqualTo(profile);
-        assertThat(saved.getCourse()).isEqualTo(course);
+        Enrollment savedEnroll = enrollCaptor.getValue();
+        assertThat(savedEnroll.getStudent()).isEqualTo(profile);
+        assertThat(savedEnroll.getCourse()).isEqualTo(course);
+
+        ArgumentCaptor<Course> courseCaptor = ArgumentCaptor.forClass(Course.class);
+        verify(courseRepository).save(courseCaptor.capture());
+        Course savedCourse = courseCaptor.getValue();
+        assertThat(savedCourse.getEnrolled()).isEqualTo(6);
     }
 
     @Test
@@ -365,7 +384,7 @@ class EnrollmentServiceTest {
 
         // 실행 및 예외 검증
         assertThatThrownBy(() ->
-                enrollmentService.enrollment(studentMember, COURSE_ID)
+                enrollmentService.enrollment(profile, COURSE_ID)
         ).isInstanceOf(CourseNotFoundException.class);
 
         // enrollmentRepository는 호출되지 않아야 함
@@ -389,7 +408,7 @@ class EnrollmentServiceTest {
 
         // 실행 및 예외 검증
         assertThatThrownBy(() ->
-                enrollmentService.enrollment(studentMember, COURSE_ID)
+                enrollmentService.enrollment(profile, COURSE_ID)
         ).isInstanceOf(EnrollmentPeriodNotFoundException.class);
 
         // enrollmentRepository는 호출되지 않아야 함
@@ -403,21 +422,14 @@ class EnrollmentServiceTest {
         LocalDate today = LocalDate.now();
 
         // enrollmentPeriodRepository에서 today가 기간 밖인 EnrollmentPeriod 반환
-        EnrollmentPeriod period = EnrollmentPeriod.builder()
-                .university(profile.getUniversity())
-                .year(today.getYear())
-                .grade(profile.getGrade())
-                .semester(profile.getSemester())
-                .startDate(today.plusDays(1))   // 시작일이 내일
-                .endDate(today.plusDays(2))     // 종료일이 모레
-                .build();
+        EnrollmentPeriod period = createNotYetPeriod(1, 2);
 
         // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
         stubEnrollmentPeriod(period);
 
         // 실행 및 예외 검증
         assertThatThrownBy(() ->
-                enrollmentService.enrollment(studentMember, COURSE_ID)
+                enrollmentService.enrollment(profile, COURSE_ID)
         ).isInstanceOf(EnrollmentPeriodClosedException.class);
 
         verifyNoInteractions(enrollmentRepository);
@@ -435,12 +447,12 @@ class EnrollmentServiceTest {
         // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
         stubEnrollmentPeriod(period);
 
-        // 2) 강좌 조회 stub (잔여좌석 0, 학점 3) 정원이 다 찬 상태
+        // 2) 강좌 조회 stub (최대인원 10, 현재수강인원 10, 학점 3) 정원이 다 찬 상태
         stubCourse(10, 10, 3);
 
         // 실행 및 예외 검증
         assertThatThrownBy(() ->
-                enrollmentService.enrollment(studentMember, COURSE_ID)
+                enrollmentService.enrollment(profile, COURSE_ID)
         ).isInstanceOf(CourseCapacityExceededException.class);
 
         // 저장 동작이 일어나지 않아야 함
@@ -458,7 +470,7 @@ class EnrollmentServiceTest {
         // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
         stubEnrollmentPeriod(period);
 
-        // 2) 강좌 조회 stub (잔여좌석 5, 학점 3)
+        // 2) 강좌 조회 stub (최대인원 10, 현재수강인원 5, 학점 3)
         stubCourse(10, 5, 3);
 
         // 3) 이미 신청한 강좌로 stub
@@ -467,7 +479,7 @@ class EnrollmentServiceTest {
 
         // 실행 및 예외 검증
         assertThatThrownBy(() ->
-                enrollmentService.enrollment(studentMember, COURSE_ID)
+                enrollmentService.enrollment(profile, COURSE_ID)
         ).isInstanceOf(DuplicateEnrollmentException.class);
 
         // save 호출되지 않아야 함
@@ -485,7 +497,7 @@ class EnrollmentServiceTest {
         // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
         stubEnrollmentPeriod(period);
 
-        // 2) 강좌 조회 stub (잔여좌석 5, 학점 3)
+        // 2) 강좌 조회 stub (최대인원 10, 현재수강인원 5, 학점 3)
         stubCourse(10, 5, 3);
 
         // 3) 중복 신청 없음 stub
@@ -507,7 +519,7 @@ class EnrollmentServiceTest {
 
         // 실행 및 예외 검증
         assertThatThrownBy(() ->
-                enrollmentService.enrollment(studentMember, COURSE_ID)
+                enrollmentService.enrollment(profile, COURSE_ID)
         ).isInstanceOf(CreditLimitExceededException.class);
 
         // save 호출이 일어나지 않아야 함
@@ -526,8 +538,8 @@ class EnrollmentServiceTest {
 
         // 2) 신규 강좌 stub (MON 10:00–11:00)
         Major major = Major.builder().id(1L).name("전공").build();
-        ProfessorProfile profProfile = ProfessorProfile.builder()
-                .member(Member.builder().name("교수님").build())
+        Professor profProfile = Professor.builder()
+                .name("교수님")
                 .build();
         Course newCourse = Course.builder()
                 .id(COURSE_ID)
@@ -576,10 +588,112 @@ class EnrollmentServiceTest {
 
         // 실행 및 예외 검증
         assertThatThrownBy(() ->
-                enrollmentService.enrollment(studentMember, COURSE_ID)
+                enrollmentService.enrollment(profile, COURSE_ID)
         ).isInstanceOf(ScheduleConflictException.class);
 
         // save 호출이 일어나지 않아야 함
         verify(enrollmentRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("내 수강신청 기간 조회 - 성공")
+    void getMyEnrollmentPeriod_success() {
+
+        // given: today 기준으로 기간 안에 들어오는 start/end 날짜 설정
+        EnrollmentPeriod period = createPeriod(1, 1);
+        // id가 null 이면 테스트에서 비교하기 불편하니 임의로 부여
+        stubEnrollmentPeriod(period);
+
+        // when
+        StudentEnrollmentPeriodResponse response = enrollmentService.getMyEnrollmentPeriod(profile);
+
+        // then
+        assertThat(response.studentId()).isEqualTo(profile.getId());
+        assertThat(response.universityName()).isEqualTo(profile.getUniversity().getName());
+        assertThat(response.year()).isEqualTo(period.getYear());
+        assertThat(response.grade()).isEqualTo(period.getGrade());
+        assertThat(response.semester()).isEqualTo(period.getSemester());
+        assertThat(response.startDate()).isEqualTo(period.getStartDate());
+        assertThat(response.endDate()).isEqualTo(period.getEndDate());
+        assertThat(response.isEnrollmentOpen()).isTrue();
+
+    }
+
+    @Test
+    @DisplayName("내 수강신청 기간 조회 - 성공 - 아직 시작하지 않은 경우")
+    void getMyEnrollmentPeriod_fail1() {
+
+        // given: today 기준으로 기간 안에 들어오는 start/end 날짜 설정
+        EnrollmentPeriod period = createNotYetPeriod(1, 2); // startDate = 내일, endDate = 모레
+
+        stubEnrollmentPeriod(period); // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
+
+        // when
+        StudentEnrollmentPeriodResponse response = enrollmentService.getMyEnrollmentPeriod(profile);
+
+        // then
+        assertThat(response.studentId()).isEqualTo(profile.getId());
+        assertThat(response.universityName()).isEqualTo(profile.getUniversity().getName());
+        assertThat(response.year()).isEqualTo(period.getYear());
+        assertThat(response.grade()).isEqualTo(period.getGrade());
+        assertThat(response.semester()).isEqualTo(period.getSemester());
+        assertThat(response.startDate()).isEqualTo(period.getStartDate());
+        assertThat(response.endDate()).isEqualTo(period.getEndDate());
+        assertThat(response.isEnrollmentOpen()).isFalse();
+
+    }
+
+    @Test
+    @DisplayName("내 수강신청 기간 조회 - 이미 지난 기간")
+    void getMyEnrollmentPeriod_fail2() {
+        // given: 오늘 기준 이미 지난 기간 (endDate < today)
+        EnrollmentPeriod period = createPeriod(5, -1); // startDate = today.minusDays(5), endDate = today.minusDays(1)
+        stubEnrollmentPeriod(period);
+
+        // when
+        StudentEnrollmentPeriodResponse response =
+                enrollmentService.getMyEnrollmentPeriod(profile);
+
+        // then: 기간 정보는 그대로 전달되지만 isEnrollmentOpen == false
+        assertThat(response.studentId()).isEqualTo(profile.getId());
+        assertThat(response.universityName()).isEqualTo(profile.getUniversity().getName());
+        assertThat(response.year()).isEqualTo(period.getYear());
+        assertThat(response.grade()).isEqualTo(period.getGrade());
+        assertThat(response.semester()).isEqualTo(period.getSemester());
+        assertThat(response.startDate()).isEqualTo(period.getStartDate());
+        assertThat(response.endDate()).isEqualTo(period.getEndDate());
+        assertThat(response.isEnrollmentOpen()).isFalse();
+    }
+
+    @Test
+    @DisplayName("내 수강신청 기간 조회 - 실패 - 수강신청 기간 정보가 없는 경우")
+    void getMyEnrollmentPeriod_fail3() {
+
+        LocalDate today = LocalDate.now();
+
+        when(enrollmentPeriodRepository
+                .findByUniversityIdAndYearAndGradeAndSemester(
+                        eq(profile.getUniversity().getId()),
+                        eq(today.getYear()),
+                        eq(profile.getGrade()),
+                        eq(profile.getSemester())
+                ))
+                .thenReturn(Optional.empty());
+
+        // when
+        StudentEnrollmentPeriodResponse response = enrollmentService.getMyEnrollmentPeriod(profile);
+
+        System.out.println(response.toString());
+
+        // then: isEnrollmentOpen=false, 기타 기간 정보는 null
+        assertThat(response.studentId()).isNull();
+        assertThat(response.universityName()).isNull();
+        assertThat(response.grade()).isNull();
+        assertThat(response.semester()).isNull();
+        assertThat(response.startDate()).isNull();
+        assertThat(response.endDate()).isNull();
+        assertThat(response.isEnrollmentOpen()).isFalse();
+
+    }
+
 }

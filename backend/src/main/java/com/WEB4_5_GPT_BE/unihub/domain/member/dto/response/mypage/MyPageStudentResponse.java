@@ -2,7 +2,7 @@ package com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage;
 
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.common.MemberInfo;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
 import lombok.Builder;
 
 @Builder
@@ -10,7 +10,7 @@ public record MyPageStudentResponse(
         MemberInfo member,
         StudentProfileResponse studentProfile
 ) {
-    public static MyPageStudentResponse from(Member member, StudentProfile profile) {
+    public static MyPageStudentResponse from(Member member, Student profile) {
         return new MyPageStudentResponse(
                 MemberInfo.builder()
                         .id(member.getId())

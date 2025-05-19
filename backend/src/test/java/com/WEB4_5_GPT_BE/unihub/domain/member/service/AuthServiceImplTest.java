@@ -6,7 +6,9 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.AdminLoginRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.MemberLoginRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.AdminLoginResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.MemberLoginResponse;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Admin;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
 import com.WEB4_5_GPT_BE.unihub.global.Rq;
 import com.WEB4_5_GPT_BE.unihub.global.exception.UnihubException;
@@ -23,6 +25,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Duration;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,14 +50,14 @@ class AuthServiceImplTest {
   private StringRedisTemplate redisTemplate;
 
   @Test
-  @DisplayName("로그인 성공 시 accessToken과 refreshToken을 발급하고 반환한다")
-  void givenValidLoginRequest_whenLogin_thenReturnTokens() {
+  @DisplayName("로그인에 성공하면 accessToken은 응답 본문으로 반환되고, refreshToken은 쿠키에 저장된다.")
+  void givenValidLoginRequest_whenLogin_thenReturnAccessTokenAndSetRefreshTokenInCookie() {
     // given
     String email = "test@example.com";
     String password = "password";
     MemberLoginRequest request = new MemberLoginRequest(email, password);
 
-    Member member = Member.builder().email(email).password("encodedPassword").build();
+    Admin member = Admin.builder().email(email).password("encodedPassword").build();
 
     when(redisTemplate.opsForValue().get("login:fail:" + email)).thenReturn("0");
     when(memberRepository.findByEmail(email)).thenReturn(Optional.of(member));
@@ -68,12 +71,12 @@ class AuthServiceImplTest {
     // then
     verify(redisTemplate).delete("login:fail:" + email);
     verify(redisTemplate.opsForValue())
-        .set(eq("refresh:" + member.getId()), eq("refreshToken"), eq(java.time.Duration.ofDays(7)));
+        .set(eq("refresh:" + member.getId()), eq("refreshToken"), eq(java.time.Duration.ofDays(1)));
     verify(authTokenService).genAccessToken(member);
     verify(authTokenService).genRefreshToken(member.getId());
 
+    verify(rq).addCookie(eq("refreshToken"), eq("refreshToken"), eq(Duration.ofDays(1))); // 쿠키 시간
     assertThat(response.accessToken()).isEqualTo("accessToken");
-    assertThat(response.refreshToken()).isEqualTo("refreshToken");
   }
 
   @Test
@@ -100,7 +103,7 @@ class AuthServiceImplTest {
     String password = "wrongPassword";
     MemberLoginRequest request = new MemberLoginRequest(email, password);
 
-    Member member = Member.builder().email(email).password("encodedPassword").build();
+    Admin member = Admin.builder().email(email).password("encodedPassword").build();
 
     when(redisTemplate.opsForValue().get("login:fail:" + email)).thenReturn("0");
     when(memberRepository.findByEmail(email)).thenReturn(Optional.of(member));
@@ -128,18 +131,19 @@ class AuthServiceImplTest {
   }
 
   @Test
-  @DisplayName("관리자 로그인 성공 시 accessToken과 refreshToken을 발급하고 반환한다")
+  @DisplayName("관리자 로그인 성공 시 accessToken는 응답 본문으로 반환하고, refreshToken은 쿠키에 저장된다.")
   void givenValidAdminLoginRequest_whenAdminLogin_thenReturnTokens() {
     // given
     String email = "admin@example.com";
     String password = "adminPassword";
     AdminLoginRequest request = new AdminLoginRequest(email, password);
 
-    Member adminMember =
-        Member.builder()
+    Admin adminMember =
+        Admin.builder()
             .email(email)
             .password("encodedPassword")
-            .role(com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role.ADMIN)
+            // Member.role 필드는 엔티티가 영속될때 JPA가 채워주는 필드이므로, 모킹 테스트에서는 이 필드에 수동으로 값을 넣어주어야 한다.
+            .role(Role.ADMIN)
             .build();
 
     when(redisTemplate.opsForValue().get("login:fail:" + email)).thenReturn("0");
@@ -157,12 +161,12 @@ class AuthServiceImplTest {
         .set(
             eq("refresh:" + adminMember.getId()),
             eq("adminRefreshToken"),
-            eq(java.time.Duration.ofDays(7)));
+            eq(java.time.Duration.ofDays(1)));
     verify(authTokenService).genAccessToken(adminMember);
     verify(authTokenService).genRefreshToken(adminMember.getId());
 
+    verify(rq).addCookie(eq("refreshToken"), eq("adminRefreshToken"), eq(Duration.ofDays(1))); // 쿠키 시간
     assertThat(response.accessToken()).isEqualTo("adminAccessToken");
-    assertThat(response.refreshToken()).isEqualTo("adminRefreshToken");
   }
 
   @Test
@@ -173,11 +177,10 @@ class AuthServiceImplTest {
     String password = "studentPassword";
     AdminLoginRequest request = new AdminLoginRequest(email, password);
 
-    Member studentMember =
-        Member.builder()
+    Student studentMember =
+        Student.builder()
             .email(email)
             .password("encodedPassword")
-            .role(com.WEB4_5_GPT_BE.unihub.domain.common.enums.Role.STUDENT)
             .build();
 
     when(redisTemplate.opsForValue().get("login:fail:" + email)).thenReturn("0");
@@ -234,15 +237,11 @@ class AuthServiceImplTest {
     String password = "password";
     MemberLoginRequest request = new MemberLoginRequest(email, password);
 
-    Member pendingProfessor = Member.builder()
+    Professor pendingProfessor = Professor.builder()
             .email(email)
             .password("encodedPassword")
             .role(Role.PROFESSOR)
-            .professorProfile(
-                    com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile.builder()
-                            .approvalStatus(com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus.PENDING)
-                            .build()
-            )
+            .approvalStatus(com.WEB4_5_GPT_BE.unihub.domain.common.enums.ApprovalStatus.PENDING)
             .build();
 
     when(redisTemplate.opsForValue().get("login:fail:" + email)).thenReturn("0");
@@ -282,8 +281,8 @@ class AuthServiceImplTest {
     String refreshToken = "validRefreshToken";
     String newAccessToken = "newAccessToken";
 
-    Member member =
-        Member.builder().id(memberId).email("test@example.com").role(Role.STUDENT).build();
+    Admin member =
+        Admin.builder().id(memberId).email("test@example.com").build();
 
     MockHttpServletRequest request = new MockHttpServletRequest();
     request.setCookies(new Cookie("refreshToken", refreshToken));
@@ -301,7 +300,6 @@ class AuthServiceImplTest {
 
     // then
     assertThat(loginResponse.accessToken()).isEqualTo(newAccessToken);
-    assertThat(loginResponse.refreshToken()).isNull(); // 재발급 안 하는 경우
   }
 
   @Test

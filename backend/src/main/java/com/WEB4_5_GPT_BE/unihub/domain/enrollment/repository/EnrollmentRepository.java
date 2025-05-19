@@ -1,7 +1,7 @@
 package com.WEB4_5_GPT_BE.unihub.domain.enrollment.repository;
 
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.entity.Enrollment;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -14,7 +14,7 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
      * @param student 수강신청 내역을 가져올 학생의 프로필
      * @return 해당 학생이 신청한 모든 Enrollment(수강신청) 리스트
      */
-    List<Enrollment> findAllByStudent(StudentProfile student);
+    List<Enrollment> findAllByStudent(Student student);
 
     /**
      * 주어진 courseId, studentProfileId 조합으로

@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,7 +24,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @Tag(name = "Enrollment", description = "수강신청 관련 API (대기열 관리, 이벤트 스트림 등)")
 @Slf4j
 @RestController
-@RequestMapping("/api/enrollment")
+@RequestMapping("/api/enrollments")
 @RequiredArgsConstructor
 public class EnrollmentEventController {
 
@@ -36,7 +37,7 @@ public class EnrollmentEventController {
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     })
     @GetMapping(value = "/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter subscribeToEvents(SecurityUser securityUser) {
+    public SseEmitter subscribeToEvents(@AuthenticationPrincipal SecurityUser securityUser) {
         // 인증된 사용자 정보가 없는 경우 예외 처리
         if (securityUser == null) {
             log.warn("인증되지 않은 SSE 연결 시도");
@@ -59,7 +60,7 @@ public class EnrollmentEventController {
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     })
     @PostMapping("/queue/join")
-    public RsData<QueueStatusDto> joinQueue(SecurityUser securityUser) {
+    public RsData<QueueStatusDto> joinQueue(@AuthenticationPrincipal SecurityUser securityUser) {
         if (securityUser == null) {
             throw new UnihubException("401", "인증되지 않은 요청입니다.");
         }
@@ -74,7 +75,7 @@ public class EnrollmentEventController {
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     })
     @GetMapping("/queue/status")
-    public RsData<QueueStatusDto> getQueueStatus(SecurityUser securityUser) {
+    public RsData<QueueStatusDto> getQueueStatus(@AuthenticationPrincipal SecurityUser securityUser) {
         if (securityUser == null) {
             throw new UnihubException("401", "인증되지 않은 요청입니다.");
         }
@@ -89,7 +90,7 @@ public class EnrollmentEventController {
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     })
     @PostMapping("/queue/release")
-    public RsData<Empty> releaseSession(SecurityUser securityUser) {
+    public RsData<Empty> releaseSession(@AuthenticationPrincipal SecurityUser securityUser) {
         if (securityUser == null) {
             throw new UnihubException("401", "인증되지 않은 요청입니다.");
         }

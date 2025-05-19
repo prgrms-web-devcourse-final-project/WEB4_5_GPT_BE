@@ -4,16 +4,15 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.AdminLoginResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.MemberLoginResponse;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageProfessorResponse;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageStudentResponse;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.ProfessorCourseResponse;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.UpdateMajorResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.*;
+import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.AuthService;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.MemberService;
 import com.WEB4_5_GPT_BE.unihub.global.response.Empty;
 import com.WEB4_5_GPT_BE.unihub.global.response.RsData;
 import com.WEB4_5_GPT_BE.unihub.global.security.SecurityUser;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -21,6 +20,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -68,22 +68,30 @@ public class MemberController {
           @ApiResponse(responseCode = "400", description = "잘못된 이메일 형식 또는 이미 인증된 이메일"),
           @ApiResponse(responseCode = "500", description = "이메일 발송 실패")
   })
-  @PostMapping("/email/code")
-  public RsData<Empty> sendEmail(@RequestBody @Valid EmailCodeRequest request) {
-    memberService.sendVerificationCode(request.email());
-    return new RsData<>("200", "이메일 인증번호가 전송되었습니다. 확인 후 인증번호를 입력해 주세요.");
+  @PostMapping("/email/{purpose}/code")
+  public RsData<Empty> sendEmail(
+          @Parameter(description = "이메일 인증 목적 (SIGNUP, PASSWORD_RESET, EMAIL_CHANGE 등)", schema = @Schema(implementation = VerificationPurpose.class))
+          @PathVariable VerificationPurpose purpose,
+          @RequestBody @Valid EmailCodeRequest request
+  ) {
+      memberService.sendVerificationCode(request.email(), purpose);
+      return new RsData<>("200", "이메일 인증번호가 전송되었습니다. 확인 후 인증번호를 입력해 주세요.");
   }
 
-  @Operation(summary = "이메일 인증 확인", description = "사용자가 입력한 인증번호를 검증하고 이메일 인증을 완료합니다.")
-  @ApiResponses(value = {
-          @ApiResponse(responseCode = "200", description = "이메일 인증 성공"),
-          @ApiResponse(responseCode = "400", description = "잘못된 인증번호이거나 인증되지 않은 이메일입니다.")
-  })
-  @PostMapping("/email/verify")
-  public RsData<Empty> verifyEmail(@RequestBody @Valid EmailCodeVerificationRequest request) {
-    memberService.verifyEmailCode(request);
-    return new RsData<>("200", "이메일 인증이 완료되었습니다.");
-  }
+    @Operation(summary = "이메일 인증 확인", description = "사용자가 입력한 인증번호를 검증하고 이메일 인증을 완료합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "이메일 인증 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 인증번호이거나 인증되지 않은 이메일입니다.")
+    })
+    @PostMapping("/email/{purpose}/verify")
+    public RsData<Empty> verifyEmail(
+            @Parameter(description = "이메일 인증 목적 (SIGNUP, PASSWORD_RESET, EMAIL_CHANGE 등)", schema = @Schema(implementation = VerificationPurpose.class))
+            @PathVariable VerificationPurpose purpose,
+            @RequestBody @Valid EmailCodeVerificationRequest request
+    ) {
+        memberService.verifyEmailCode(request.email(), request.emailCode(), purpose);
+        return new RsData<>("200", "이메일 인증이 완료되었습니다.");
+    }
 
   @Operation(summary = "비밀번호 변경", description = "현재 비밀번호 검증 후, 새 비밀번호로 변경합니다.")
   @ApiResponses(value = {
@@ -177,6 +185,20 @@ public class MemberController {
     public RsData<MyPageProfessorResponse> getProfessorMyPage(@AuthenticationPrincipal SecurityUser user) {
         return new RsData<>("200", "교수 마이페이지 조회 성공", memberService.getProfessorMyPage(user.getId()));
     }
+
+    @Operation(summary = "관리자 마이페이지 조회", description = "현재 로그인한 관리자의 프로필 정보를 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "관리자 마이페이지 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
+            @ApiResponse(responseCode = "403", description = "관리자 권한이 없습니다."),
+            @ApiResponse(responseCode = "404", description = "회원 정보를 찾을 수 없습니다.")
+    })
+    @GetMapping("/me/admin")
+    public RsData<MyPageAdminResponse> getAdminMyPage(@AuthenticationPrincipal SecurityUser user) {
+        MyPageAdminResponse response = memberService.getAdminMyPage(user.getId());
+        return new RsData<>("200", "관리자 마이페이지 조회 성공", response);
+    }
+
 
     @Operation(
             summary = "교수 강의 목록 조회",

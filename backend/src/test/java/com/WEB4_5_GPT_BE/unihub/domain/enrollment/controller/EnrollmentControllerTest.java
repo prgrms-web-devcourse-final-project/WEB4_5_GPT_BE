@@ -1,11 +1,11 @@
 package com.WEB4_5_GPT_BE.unihub.domain.enrollment.controller;
 
+import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.request.EnrollmentRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.MemberLoginRequest;
 import com.WEB4_5_GPT_BE.unihub.global.config.RedisTestContainerConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -34,11 +35,6 @@ class EnrollmentControllerTest {
     private ObjectMapper objectMapper;
     @Autowired
     private CourseRepository courseRepository;
-
-    @BeforeEach
-    void setUp() {
-
-    }
 
     private String loginAndGetAccessToken(String email, String password) throws Exception {
         MemberLoginRequest request = new MemberLoginRequest(email, password);
@@ -90,9 +86,12 @@ class EnrollmentControllerTest {
                 .andExpect(jsonPath("$.data.length()").value(2));
 
         // when: 네트워크 강좌를 수강 신청 요청
-        Long courseId = courseRepository.findAll().stream()
+        Course course = courseRepository.findAll().stream()
                 .filter(c -> "네트워크".equals(c.getTitle()))
-                .findFirst().get().getId();
+                .findFirst().get();
+
+        Integer availableSeats = course.getAvailableSeats();
+        Long courseId = course.getId();
 
         mockMvc.perform(post("/api/enrollments")
                         .header("Authorization", "Bearer " + accessToken)
@@ -103,10 +102,13 @@ class EnrollmentControllerTest {
                 .andExpect(jsonPath("$.message").value("수강 신청이 완료되었습니다."));
 
         // then: 내 수강목록 조회 시 신청 내역이 3개로 증가해야 함
+        // then: 신청 강좌의 신청 가능 인원이 1 감소해야 함
         mockMvc.perform(get("/api/enrollments/me")
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(3));
+                .andExpect(jsonPath("$.data.length()").value(3))
+                .andExpect(jsonPath("$.data[?(@.courseTitle=='네트워크')].availableSeats")
+                        .value(availableSeats - 1));
     }
 
     @Test
@@ -245,11 +247,13 @@ class EnrollmentControllerTest {
                 .andExpect(jsonPath("$.data.length()").value(2));
 
         // 취소할 강좌 ID 조회
-        Long courseId = courseRepository.findAll().stream()
+        Course course = courseRepository.findAll().stream()
                 .filter(c -> "자료구조".equals(c.getTitle()))
                 .findFirst()
-                .orElseThrow()
-                .getId();
+                .get();
+
+        Integer enrolled = course.getEnrolled();
+        Long courseId = course.getId();
 
         // when: 해당 강좌 취소 요청
         mockMvc.perform(delete("/api/enrollments/{courseId}", courseId)
@@ -263,6 +267,12 @@ class EnrollmentControllerTest {
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(1));
+
+        // then: 취소 강좌의 현재 수강 인원이 1명 감소했는지 검증
+        mockMvc.perform(get("/api/courses/{courseId}", courseId)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.enrolled").value(enrolled - 1));
     }
 
     @Test
@@ -298,5 +308,92 @@ class EnrollmentControllerTest {
                 .andExpect(jsonPath("$.message").value("수강신청 내역이 존재하지 않습니다."));
     }
 
+    @Test
+    @DisplayName("내 수강신청 기간 조회 - 성공")
+    @Transactional
+    void getEnrollmentPeriod_success() throws Exception {
+
+        // given: 학생 로그인 후 accessToken 발급
+        String accessToken = loginAndGetAccessToken("teststudent@auni.ac.kr", "password");
+
+        // when / then
+        mockMvc.perform(get("/api/enrollments/periods/me")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200"))
+                .andExpect(jsonPath("$.message").value("내 수강신청 기간 정보를 조회했습니다."))
+                // data 필드 존재 및 타입 검증
+                .andExpect(jsonPath("$.data.startDate").exists())
+                .andExpect(jsonPath("$.data.endDate").exists())
+                .andExpect(jsonPath("$.data.isEnrollmentOpen").value(true));
+    }
+
+    @Test
+    @DisplayName("내 수강신청 기간 조회 - 정보 없음")
+    @Transactional
+    void getEnrollmentPeriod_noInfo() throws Exception {
+
+        // given: 학생 로그인 후 accessToken 발급
+        String accessToken = loginAndGetAccessToken("teststudent3@auni.ac.kr", "password");
+
+        // when / then
+        mockMvc.perform(get("/api/enrollments/periods/me")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200"))
+                .andExpect(jsonPath("$.message").value("내 수강신청 기간 정보를 조회했습니다."))
+                // data 필드 존재 및 타입 검증
+                .andExpect(jsonPath("$.data.startDate").doesNotExist())
+                .andExpect(jsonPath("$.data.endDate").doesNotExist())
+                .andExpect(jsonPath("$.data.isEnrollmentOpen").value(false));
+    }
+
+    @Test
+    @DisplayName("내 수강신청 기간 조회 - 이미 지난 기간")
+    @Transactional
+    void getEnrollmentPeriod_expired() throws Exception {
+
+        // given: 학생 로그인 후 accessToken 발급
+        String accessToken = loginAndGetAccessToken("test3rdstudent@auni.ac.kr", "password");
+
+        // when / then
+        mockMvc.perform(get("/api/enrollments/periods/me")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200"))
+                .andExpect(jsonPath("$.message").value("내 수강신청 기간 정보를 조회했습니다."))
+                // data 필드 존재 및 타입 검증
+                .andExpect(jsonPath("$.data.startDate").exists())
+                .andExpect(jsonPath("$.data.endDate").exists())
+                .andExpect(jsonPath("$.data.isEnrollmentOpen").value(false));
+    }
+
+    @Test
+    @DisplayName("내 수강신청 기간 조회 - 기간 아직 안됨")
+    @Transactional
+    void getEnrollmentPeriod_notYet() throws Exception {
+
+        // given: 학생 로그인 후 accessToken 발급
+        String accessToken = loginAndGetAccessToken("test3rdstudent@auni.ac.kr", "password");
+
+        // when / then
+        mockMvc.perform(get("/api/enrollments/periods/me")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200"))
+                .andExpect(jsonPath("$.message").value("내 수강신청 기간 정보를 조회했습니다."))
+                // data 필드 존재 및 타입 검증
+                .andExpect(jsonPath("$.data.startDate").exists())
+                .andExpect(jsonPath("$.data.endDate").exists())
+                .andExpect(jsonPath("$.data.isEnrollmentOpen").value(false));
+    }
 
 }

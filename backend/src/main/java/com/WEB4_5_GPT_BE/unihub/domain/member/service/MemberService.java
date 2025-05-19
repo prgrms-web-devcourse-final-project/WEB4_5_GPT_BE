@@ -5,11 +5,9 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.PasswordResetConfirmat
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.mypage.*;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageProfessorResponse;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.MyPageStudentResponse;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.ProfessorCourseResponse;
-import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.UpdateMajorResponse;
+import com.WEB4_5_GPT_BE.unihub.domain.member.dto.response.mypage.*;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
+import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
 
 import java.util.List;
 import java.util.Optional;
@@ -22,10 +20,10 @@ public interface MemberService {
     void signUpProfessor(ProfessorSignUpRequest request);
 
     // 이메일로 인증코드 발송
-    void sendVerificationCode(String email);
+    void sendVerificationCode(String email, VerificationPurpose purpose);
 
     // 이메일 인증 코드 검증
-    void verifyEmailCode(EmailCodeVerificationRequest request);
+    void verifyEmailCode(String email, String code, VerificationPurpose purpose);
 
     // 비밀번호 재설정
     void resetPassword(PasswordResetConfirmationRequest request);
@@ -41,7 +39,7 @@ public interface MemberService {
     UpdateMajorResponse updateMajor(Long memberId, UpdateMajorRequest request);
     void verifyPassword(Long memberId, VerifyPasswordRequest request);
     void deleteMember(Long memberId);
-    
+    MyPageAdminResponse getAdminMyPage(Long memberId);
     // 모든 학생의 학기와 학년 정보를 업데이트
     void updateAllStudentSemesters();
 

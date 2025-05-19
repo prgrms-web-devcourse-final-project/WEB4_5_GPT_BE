@@ -39,24 +39,6 @@ public class Rq {
             new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities()));
   }
 
-  public Member getActor() {
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-    if (authentication == null || !(authentication.getPrincipal() instanceof SecurityUser)) {
-      throw new UnihubException("401", "로그인이 필요합니다.");
-    }
-
-    SecurityUser user = (SecurityUser) authentication.getPrincipal();
-
-    return Member.builder().id(user.getId()).email(user.getUsername()).name(user.getName()).build();
-  }
-
-  public Member getRealActor(Member actor) {
-    return memberService
-        .findById(actor.getId())
-        .orElseThrow(() -> new UnihubException("404", "존재하지 않는 사용자입니다."));
-  }
-
   public String getAccessToken() {
     String authorization = getHeader("Authorization");
     if (authorization != null && authorization.startsWith("Bearer ")) {
@@ -111,5 +93,17 @@ public class Rq {
     cookie.setAttribute("SameSite", "None");
     cookie.setMaxAge(0);
     response.addCookie(cookie);
+  }
+
+  public Member getActor() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+    if (authentication == null || !(authentication.getPrincipal() instanceof SecurityUser)) {
+      throw new UnihubException("401", "로그인이 필요합니다.");
+    }
+
+    SecurityUser user = (SecurityUser) authentication.getPrincipal();
+
+    return memberService.findById(user.getId()).orElseThrow();
   }
 }

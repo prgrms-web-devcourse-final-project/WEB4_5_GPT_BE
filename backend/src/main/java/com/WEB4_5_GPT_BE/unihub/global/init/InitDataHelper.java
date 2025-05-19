@@ -13,12 +13,20 @@ import com.WEB4_5_GPT_BE.unihub.domain.enrollment.entity.Enrollment;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.repository.EnrollmentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.ProfessorSignUpRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.StudentSignUpRequest;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Admin;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.ProfessorProfile;
-import com.WEB4_5_GPT_BE.unihub.domain.member.entity.StudentProfile;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
+import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
+import com.WEB4_5_GPT_BE.unihub.domain.member.enums.VerificationPurpose;
+import com.WEB4_5_GPT_BE.unihub.domain.member.repository.AdminRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.MemberRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.EmailService;
 import com.WEB4_5_GPT_BE.unihub.domain.member.service.MemberService;
+import com.WEB4_5_GPT_BE.unihub.domain.notice.entity.Notice;
+import com.WEB4_5_GPT_BE.unihub.domain.notice.repository.NoticeRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.timetable.entity.Timetable;
+import com.WEB4_5_GPT_BE.unihub.domain.timetable.repository.TimetableRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.Major;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
 import com.WEB4_5_GPT_BE.unihub.domain.university.repository.MajorRepository;
@@ -39,11 +47,15 @@ public class InitDataHelper {
     private final MajorRepository majorRepository;
     private final MemberService memberService;
     private final MemberRepository memberRepository;
+    private final ProfessorRepository professorRepository;
+    private final AdminRepository adminRepository;
     private final EmailService emailService;
     private final CourseRepository courseRepository;
     private final CourseScheduleRepository courseScheduleRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final EnrollmentPeriodRepository enrollmentPeriodRepository;
+    private final NoticeRepository noticeRepository;
+    private final TimetableRepository timetableRepository;
 
     public University createUniversity(String name, String emailDomain) {
         return universityRepository.save(University.builder().name(name).emailDomain(emailDomain).build());
@@ -53,18 +65,13 @@ public class InitDataHelper {
         return majorRepository.save(Major.builder().name(name).university(university).build());
     }
 
-    public void createStudent(String email, String pw, String name, String studentCode, Long univId, Long majorId) {
-        emailService.markEmailAsVerified(email);
-        memberService.signUpStudent(new StudentSignUpRequest(email, pw, name, studentCode, univId, majorId, 1, 1, Role.STUDENT));
-    }
-
-    public void create2ndStudent(String email, String pw, String name, String studentCode, Long univId, Long majorId) {
-        emailService.markEmailAsVerified(email);
-        memberService.signUpStudent(new StudentSignUpRequest(email, pw, name, studentCode, univId, majorId, 2, 1, Role.STUDENT));
+    public void createStudent(String email, String pw, String name, String studentCode, Long univId, Long majorId, Integer grade, Integer semester) {
+        emailService.markEmailAsVerified(email, VerificationPurpose.SIGNUP);
+        memberService.signUpStudent(new StudentSignUpRequest(email, pw, name, studentCode, univId, majorId, grade, semester, Role.STUDENT));
     }
 
     public Course createCourse(String title, Major major, String location,
-                               Integer capacity, Integer enrolled, Integer credit, ProfessorProfile professor,
+                               Integer capacity, Integer enrolled, Integer credit, Professor professor,
                                Integer grade, Integer semester, String coursePlanAttachment) {
         return courseRepository.save(
                 Course.builder()
@@ -98,21 +105,20 @@ public class InitDataHelper {
     }
 
     public Member createProfessor(String email, String pw, String name, String empCode, Long univId, Long majorId, ApprovalStatus status) {
-        emailService.markEmailAsVerified(email);
+        emailService.markEmailAsVerified(email,VerificationPurpose.SIGNUP);
         memberService.signUpProfessor(new ProfessorSignUpRequest(email, pw, name, empCode, univId, majorId, Role.PROFESSOR));
-        Member professor = memberRepository.findByEmail(email).orElseThrow();
-        professor.getProfessorProfile().setApprovalStatus(status);
-        return memberRepository.save(professor);
+        Professor professor = (Professor) memberRepository.findByEmail(email).orElseThrow();
+        professor.setApprovalStatus(status);
+        return professorRepository.save(professor);
     }
 
     public void createAdmin(String email, String pw, String name, PasswordEncoder encoder) {
-        Member admin = Member.builder()
+        Admin admin = Admin.builder()
                 .email(email)
                 .password(encoder.encode(pw))
                 .name(name)
-                .role(Role.ADMIN)
                 .build();
-        memberRepository.save(admin);
+        adminRepository.save(admin);
     }
 
     public long countMembers() {
@@ -132,10 +138,10 @@ public class InitDataHelper {
 
         Member member = optionalMember.get();
 
-        if (member.getRole() != Role.PROFESSOR) return;
+        if (!(member instanceof Professor)) return;
 
-        ProfessorProfile profile = member.getProfessorProfile();
-        if (profile != null && profile.getApprovalStatus() == null) {
+        Professor profile = (Professor) member;
+        if (profile.getApprovalStatus() == null) {
             profile.setApprovalStatus(status);
             memberRepository.save(member);
         }
@@ -146,8 +152,9 @@ public class InitDataHelper {
     }
 
     public void createEnrollment(Member student, Long courseId) {
-        StudentProfile profile = student.getStudentProfile();
+        Student profile = (Student) student;
         Course course = courseRepository.findById(courseId).get();
+        course.incrementEnrolled();
 
         Enrollment enrollment = Enrollment.builder()
                 .student(profile)
@@ -155,6 +162,7 @@ public class InitDataHelper {
                 .build();
 
         enrollmentRepository.save(enrollment);
+        courseRepository.save(course);
     }
 
     public void createEnrollmentPeriod(
@@ -172,4 +180,22 @@ public class InitDataHelper {
         enrollmentPeriodRepository.save(period);
     }
 
+    public Notice createNotice(String title, String content, String attachmentUrl) {
+        Notice notice = Notice.builder()
+                .title(title)
+                .content(content)
+                .attachmentUrl(attachmentUrl)
+                .isDeleted(false)
+                .build();
+        return noticeRepository.save(notice);
+    }
+
+    public void createTimetable(Member member, int year, int semester) {
+        Timetable timetable = Timetable.builder()
+                .member(member)
+                .year(year)
+                .semester(semester)
+                .build();
+        timetableRepository.save(timetable);
+    }
 }
