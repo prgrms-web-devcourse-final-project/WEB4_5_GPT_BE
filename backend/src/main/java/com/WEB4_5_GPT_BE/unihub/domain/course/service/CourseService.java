@@ -3,12 +3,10 @@ package com.WEB4_5_GPT_BE.unihub.domain.course.service;
 import com.WEB4_5_GPT_BE.unihub.domain.course.dto.*;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.CourseSchedule;
-import com.WEB4_5_GPT_BE.unihub.domain.course.exception.CourseNotFoundException;
-import com.WEB4_5_GPT_BE.unihub.domain.course.exception.FileUploadException;
-import com.WEB4_5_GPT_BE.unihub.domain.course.exception.LocationScheduleConflictException;
-import com.WEB4_5_GPT_BE.unihub.domain.course.exception.ProfessorScheduleConflictException;
+import com.WEB4_5_GPT_BE.unihub.domain.course.exception.*;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseScheduleRepository;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.repository.EnrollmentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
 import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.ProfessorProfileNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.ProfessorRepository;
@@ -57,6 +55,8 @@ public class CourseService {
     private final ProfessorRepository professorRepository;
 
     private final S3Service s3Service;
+
+    private final EnrollmentRepository enrollmentRepository;
 
     /**
      * 주어진 ID에 해당하는 강의 정보를 반환한다.
@@ -192,9 +192,13 @@ public class CourseService {
      * @param courseId 삭제하고자 하는 강의의 ID
      */
     public void deleteCourse(Long courseId) {
-        Course course = courseRepository.findById(courseId).orElseThrow(
-                CourseNotFoundException::new
-        );
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(CourseNotFoundException::new);
+
+        // 수강신청이 하나라도 있으면 삭제 금지
+        if (enrollmentRepository.existsByCourseId(courseId)) {
+            throw new CourseDeletionException();
+        }
         // s3에 업로드된 강의계획서 파일 삭제, 실패 시에도 강의 삭제는 정상 진행되도록 구현하고 log 남김
         deleteS3AttachmentIfExistsAndLog(course.getCoursePlanAttachment());
 
