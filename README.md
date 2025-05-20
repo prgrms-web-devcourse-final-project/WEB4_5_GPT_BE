@@ -68,6 +68,8 @@
 ## 📄 추가 문서
 
 ### 🔗 ERD
+<details>
+  <summary>ERD 보기</summary>
 ![unihub](https://github.com/user-attachments/assets/632b7962-3dba-4d7a-b76b-76b3720f1c58)
 
 ### 📜 프로젝트 기획서
