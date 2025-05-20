@@ -2,10 +2,12 @@ package com.WEB4_5_GPT_BE.unihub.domain.enrollment.controller;
 
 import com.WEB4_5_GPT_BE.unihub.domain.course.dto.TimetableCourseResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.course.exception.CourseNotFoundException;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.QueueStatusDto;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.request.EnrollmentRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response.MyEnrollmentResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response.StudentEnrollmentPeriodResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.*;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.EnrollmentQueueService;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.EnrollmentService;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.springDoc.apiResponse.EnrollmentApiResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.springDoc.apiResponse.EnrollmentCancelApiResponse;
@@ -42,6 +44,7 @@ import java.util.List;
 public class EnrollmentController {
 
     private final EnrollmentService enrollmentService;
+    private final EnrollmentQueueService enrollmentQueueService;
 
     /**
      * 내 수강신청 목록을 조회합니다.
@@ -54,8 +57,11 @@ public class EnrollmentController {
             description = "로그인된 학생 본인의 수강신청 목록을 조회합니다. header에 Bearer accessToken이 없다면 접근할 수 없습니다."
     )
     @GetMyEnrollmentListApiResponse // api 요청에 대한 성공,예외 response 예시를 정의합니다.
-    @GetMapping(value = "/me")
+    @GetMapping("/me")
     public RsData<List<MyEnrollmentResponse>> getMyEnrollmentList(@AuthenticationPrincipal SecurityUser user) {
+        // 세션 유효성 검증
+        validateEnrollmentSession(user);
+
         Student actor = Student.builder().id(user.getId()).build();
         List<MyEnrollmentResponse> response = enrollmentService.getMyEnrollmentList(actor); // 내 수강목록을 조회하여 반환
 
@@ -67,6 +73,8 @@ public class EnrollmentController {
     @getMyEnrollmentPeriodApiResponse // api 요청에 대한 성공,예외 response 예시를 정의합니다.
     @GetMapping("/periods/me")
     public RsData<StudentEnrollmentPeriodResponse> getMyEnrollmentPeriod(@AuthenticationPrincipal SecurityUser user) {
+        // 세션 유효성 검증
+        validateEnrollmentSession(user);
 
         Student actor = Student.builder().id(user.getId()).build();
         StudentEnrollmentPeriodResponse response = enrollmentService.getMyEnrollmentPeriod(actor); // 내 수강신청 기간 정보 조회
@@ -90,6 +98,8 @@ public class EnrollmentController {
     @EnrollmentCancelApiResponse // api 요청에 대한 성공,예외 response 예시를 정의합니다.
     @DeleteMapping("/{courseId}")
     public RsData<Empty> enrollmentCancel(@PathVariable Long courseId, @AuthenticationPrincipal SecurityUser user) {
+        // 세션 유효성 검증
+        validateEnrollmentSession(user);
 
         Student actor = Student.builder().id(user.getId()).build();
         enrollmentService.cancelMyEnrollment(actor, courseId); // 해당 강좌에 대한 수강 취소 요청
@@ -117,6 +127,8 @@ public class EnrollmentController {
     @EnrollmentApiResponse // api 요청에 대한 성공,예외 response 예시를 정의합니다.
     @PostMapping
     public RsData<Empty> enrollment(@RequestBody EnrollmentRequest request, @AuthenticationPrincipal SecurityUser user) {
+        // 세션 유효성 검증
+        validateEnrollmentSession(user);
 
         Student actor = Student.builder().id(user.getId()).build();
         enrollmentService.enrollment(actor, request.courseId()); // 해당 강좌에 대한 수강 신청 요청
@@ -140,6 +152,8 @@ public class EnrollmentController {
             @RequestParam(value = "semester", required = false) Integer semester,
             @AuthenticationPrincipal SecurityUser actor
     ) {
+        // 세션 유효성 검증
+        validateEnrollmentSession(actor);
         // 필수 파라미터 검증
         if (year == null) {
             throw new RequiredParameterMissingException("year");
@@ -152,5 +166,18 @@ public class EnrollmentController {
                 enrollmentService.getMyEnrollmentsForTimetable(actor, year, semester);
 
         return new RsData<>("200", "시간표 등록용 강의 목록 조회 완료", timetableCourseResponse);
+    }
+
+    /**
+     * 사용자의 수강신청 세션 유효성 검증
+     * 세션이 없으면 예외 발생
+     */
+    private void validateEnrollmentSession(SecurityUser user) {
+        String memberId = String.valueOf(user.getId());
+        QueueStatusDto queueStatus = enrollmentQueueService.getQueueStatus(memberId);
+
+        if (!queueStatus.isAllowed()) {
+            throw new NoSessionException();
+        }
     }
 }
