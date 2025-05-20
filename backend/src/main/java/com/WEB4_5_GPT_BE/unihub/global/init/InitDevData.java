@@ -114,8 +114,14 @@ public class InitDevData {
 
         // 11) 2학년 학생 1명 더 생성
         helper.createStudent(
-                "thirdstudent@auni.ac.kr", "studentPw3", "정하늘", "20250003",
+                "thirdstudent@auni.ac.kr", "studentPw", "홍길동", "20250003",
                 university.getId(), majorSW.getId(), 2, 1
+        );
+        
+        // 12) 1학년 학생 1명 더 생성
+        helper.createStudent(
+                "fourthstudent@auni.ac.kr", "studentPw", "정학생", "20231423",
+                university.getId(), majorSW.getId(), 1, 1
         );
     }
 
