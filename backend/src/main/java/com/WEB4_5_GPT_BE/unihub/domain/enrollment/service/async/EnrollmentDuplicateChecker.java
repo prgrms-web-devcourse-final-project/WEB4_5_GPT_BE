@@ -1,6 +1,6 @@
 package com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async;
 
-import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.EnrollmentAlreadyQueuedException;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.RequestAlreadyQueuedException;
 import com.WEB4_5_GPT_BE.unihub.global.concurrent.ConcurrencyGuard;
 import lombok.RequiredArgsConstructor;
 import org.redisson.api.RBucket;
@@ -11,7 +11,7 @@ import java.time.Duration;
 
 /**
  * 수강신청 중복 검사 컴포넌트
- * <p>
+ *
  * 학생(studentId)과 강좌(courseId) 조합에 대해
  * 이미 enqueue 되어있는지 flag를 통해 검사하고,
  * 중복 등록 시 예외를 던집니다.
@@ -32,7 +32,7 @@ public class EnrollmentDuplicateChecker {
      *
      * @param studentId 학생 ID
      * @param courseId  강좌 ID
-     * @throws EnrollmentAlreadyQueuedException 이미 대기 중인 경우 발생
+     * @throws RequestAlreadyQueuedException 이미 대기 중인 경우 발생
      */
     @ConcurrencyGuard(lockName = "student:enroll")
     public void markEnqueuedIfAbsent(Long studentId, Long courseId) {
@@ -42,7 +42,7 @@ public class EnrollmentDuplicateChecker {
 
         // 이미 플래그가 설정되어 있으면 중복으로 간주
         if (flag.isExists()) {
-            throw new EnrollmentAlreadyQueuedException();
+            throw new RequestAlreadyQueuedException();
         }
 
         // 플래그가 없으면 true로 설정하고 1시간 뒤 자동 만료
