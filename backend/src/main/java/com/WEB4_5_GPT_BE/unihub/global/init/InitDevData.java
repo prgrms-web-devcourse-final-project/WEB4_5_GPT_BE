@@ -111,6 +111,12 @@ public class InitDevData {
 
         //공지사항 생성
         initNotices();
+
+        // 11) 2학년 학생 1명 더 생성
+        helper.createStudent(
+                "thirdstudent@auni.ac.kr", "studentPw3", "정하늘", "20250003",
+                university.getId(), majorSW.getId(), 2, 1
+        );
     }
 
     /**
