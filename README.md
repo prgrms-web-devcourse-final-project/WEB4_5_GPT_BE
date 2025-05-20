@@ -68,7 +68,7 @@
 ## 📄 추가 문서
 
 ### 🔗 ERD
-![ERD](https://github.com/user-attachments/assets/8dfc3729-dc46-4ad3-b22f-02280294541d)
+![unihub](https://github.com/user-attachments/assets/632b7962-3dba-4d7a-b76b-76b3720f1c58)
 
 ### 📜 프로젝트 기획서
 - [프로젝트 기획서 바로가기](https://www.notion.so/1db3550b7b558190b279c1b3b4a32d16?pvs=4)
