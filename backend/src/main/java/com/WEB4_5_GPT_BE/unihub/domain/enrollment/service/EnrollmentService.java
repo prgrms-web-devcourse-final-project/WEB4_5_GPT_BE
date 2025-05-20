@@ -18,7 +18,6 @@ import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
 import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.StudentProfileNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
-import com.WEB4_5_GPT_BE.unihub.global.concurrent.ConcurrencyGuard;
 import com.WEB4_5_GPT_BE.unihub.global.security.SecurityUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -235,7 +234,6 @@ public class EnrollmentService {
      * @throws ScheduleConflictException         기존 신청한 강좌와 시간표가 겹치는 경우
      */
     @Transactional(readOnly = true)
-    @ConcurrencyGuard(lockName = "course")
     public void enrollment(Long studentId, Long courseId) {
 
         // 동시성 테스트를 위해 임시로 대기열 제거
