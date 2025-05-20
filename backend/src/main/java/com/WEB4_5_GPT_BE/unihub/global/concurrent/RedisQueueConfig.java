@@ -1,6 +1,7 @@
 package com.WEB4_5_GPT_BE.unihub.global.concurrent;
 
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.EnrollmentCommand;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.cancel.EnrollmentCancelCommand;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RedissonClient;
 import org.springframework.context.annotation.Bean;
@@ -17,8 +18,19 @@ public class RedisQueueConfig {
 //        return null;
 //    }
 
+    /**
+     * 수강신청 요청을 위한 Redis BlockingQueue
+     */
     @Bean
     public RBlockingQueue<EnrollmentCommand> enrollQueue(RedissonClient redisson) {
         return redisson.getBlockingQueue("enrollQueue");
+    }
+
+    /**
+     * 수강취소 요청을 위한 Redis BlockingQueue
+     */
+    @Bean
+    public RBlockingQueue<EnrollmentCancelCommand> cancelQueue(RedissonClient redisson) {
+        return redisson.getBlockingQueue("cancelQueue");
     }
 }

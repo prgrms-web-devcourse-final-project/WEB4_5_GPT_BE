@@ -52,4 +52,16 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     @Modifying
     @Query("UPDATE Course c SET c.enrolled = c.enrolled + 1 WHERE c.id = :courseId")
     void incrementEnrolled(@Param("courseId") Long courseId);
+
+    /**
+     * course.enrolled 컬럼을 1 감소시킵니다.
+     * (동시성 처리를 DB 레벨에서 atomic 하게 해 줍니다.)
+     *
+     * @param courseId 감소시킬 Course의 ID
+     */
+    @Modifying
+    @Query("UPDATE Course c SET c.enrolled = c.enrolled - 1 WHERE c.id = :courseId")
+    void decrementEnrolled(@Param("courseId") Long courseId);
+
+
 }

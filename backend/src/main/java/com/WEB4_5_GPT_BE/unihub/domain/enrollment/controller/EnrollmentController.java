@@ -90,6 +90,8 @@ public class EnrollmentController {
      * @throws EnrollmentPeriodNotFoundException 수강신청 기간 정보가 없는 경우
      * @throws EnrollmentPeriodClosedException   수강신청 기간 외 요청인 경우
      * @throws EnrollmentNotFoundException       수강신청 내역이 없는 경우
+     * @throws CannotCancelException             수강취소 요청 시 현재 수강인원이 0보다 작아지는 경우
+     * @throws RequestAlreadyQueuedException     이미 취소 요청이 큐에 등록되어 있는 경우 (중복요청)
      */
     @Operation(
             summary = "수강 취소",
@@ -101,9 +103,7 @@ public class EnrollmentController {
         // 세션 유효성 검증
         validateEnrollmentSession(user);
 
-        Student actor = Student.builder().id(user.getId()).build();
-        enrollmentService.cancelMyEnrollment(actor, courseId); // 해당 강좌에 대한 수강 취소 요청
-
+        enrollmentService.cancelMyEnrollment(user.getId(), courseId); // 해당 강좌에 대한 수강 신청 요청
         return new RsData<>("200", "수강 취소가 완료되었습니다.");
     }
 
