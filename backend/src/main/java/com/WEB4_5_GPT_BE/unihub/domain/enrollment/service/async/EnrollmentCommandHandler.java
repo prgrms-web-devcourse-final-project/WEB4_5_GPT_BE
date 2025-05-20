@@ -43,6 +43,7 @@ public class EnrollmentCommandHandler {
     public void process(EnrollmentCommand cmd) {
         Long studentId = cmd.studentId();
         Long courseId = cmd.courseId();
+        String flagKey = "enroll:queued:" + studentId + ":" + courseId;
 
         try {
             // 1) 학생 조회, 없으면 예외
@@ -68,6 +69,8 @@ public class EnrollmentCommandHandler {
             redisson.getAtomicLong("course:" + courseId + ":enrolled")
                     .decrementAndGet();
             throw e;
+        } finally {
+            redisson.getBucket(flagKey).delete(); // 큐가 처리되고 나면 flag 해제
         }
     }
 }

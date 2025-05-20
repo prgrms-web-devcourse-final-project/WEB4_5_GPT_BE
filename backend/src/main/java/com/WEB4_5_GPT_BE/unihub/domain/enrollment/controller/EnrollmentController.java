@@ -14,6 +14,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.enrollment.springDoc.apiResponse.Enrollme
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.springDoc.apiResponse.GetMyEnrollmentListApiResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.springDoc.apiResponse.getMyEnrollmentPeriodApiResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
+import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.StudentProfileNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.global.response.Empty;
 import com.WEB4_5_GPT_BE.unihub.global.response.RsData;
 import com.WEB4_5_GPT_BE.unihub.global.security.SecurityUser;
@@ -119,6 +120,8 @@ public class EnrollmentController {
      * @throws DuplicateEnrollmentException      동일 강좌 중복 신청 시
      * @throws CreditLimitExceededException      최대 학점 초과 시
      * @throws ScheduleConflictException         기존 신청한 강좌와 시간표가 겹치는 경우
+     * @throws StudentProfileNotFoundException   학생 프로필이 없는 경우
+     * @throws RequestAlreadyQueuedException     이미 수강신청 요청이 큐에 등록된 경우
      */
     @Operation(
             summary = "수강 신청",
