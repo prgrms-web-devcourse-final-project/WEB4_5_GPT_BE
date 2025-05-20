@@ -13,6 +13,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.enrollment.entity.Enrollment;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.*;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.repository.EnrollmentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.EnrollmentCommand;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.EnrollmentDuplicateChecker;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
 import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.StudentProfileNotFoundException;
@@ -47,6 +48,7 @@ public class EnrollmentService {
 
     private final RedissonClient redisson; // 동시성 처리를 위한 RedissonClient
     private final RBlockingQueue<EnrollmentCommand> enrollQueue; // 수강신청 요청을 저장하는 Queue
+    private final EnrollmentDuplicateChecker enrollmentDuplicateChecker; // 중복 큐 삽입 방지
 
     private final int MAXIMUM_CREDIT = 21; // 최대 학점 상수 (21학점)
     private final EnrollmentQueueService enrollmentQueueService; // 수강신청 대기열 큐 TODO: 테스트 후 제거
@@ -250,7 +252,11 @@ public class EnrollmentService {
 
         ensureEnrollmentAllowed(profile, course); // 수강 신청이 가능한지 여러 예외상황 검증
 
-        tryReserveSeat(studentId, courseId); // Redis AtomicLong로 자리 확보
+        // 2) 동일학생+동일강좌 수강신청이 이미 큐에 들어가있는지 확인
+        enrollmentDuplicateChecker.markEnqueuedIfAbsent(studentId, courseId);
+
+        // 3) 실제 자리 확보 + 큐 등록
+        tryReserveSeatAndEnqueue(studentId, courseId);
 
     }
 
@@ -285,27 +291,42 @@ public class EnrollmentService {
     }
 
     /**
-     * 실제 수강신청을 처리하는 메서드입니다.
-     * Redis AtomicLong을 증가시켜 강의 자리를 확보 후 Queue를 통해 DB에 순차적으로 저장합니다.
+     * Redis의 AtomicLong을 통해 수강신청 자리 확보 후 Redis 큐에 수강신청 명령을 추가합니다.
      *
      * @param studentId 학생 ID
      * @param courseId  강좌 ID
-     * @throws CourseCapacityExceededException 정원 초과 시
+     * @throws CourseCapacityExceededException 정원 초과 시 예외 발생
      */
-    private void tryReserveSeat(Long studentId, Long courseId) {
-        // 2) Redis AtomicLong로 자리 확보
-        RAtomicLong enrolled = redisson.getAtomicLong("course:" + courseId + ":enrolled");
-        RAtomicLong capacity = redisson.getAtomicLong("course:" + courseId + ":capacity");
+    private void tryReserveSeatAndEnqueue(Long studentId, Long courseId) {
+        // Redis 키 생성
+        String enrolledKey = "course:" + courseId + ":enrolled";
+        String capacityKey = "course:" + courseId + ":capacity";
+        RAtomicLong enrolled = redisson.getAtomicLong(enrolledKey);
+        RAtomicLong capacity = redisson.getAtomicLong(capacityKey);
 
+        // 중복 enqueue 방지 플래그 키
+        String flagKey = "enroll:queued:" + studentId + ":" + courseId;
+
+        // 1) 자리 확보: 현재 enrolled 값을 1 증가시키고
         long newCount = enrolled.incrementAndGet();
+        //    증가된 값이 capacity를 넘으면 복구 후 예외
         if (newCount > capacity.get()) {
-            enrolled.decrementAndGet(); // 정원초과 시 즉시 복구
-            throw new CourseCapacityExceededException();
+            enrolled.decrementAndGet();                  // 자리 반납
+            redisson.getBucket(flagKey).delete();        // enqueue 플래그 롤백
+            throw new CourseCapacityExceededException(); // 정원 초과 예외
         }
 
-        // 3) DB 저장을 비동기화: EnrollmentCommand 큐에 넣고 바로 리턴
-        enrollQueue.add(new EnrollmentCommand(studentId, courseId));
+        try {
+            // 2) Redis 큐에 수강신청 명령 추가
+            enrollQueue.add(new EnrollmentCommand(studentId, courseId));
+        } catch (Exception e) {
+            // 3) enqueue 중 에러 발생 시 복구
+            enrolled.decrementAndGet();                  // 자리 반납
+            redisson.getBucket(flagKey).delete();        // enqueue 플래그 롤백
+            throw e;                                     // 예외 재던짐
+        }
     }
+
 
     /**
      * 학생이 동일 강좌를 이미 신청하지 않았는지 확인한다.
