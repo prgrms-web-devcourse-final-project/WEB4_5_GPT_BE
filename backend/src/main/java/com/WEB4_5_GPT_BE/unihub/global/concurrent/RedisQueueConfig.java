@@ -11,15 +11,6 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("!test")
 @Configuration
 public class RedisQueueConfig {
-
-//    @Bean
-//    public RAtomicLong capacityCounter(RedissonClient redisson) {
-//        // 애플리케이션 기동/강의 생성 시점에
-//        // 각 courseId:capacity 키를 초기화해야 합니다.
-//        // 예: redisson.getAtomicLong("course:11:capacity").set(30);
-//        return null;
-//    }
-
     /**
      * 수강신청 요청을 위한 Redis BlockingQueue
      */
