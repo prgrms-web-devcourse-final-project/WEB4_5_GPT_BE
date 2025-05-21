@@ -103,7 +103,7 @@ public class CourseService {
         Course saved = courseRepository.save(res);
 
         // redis에서 관리되는 해당 강좌의 enrolled, capacity 값 등록
-        updateCourseCountersToRedis(saved);
+        syncCourseCounters(saved);
 
         return CourseWithFullScheduleResponse.from(saved);
     }
@@ -155,7 +155,7 @@ public class CourseService {
         res.setId(orig.getId());
 
         // redis에서 관리되는 해당 강좌의 enrolled, capacity 값 최신화
-        updateCourseCountersToRedis(res);
+        syncCourseCounters(res);
 
         return CourseWithFullScheduleResponse.from(courseRepository.save(res));
     }
@@ -222,6 +222,9 @@ public class CourseService {
         deleteS3AttachmentIfExistsAndLog(course.getCoursePlanAttachment());
 
         courseRepository.delete(course);
+
+        // redis에서 관리되는 해당 강좌의 enrolled, capacity 값 삭제
+        deleteCourseCounters(course);
     }
 
     /**
@@ -406,17 +409,26 @@ public class CourseService {
     }
 
     /**
-     * Redis에 저장된 해당 강좌의
-     * - capacity (총 정원)
-     * - enrolled (현재 수강인원)
-     * 카운터를 세팅해 줍니다.
+     * Redis에 저장된 해당 강좌의 capacity/enrolled 카운터 키를 수정합니다.
      *
      * @param course 세팅할 강좌 정보
      */
-    private void updateCourseCountersToRedis(Course course) {
+    private void syncCourseCounters(Course course) {
         String keyCapacity = "course:" + course.getId() + ":capacity";
         String keyEnrolled = "course:" + course.getId() + ":enrolled";
         redisson.getAtomicLong(keyCapacity).set(course.getCapacity());
         redisson.getAtomicLong(keyEnrolled).set(course.getEnrolled());
+    }
+
+    /**
+     * Redis에 저장된 해당 강좌의 capacity/enrolled 카운터 키를 삭제합니다.
+     *
+     * @param course 삭제할 강좌 정보
+     */
+    private void deleteCourseCounters(Course course) {
+        String keyCapacity = "course:" + course.getId() + ":capacity";
+        String keyEnrolled = "course:" + course.getId() + ":enrolled";
+        redisson.<Long>getAtomicLong(keyCapacity).delete();
+        redisson.<Long>getAtomicLong(keyEnrolled).delete();
     }
 }
