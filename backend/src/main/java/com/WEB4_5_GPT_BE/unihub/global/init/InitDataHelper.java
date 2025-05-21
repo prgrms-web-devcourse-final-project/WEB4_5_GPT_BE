@@ -75,7 +75,7 @@ public class InitDataHelper {
     public Course createCourse(String title, Major major, String location,
                                Integer capacity, Integer enrolled, Integer credit, Professor professor,
                                Integer grade, Integer semester, String coursePlanAttachment) {
-        return courseRepository.save(
+        Course course = courseRepository.save(
                 Course.builder()
                         .title(title)
                         .major(major)
@@ -88,6 +88,11 @@ public class InitDataHelper {
                         .semester(semester)
                         .coursePlanAttachment(coursePlanAttachment)
                         .build());
+
+        redisson.getAtomicLong("course:" + course.getId() + ":capacity").set(capacity);
+        redisson.getAtomicLong("course:" + course.getId() + ":enrolled").set(enrolled);
+
+        return course;
     }
 
     public CourseSchedule createCourseScheduleAndAssociateWithCourse(Course course, DayOfWeek day, String startTime, String endTime) {
