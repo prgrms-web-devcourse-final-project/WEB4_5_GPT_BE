@@ -1,4 +1,4 @@
-package com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async;
+package com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.enroll;
 
 import com.WEB4_5_GPT_BE.unihub.domain.course.exception.CourseNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;

@@ -1,7 +1,7 @@
 package com.WEB4_5_GPT_BE.unihub.global.concurrent;
 
-import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.EnrollmentCommand;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.cancel.EnrollmentCancelCommand;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.enroll.EnrollmentCommand;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RedissonClient;
 import org.springframework.context.annotation.Bean;

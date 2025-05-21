@@ -12,10 +12,10 @@ import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response.StudentEnrollment
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.entity.Enrollment;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.*;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.repository.EnrollmentRepository;
-import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.EnrollmentCommand;
-import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.EnrollmentDuplicateChecker;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.cancel.EnrollmentCancelCommand;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.cancel.EnrollmentCancelDuplicateChecker;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.enroll.EnrollmentCommand;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.enroll.EnrollmentDuplicateChecker;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
 import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.StudentProfileNotFoundException;
