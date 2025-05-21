@@ -152,8 +152,6 @@ public class EnrollmentController {
             @RequestParam(value = "semester", required = false) Integer semester,
             @AuthenticationPrincipal SecurityUser actor
     ) {
-        // 세션 유효성 검증
-        validateEnrollmentSession(actor);
         // 필수 파라미터 검증
         if (year == null) {
             throw new RequiredParameterMissingException("year");
