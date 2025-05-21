@@ -102,12 +102,8 @@ public class CourseService {
         Course res = courseRequest.toEntity(m, 0, p);
         Course saved = courseRepository.save(res);
 
-        String keyEnrolled = "course:" + saved.getId() + ":enrolled"; // ex) course:1:enrolled
-        String keyCapacity = "course:" + saved.getId() + ":capacity"; // ex) course:1:capacity
-
-        // 원하는 값으로 다시 세팅
-        redisson.getAtomicLong(keyCapacity).set(saved.getCapacity());
-        redisson.getAtomicLong(keyEnrolled).set(saved.getEnrolled());
+        // redis에서 관리되는 해당 강좌의 enrolled, capacity 값 등록
+        updateCourseCountersToRedis(saved);
 
         return CourseWithFullScheduleResponse.from(saved);
     }
@@ -157,6 +153,9 @@ public class CourseService {
         }
         Course res = courseRequest.toEntity(m, orig.getEnrolled(), p);
         res.setId(orig.getId());
+
+        // redis에서 관리되는 해당 강좌의 enrolled, capacity 값 최신화
+        updateCourseCountersToRedis(res);
 
         return CourseWithFullScheduleResponse.from(courseRepository.save(res));
     }
@@ -404,5 +403,20 @@ public class CourseService {
                                         Boolean d = e.getEndTime().compareTo(LocalTime.parse(p.endTime())) <= 0;
                                         return ((a && b) || (c && d)) && e.getDay() == p.day();
                                     }));
+    }
+
+    /**
+     * Redis에 저장된 해당 강좌의
+     * - capacity (총 정원)
+     * - enrolled (현재 수강인원)
+     * 카운터를 세팅해 줍니다.
+     *
+     * @param course 세팅할 강좌 정보
+     */
+    private void updateCourseCountersToRedis(Course course) {
+        String keyCapacity = "course:" + course.getId() + ":capacity";
+        String keyEnrolled = "course:" + course.getId() + ":enrolled";
+        redisson.getAtomicLong(keyCapacity).set(course.getCapacity());
+        redisson.getAtomicLong(keyEnrolled).set(course.getEnrolled());
     }
 }
