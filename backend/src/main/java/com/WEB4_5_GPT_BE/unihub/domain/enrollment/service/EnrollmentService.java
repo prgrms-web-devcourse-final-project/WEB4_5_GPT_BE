@@ -55,7 +55,6 @@ public class EnrollmentService {
     private final RBlockingQueue<EnrollmentCancelCommand> cancelQueue; // 수강신청 취소 요청을 저장하는 Queue
 
     private final int MAXIMUM_CREDIT = 21; // 최대 학점 상수 (21학점)
-    private final EnrollmentQueueService enrollmentQueueService; // 수강신청 대기열 큐 TODO: 테스트 후 제거
     private final EnrollmentCancelDuplicateChecker enrollmentCancelDuplicateChecker;
 
     /**
@@ -114,8 +113,6 @@ public class EnrollmentService {
     @Transactional(readOnly = true)
     public void cancelMyEnrollment(Long studentId, Long courseId) {
 
-        enrollmentQueueService.addToQueue(String.valueOf(studentId)); // TODO: 테스트 후 제거
-
         // Member → StudentProfile 조회
         Student profile = studentRepository.findById(studentId)
                 .orElseThrow(StudentProfileNotFoundException::new);
@@ -123,13 +120,17 @@ public class EnrollmentService {
         // 수강 취소 가능 기간인지 검증
         ensureEnrollmentPeriodActive(profile);
 
+        // 수강 신청 내역이 있는지 조회 없다면 예외처리
+        if (!enrollmentRepository.existsByCourseIdAndStudentId(courseId, studentId)) {
+            throw new EnrollmentNotFoundException();
+        }
+
         // 2) 중복 취소 커맨드 방지
         enrollmentCancelDuplicateChecker.markEnqueuedIfAbsent(studentId, courseId);
 
         // 3) 실제 취소 자리 공석 + 큐에 커맨드 추가
         tryDecrementAndEnqueueCancel(studentId, courseId);
     }
-
 
     /**
      * Redis 큐에 수강취소 명령(EnrollmentCancelCommand)을 추가하여 순차적으로 수강취소 처리합니다.
@@ -230,20 +231,6 @@ public class EnrollmentService {
     }
 
     /**
-     * 학생 프로필 ID와 강좌 ID로 수강신청 내역을 조회한다.
-     *
-     * @param studentId 학생 ID
-     * @param courseId  강좌 ID
-     * @return 조회된 Enrollment 엔티티
-     * @throws EnrollmentNotFoundException 해당 강좌에 대한 수강신청 내역이 없는 경우
-     */
-    private Enrollment findEnrollment(Long studentId, Long courseId) {
-        return enrollmentRepository
-                .findByCourseIdAndStudentId(courseId, studentId)
-                .orElseThrow(EnrollmentNotFoundException::new);
-    }
-
-    /**
      * 비동기 수강 신청을 처리하는 메서드입니다.
      *
      * 여러 예외 상황을 검증한 후 수강 신청을 진행합니다.
@@ -263,9 +250,6 @@ public class EnrollmentService {
      */
     @Transactional(readOnly = true)
     public void enrollment(Long studentId, Long courseId) {
-
-        // 동시성 테스트를 위해 임시로 대기열 제거
-        enrollmentQueueService.addToQueue(String.valueOf(studentId)); // TODO: 테스트 후 제거
 
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(CourseNotFoundException::new);
