@@ -13,6 +13,9 @@ import com.WEB4_5_GPT_BE.unihub.domain.enrollment.entity.Enrollment;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.*;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.repository.EnrollmentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.EnrollmentCommand;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.EnrollmentDuplicateChecker;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.cancel.EnrollmentCancelCommand;
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.cancel.EnrollmentCancelDuplicateChecker;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentRepository;
@@ -22,12 +25,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.redisson.api.RAtomicLong;
 import org.redisson.api.RBlockingQueue;
+import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
 
 import java.time.LocalDate;
@@ -60,6 +63,15 @@ class EnrollmentServiceTest {
 
     @Mock
     private RBlockingQueue<EnrollmentCommand> enrollQueue;
+
+    @Mock
+    private EnrollmentDuplicateChecker enrollmentDuplicateChecker;
+
+    @Mock
+    private RBlockingQueue<EnrollmentCancelCommand> cancelQueue;
+
+    @Mock
+    private EnrollmentCancelDuplicateChecker enrollmentCancelDuplicateChecker;
 
     @InjectMocks
     private EnrollmentService enrollmentService;
@@ -195,15 +207,12 @@ class EnrollmentServiceTest {
     }
 
     private void stubEnrollmentPeriod(EnrollmentPeriod period) {
-        LocalDate today = LocalDate.now();
-        lenient().when(enrollmentPeriodRepository
-                .findByUniversityIdAndYearAndGradeAndSemester(
-                        eq(profile.getUniversity().getId()),
-                        eq(today.getYear()),
-                        eq(profile.getGrade()),
-                        eq(profile.getSemester())
-                ))
-                .thenReturn(Optional.of(period));
+        lenient().when(enrollmentPeriodRepository.findByUniversityIdAndYearAndGradeAndSemester(
+                anyLong(),
+                anyInt(),
+                anyInt(),
+                anyInt()
+        )).thenReturn(Optional.of(period));
     }
 
     private Course stubCourse(int capacity, int enrolled, int credit) {
@@ -237,39 +246,33 @@ class EnrollmentServiceTest {
     @DisplayName("수강 취소 - 성공")
     void cancelMyEnrollment_success() {
 
-        // 1) 수강신청 기간 생성
-        EnrollmentPeriod period = createPeriod(1, 1);
+        // 0) Redis AtomicLong Stub
+        RAtomicLong counter = mock(RAtomicLong.class);
+        when(redisson.getAtomicLong("course:" + COURSE_ID + ":enrolled"))
+                .thenReturn(counter);
+        when(counter.decrementAndGet()).thenReturn(9L);
 
-        // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
+        // 1) 중복 취소 커맨드 방지 stub
+        doNothing().when(enrollmentCancelDuplicateChecker)
+                .markEnqueuedIfAbsent(anyLong(), anyLong());
+
+        // 3) 수강신청 기간 stub
+        EnrollmentPeriod period = createPeriod(1, 1);
         stubEnrollmentPeriod(period);
 
-        // 2) 기존 수강신청 내역 조회 stub
-        Course course = Course.builder()
-                .id(COURSE_ID)
-                .title("테스트강좌")
-                .capacity(30)
-                .enrolled(10)  // 취소 전 인원
-                .build();
-        Enrollment enrollment = Enrollment.builder()
-                .id(42L)
-                .student(profile)
-                .course(course)
-                .build();
-        when(enrollmentRepository.findByCourseIdAndStudentId(COURSE_ID, profile.getId()))
-                .thenReturn(Optional.of(enrollment));
+        // 4) 기존 수강신청 내역 조회 stub
+        when(enrollmentRepository.existsByCourseIdAndStudentId(COURSE_ID, profile.getId()))
+                .thenReturn(true);
 
-        // 3) 실행 (예외 없이 정상 종료)
-        enrollmentService.cancelMyEnrollment(profile, COURSE_ID);
+        // --- when ---
+        enrollmentService.cancelMyEnrollment(profile.getId(), COURSE_ID);
 
-        // 4) delete 호출 검증
-        verify(enrollmentRepository).delete(enrollment);
-
-        // 5) Course.enrolled가 9로 감소했는지 검증
-        ArgumentCaptor<Course> captor = ArgumentCaptor.forClass(Course.class);
-        verify(courseRepository).save(captor.capture());
-        Course saved = captor.getValue();
-        assertThat(saved.getEnrolled()).isEqualTo(9);
+        // --- 그리고 핵심 호출 검증 ---
+        verify(enrollmentCancelDuplicateChecker, times(1))
+                .markEnqueuedIfAbsent(anyLong(), anyLong());
+        verify(counter, times(1)).decrementAndGet();
     }
+
 
     @Test
     @DisplayName("수강 취소 실패 - 수강신청 기간 정보 없음")
@@ -288,7 +291,7 @@ class EnrollmentServiceTest {
 
         // 실행 및 예외 검증
         assertThatThrownBy(() ->
-                enrollmentService.cancelMyEnrollment(profile, COURSE_ID)
+                enrollmentService.cancelMyEnrollment(profile.getId(), COURSE_ID)
         ).isInstanceOf(EnrollmentPeriodNotFoundException.class);
 
         // enrollmentRepository는 호출되지 않아야 함
@@ -298,8 +301,6 @@ class EnrollmentServiceTest {
     @Test
     @DisplayName("수강 취소 실패 - 수강신청 기간 외 요청인 경우")
     void cancelMyEnrollment_throws2() {
-        LocalDate today = LocalDate.now();
-
         // enrollmentPeriodRepository에서 today가 기간 밖인 EnrollmentPeriod 반환
         EnrollmentPeriod period = createNotYetPeriod(1, 2);
 
@@ -308,7 +309,7 @@ class EnrollmentServiceTest {
 
         // 실행 및 예외 검증
         assertThatThrownBy(() ->
-                enrollmentService.cancelMyEnrollment(profile, COURSE_ID)
+                enrollmentService.cancelMyEnrollment(profile.getId(), COURSE_ID)
         ).isInstanceOf(EnrollmentPeriodClosedException.class);
 
         // enrollmentRepository는 호출되지 않아야 함
@@ -325,12 +326,12 @@ class EnrollmentServiceTest {
         stubEnrollmentPeriod(period);
 
         // 수강신청 내역이 없도록 stub
-        when(enrollmentRepository.findByCourseIdAndStudentId(COURSE_ID, profile.getId()))
-                .thenReturn(Optional.empty());
+        when(enrollmentRepository.existsByCourseIdAndStudentId(COURSE_ID, profile.getId()))
+                .thenReturn(false);
 
         // 실행 및 예외 검증
         assertThatThrownBy(() ->
-                enrollmentService.cancelMyEnrollment(profile, COURSE_ID))
+                enrollmentService.cancelMyEnrollment(profile.getId(), COURSE_ID))
                 .isInstanceOf(EnrollmentNotFoundException.class);
 
         // delete가 호출되지 않아야 함
@@ -361,12 +362,19 @@ class EnrollmentServiceTest {
         // --- 0) Redis AtomicLong Stub ---
         stubRedisCounters(10L, 5L);
 
+        doNothing().when(enrollmentDuplicateChecker).markEnqueuedIfAbsent(anyLong(), anyLong());
+
+        RAtomicLong counter = mock(RAtomicLong.class);
+        when(redisson.getAtomicLong("course:" + COURSE_ID + ":enrolled"))
+                .thenReturn(counter);
+        when(counter.incrementAndGet()).thenReturn(1L);
+
         // --- 1) 수강신청 기간 stub ---
         EnrollmentPeriod period = createPeriod(1, 1);
         stubEnrollmentPeriod(period);
 
         // --- 2) 기타 검증용 stub ---
-        Course course = stubCourse(10, 5, 3);
+        stubCourse(10, 5, 3);
         when(enrollmentRepository.existsByCourseIdAndStudentId(COURSE_ID, profile.getId()))
                 .thenReturn(false);
         when(enrollmentRepository.findAllByStudent(profile))
@@ -381,14 +389,10 @@ class EnrollmentServiceTest {
         verify(enrollmentRepository, never()).save(any());
         verify(courseRepository, never()).save(any());
 
-        // --- 5) 큐에 명령이 제대로 던져졌는지 검증 ---
-        ArgumentCaptor<EnrollmentCommand> cmdCaptor =
-                ArgumentCaptor.forClass(EnrollmentCommand.class);
-        verify(enrollQueue).add(cmdCaptor.capture());
-
-        EnrollmentCommand cmd = cmdCaptor.getValue();
-        assertThat(cmd.studentId()).isEqualTo(profile.getId());
-        assertThat(cmd.courseId()).isEqualTo(COURSE_ID);
+        // --- 그리고 핵심 호출 검증 ---
+        verify(enrollmentDuplicateChecker, times(1))
+                .markEnqueuedIfAbsent(profile.getId(), COURSE_ID);
+        verify(counter, times(1)).incrementAndGet();
     }
 
     @Test
@@ -465,6 +469,14 @@ class EnrollmentServiceTest {
         // --- 0) Redis AtomicLong Stub 준비 ---
         // capacity=10, enrolled=10(만원)
         stubRedisCounters(10L, 10L);
+
+        doNothing().when(enrollmentDuplicateChecker).markEnqueuedIfAbsent(anyLong(), anyLong());
+
+        RBucket<Boolean> mockBucket = mock(RBucket.class);
+        doReturn(mockBucket)
+                .when(redisson)
+                .getBucket(anyString());
+        when(mockBucket.delete()).thenReturn(true);
 
         // --- 1) 수강신청 기간 생성 & stub ---
         EnrollmentPeriod period = createPeriod(1, 1);
