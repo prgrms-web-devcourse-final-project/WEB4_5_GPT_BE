@@ -81,9 +81,11 @@ public class CourseController {
             @RequestPart("data") CourseWithOutUrlRequest courseWithOutUrlRequest,
 
             @Parameter(description = "강의계획서 파일", content = @Content(mediaType = "application/octet-stream"))
-            @RequestPart(name = "file", required = false) MultipartFile coursePlanFile
+            @RequestPart(name = "file", required = false) MultipartFile coursePlanFile,
+
+            @AuthenticationPrincipal SecurityUser principal
     ) {
-        CourseWithFullScheduleResponse res = courseService.createCourse(courseWithOutUrlRequest, coursePlanFile);
+        CourseWithFullScheduleResponse res = courseService.createCourse(courseWithOutUrlRequest, coursePlanFile, principal);
         return new RsData<>(String.valueOf(HttpStatus.CREATED.value()), "성공적으로 생성되었습니다.", res);
     }
 
@@ -118,9 +120,11 @@ public class CourseController {
             @RequestPart("data") CourseWithOutUrlRequest courseWithOutUrlRequest,
 
             @Parameter(description = "새로운 강의계획서 파일", content = @Content(mediaType = "application/octet-stream"))
-            @RequestPart(name = "file", required = false) MultipartFile coursePlanFile
+            @RequestPart(name = "file", required = false) MultipartFile coursePlanFile,
+
+            @AuthenticationPrincipal SecurityUser principal
     ) {
-        CourseWithFullScheduleResponse res = courseService.updateCourse(courseId, courseWithOutUrlRequest, coursePlanFile);
+        CourseWithFullScheduleResponse res = courseService.updateCourse(courseId, courseWithOutUrlRequest, coursePlanFile, principal);
         return new RsData<>(String.valueOf(HttpStatus.OK.value()), "성공적으로 수정되었습니다.", res);
     }
 
