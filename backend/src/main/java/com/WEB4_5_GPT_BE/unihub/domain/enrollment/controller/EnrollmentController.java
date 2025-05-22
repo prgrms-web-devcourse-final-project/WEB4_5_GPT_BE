@@ -59,8 +59,6 @@ public class EnrollmentController {
     @GetMyEnrollmentListApiResponse // api 요청에 대한 성공,예외 response 예시를 정의합니다.
     @GetMapping("/me")
     public RsData<List<MyEnrollmentResponse>> getMyEnrollmentList(@AuthenticationPrincipal SecurityUser user) {
-        // 세션 유효성 검증
-        validateEnrollmentSession(user);
 
         Student actor = Student.builder().id(user.getId()).build();
         List<MyEnrollmentResponse> response = enrollmentService.getMyEnrollmentList(actor); // 내 수강목록을 조회하여 반환
