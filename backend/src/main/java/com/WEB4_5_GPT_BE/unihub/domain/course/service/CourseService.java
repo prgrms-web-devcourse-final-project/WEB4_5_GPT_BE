@@ -78,8 +78,12 @@ public class CourseService {
      * @param courseRequest 강의 정보
      * @return 생성된 강의의 {@link CourseWithFullScheduleResponse} DTO
      */
-    public CourseWithFullScheduleResponse createCourse(CourseRequest courseRequest) {
-        University u = universityRepository.findByName(courseRequest.university()).orElseThrow(
+    public CourseWithFullScheduleResponse createCourse(CourseRequest courseRequest, SecurityUser principal) {
+//        University u = universityRepository.findByName(courseRequest.university()).orElseThrow(
+//                UniversityNotFoundException::new
+//        );
+        Long universityId = getUnivIdFromPrincipal(principal);
+        University u = universityRepository.findById(universityId).orElseThrow(
                 UniversityNotFoundException::new
         );
         Major m = majorRepository.findByUniversityIdAndName(u.getId(), courseRequest.major()).orElseThrow(
@@ -100,14 +104,14 @@ public class CourseService {
         return CourseWithFullScheduleResponse.from(courseRepository.save(res));
     }
 
-    public CourseWithFullScheduleResponse createCourse(CourseWithOutUrlRequest req, MultipartFile file) {
+    public CourseWithFullScheduleResponse createCourse(CourseWithOutUrlRequest req, MultipartFile file, SecurityUser principal) {
         String url = null;
         try {
             if (file != null && !file.isEmpty()) {
                 url = s3Service.upload(file);
             }
             CourseRequest courseRequest = req.withCoursePlanAttachment(url);
-            return createCourse(courseRequest); // 기존 createCourse(CourseRequest) 호출
+            return createCourse(courseRequest, principal); // 기존 createCourse(CourseRequest) 호출
         } catch (IOException e) {
             throw new FileUploadException();
         } catch (UnihubException ex) {
@@ -123,10 +127,14 @@ public class CourseService {
      * @param courseRequest 덮어쓸 정보
      * @return 수정된 강의의 {@link CourseWithFullScheduleResponse} DTO
      */
-    public CourseWithFullScheduleResponse updateCourse(Long courseId, CourseRequest courseRequest) {
+    public CourseWithFullScheduleResponse updateCourse(Long courseId, CourseRequest courseRequest, SecurityUser principal) {
         Course orig = courseRepository.findById(courseId).orElseThrow(
                 CourseNotFoundException::new);
-        University u = universityRepository.findByName(courseRequest.university()).orElseThrow(
+//        University u = universityRepository.findByName(courseRequest.university()).orElseThrow(
+//                UniversityNotFoundException::new
+//        );
+        Long universityId = getUnivIdFromPrincipal(principal);
+        University u = universityRepository.findById(universityId).orElseThrow(
                 UniversityNotFoundException::new
         );
         Major m = majorRepository.findByUniversityIdAndName(u.getId(), courseRequest.major()).orElseThrow(
@@ -157,7 +165,7 @@ public class CourseService {
      * @param file     강의계획서 파일
      * @return 입력한 file을 업로드 및 강의계획서 URL을 업데이트하여 기존 updateCourse(courseId, courseRequest) 호출
      */
-    public CourseWithFullScheduleResponse updateCourse(Long courseId, CourseWithOutUrlRequest req, MultipartFile file) {
+    public CourseWithFullScheduleResponse updateCourse(Long courseId, CourseWithOutUrlRequest req, MultipartFile file, SecurityUser principal) {
 
         // 1) 원본 url 조회
         Course origin = courseRepository.findById(courseId).orElseThrow(CourseNotFoundException::new);
@@ -173,7 +181,7 @@ public class CourseService {
             }
             // 4) 기존 URL이거나, 새로 업로드된 URL을 끼워 넣음
             CourseRequest courseRequest = req.withCoursePlanAttachment(url);
-            return updateCourse(courseId, courseRequest);
+            return updateCourse(courseId, courseRequest, principal);
         } catch (IOException e) {
             throw new FileUploadException();
         } catch (UnihubException ex) {
