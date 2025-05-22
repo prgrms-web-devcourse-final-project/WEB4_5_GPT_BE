@@ -89,6 +89,7 @@ class CourseServiceTest {
     private Major testMajor2;
     private Professor testProfessorProfile1;
     private University testUniversity1;
+    private SecurityUser testAuthUser1;
 
     @BeforeEach
     public void setUp() {
@@ -133,6 +134,7 @@ class CourseServiceTest {
         testCourseRequest3 = new CourseRequest("testCourseRequest3", testMajor2.getName(), testUniversity1.getName(),
                 "nonexistentLocation", 40, 3, testProfessorProfile1.getEmployeeId(), 4, 2, null,
                 List.of(new CourseScheduleDto(DayOfWeek.TUE, "13:00", "14:00")));
+        testAuthUser1 = new SecurityUser(testProfessorProfile1, List.of(new SimpleGrantedAuthority("ROLE_PROFESSOR")));
     }
 
     @Test
@@ -167,26 +169,28 @@ class CourseServiceTest {
     void givenCourseWithoutSchedule_whenCreatingCourse_thenSaveCourse() {
         CourseRequest testCourseRequest = new CourseRequest("testCourseRequest3", testMajor2.getName(), testUniversity1.getName(),
                 "nonexistentLocation", 40, 3, testProfessorProfile1.getEmployeeId(), 4, 2, null, List.of());
-        given(universityRepository.findByName(testUniversity1.getName())).willReturn(Optional.of(testUniversity1));
+        given(professorRepository.findById(testProfessorProfile1.getId())).willReturn(Optional.of(testProfessorProfile1));
+        given(universityRepository.findById(testUniversity1.getId())).willReturn(Optional.of(testUniversity1));
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest.major()))
                 .willReturn(Optional.of(testCourse2.getMajor()));
         given(professorRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
                 .willReturn(Optional.of(testProfessorProfile1));
         given(courseRepository.save(any(Course.class))).willReturn(testCourseRequest.toEntity(testMajor2, 0, testProfessorProfile1));
 
-        CourseWithFullScheduleResponse result = courseService.createCourse(testCourseRequest);
+        CourseWithFullScheduleResponse result = courseService.createCourse(testCourseRequest, testAuthUser1);
 
         assertThat(result).isNotNull();
         assertThat(result.title()).isEqualTo(testCourseRequest.title());
         assertThat(result.schedule().size()).isEqualTo(testCourseRequest.schedule().size());
-        then(universityRepository).should().findByName(testUniversity1.getName());
+        then(universityRepository).should().findById(testUniversity1.getId());
         then(majorRepository).should().findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest.major());
     }
 
     @Test
     @DisplayName("스케줄이 중복되지 않는 강의를 생성할때 정상 생성된다.")
     void givenCourseWithNonconflictingSchedule_whenCreatingCourse_thenSaveCourse() {
-        given(universityRepository.findByName(testUniversity1.getName())).willReturn(Optional.of(testUniversity1));
+        given(professorRepository.findById(testProfessorProfile1.getId())).willReturn(Optional.of(testProfessorProfile1));
+        given(universityRepository.findById(testUniversity1.getId())).willReturn(Optional.of(testUniversity1));
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest3.major()))
                 .willReturn(Optional.of(testCourse2.getMajor()));
         given(professorRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
@@ -197,12 +201,12 @@ class CourseServiceTest {
                 .willReturn(testCourse1.getSchedules());
         given(courseRepository.save(any(Course.class))).willReturn(testCourseRequest3.toEntity(testMajor2, 0, testProfessorProfile1));
 
-        CourseWithFullScheduleResponse result = courseService.createCourse(testCourseRequest3);
+        CourseWithFullScheduleResponse result = courseService.createCourse(testCourseRequest3, testAuthUser1);
 
         assertThat(result).isNotNull();
         assertThat(result.title()).isEqualTo(testCourseRequest3.title());
         assertThat(result.schedule().size()).isEqualTo(testCourseRequest3.schedule().size());
-        then(universityRepository).should().findByName(testUniversity1.getName());
+        then(universityRepository).should().findById(testUniversity1.getId());
         then(majorRepository).should().findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest3.major());
         then(professorRepository).should().findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId());
         then(courseScheduleRepository).should().findByUniversityIdAndProfessorEmployeeId(
@@ -214,7 +218,8 @@ class CourseServiceTest {
     @Test
     @DisplayName("강의실 스케줄이 중복되는 강의를 생성할때 예외를 던진다.")
     void givenCourseWithLocationConflict_whenCreatingCourse_thenThrowException() {
-        given(universityRepository.findByName(testUniversity1.getName())).willReturn(Optional.of(testUniversity1));
+        given(professorRepository.findById(testProfessorProfile1.getId())).willReturn(Optional.of(testProfessorProfile1));
+        given(universityRepository.findById(testUniversity1.getId())).willReturn(Optional.of(testUniversity1));
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest1.major()))
                 .willReturn(Optional.of(testCourse2.getMajor()));
         given(courseScheduleRepository.findByUniversityIdAndLocation(
@@ -222,12 +227,12 @@ class CourseServiceTest {
                 testCourseRequest1.location()))
                 .willReturn(testCourse1.getSchedules());
 
-        Throwable result = catchThrowable(() -> courseService.createCourse(testCourseRequest1));
+        Throwable result = catchThrowable(() -> courseService.createCourse(testCourseRequest1, testAuthUser1));
 
         assertThat(result)
                 .isInstanceOf(LocationScheduleConflictException.class)
                 .hasMessage("강의 장소가 이미 사용 중입니다.");
-        then(universityRepository).should().findByName(testUniversity1.getName());
+        then(universityRepository).should().findById(testUniversity1.getId());
         then(majorRepository).should().findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest1.major());
         then(courseScheduleRepository).should().findByUniversityIdAndLocation(
                 testUniversity1.getId(),
@@ -237,7 +242,8 @@ class CourseServiceTest {
     @Test
     @DisplayName("교수 스케줄이 중복되는 강의를 생성할때 예외를 던진다.")
     void givenCourseWithProfessorConflict_whenCreatingCourse_thenThrowException() {
-        given(universityRepository.findByName(testUniversity1.getName())).willReturn(Optional.of(testUniversity1));
+        given(professorRepository.findById(testProfessorProfile1.getId())).willReturn(Optional.of(testProfessorProfile1));
+        given(universityRepository.findById(testUniversity1.getId())).willReturn(Optional.of(testUniversity1));
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest2.major()))
                 .willReturn(Optional.of(testCourse2.getMajor()));
         given(professorRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
@@ -247,12 +253,12 @@ class CourseServiceTest {
                 testCourseRequest2.employeeId()))
                 .willReturn(testCourse1.getSchedules());
 
-        Throwable result = catchThrowable(() -> courseService.createCourse(testCourseRequest2));
+        Throwable result = catchThrowable(() -> courseService.createCourse(testCourseRequest2, testAuthUser1));
 
         assertThat(result)
                 .isInstanceOf(UnihubException.class)
                 .hasMessage("강사/교수가 이미 수업 중입니다.");
-        then(universityRepository).should().findByName(testUniversity1.getName());
+        then(universityRepository).should().findById(testUniversity1.getId());
         then(majorRepository).should().findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest1.major());
         then(professorRepository).should().findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId());
         then(courseScheduleRepository).should().findByUniversityIdAndProfessorEmployeeId(
@@ -266,7 +272,7 @@ class CourseServiceTest {
         given(courseRepository.findById(1234567L)).willReturn(Optional.empty());
 
         Throwable thrown = catchThrowable(
-                () -> courseService.updateCourse(1234567L, testCourseRequest1));
+                () -> courseService.updateCourse(1234567L, testCourseRequest1, testAuthUser1));
 
         assertThat(thrown)
                 .isInstanceOf(CourseNotFoundException.class)
@@ -280,20 +286,21 @@ class CourseServiceTest {
         CourseRequest testCourseRequest = new CourseRequest("testCourseRequest3", testMajor2.getName(), testUniversity1.getName(),
                 "nonexistentLocation", 40, 3, testProfessorProfile1.getEmployeeId(), 4, 2, null, List.of());
         given(courseRepository.findById(1L)).willReturn(Optional.of(testCourseRequest.toEntity(testMajor2, 0, testProfessorProfile1)));
-        given(universityRepository.findByName(testUniversity1.getName())).willReturn(Optional.of(testUniversity1));
+        given(professorRepository.findById(testProfessorProfile1.getId())).willReturn(Optional.of(testProfessorProfile1));
+        given(universityRepository.findById(testUniversity1.getId())).willReturn(Optional.of(testUniversity1));
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest.major()))
                 .willReturn(Optional.of(testMajor2));
         given(professorRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
                 .willReturn(Optional.of(testProfessorProfile1));
         given(courseRepository.save(any(Course.class))).willReturn(testCourseRequest.toEntity(testMajor2, 0, testProfessorProfile1));
 
-        CourseWithFullScheduleResponse result = courseService.updateCourse(1L, testCourseRequest);
+        CourseWithFullScheduleResponse result = courseService.updateCourse(1L, testCourseRequest, testAuthUser1);
 
         assertThat(result).isNotNull();
         assertThat(result.title()).isEqualTo(testCourseRequest.title());
         assertThat(result.schedule().size()).isEqualTo(testCourseRequest.schedule().size());
         then(courseRepository).should().findById(1L);
-        then(universityRepository).should().findByName(testUniversity1.getName());
+        then(universityRepository).should().findById(testUniversity1.getId());
         then(majorRepository).should().findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest.major());
         then(professorRepository).should().findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId());
         then(courseRepository).should().save(any(Course.class));
@@ -303,7 +310,8 @@ class CourseServiceTest {
     @DisplayName("스케줄이 중복되지 않는 정보로 강의를 수정할때 정상 생성된다.")
     void givenCourseWithNonconflictingSchedule_whenUpdatingCourse_thenUpdateCourse() {
         given(courseRepository.findById(1L)).willReturn(Optional.of(testCourse1));
-        given(universityRepository.findByName(testUniversity1.getName())).willReturn(Optional.of(testUniversity1));
+        given(professorRepository.findById(testProfessorProfile1.getId())).willReturn(Optional.of(testProfessorProfile1));
+        given(universityRepository.findById(testUniversity1.getId())).willReturn(Optional.of(testUniversity1));
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest3.major()))
                 .willReturn(Optional.of(testCourse2.getMajor()));
         given(professorRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
@@ -320,13 +328,13 @@ class CourseServiceTest {
                 .willReturn(testCourse1.getSchedules());
         given(courseRepository.save(any(Course.class))).willReturn(testCourseRequest3.toEntity(testMajor2, 0, testProfessorProfile1));
 
-        CourseWithFullScheduleResponse result = courseService.updateCourse(1L, testCourseRequest3);
+        CourseWithFullScheduleResponse result = courseService.updateCourse(1L, testCourseRequest3, testAuthUser1);
 
         assertThat(result).isNotNull();
         assertThat(result.id()).isNull();
         assertThat(result.title()).isEqualTo(testCourseRequest3.title());
         then(courseRepository).should().findById(1L);
-        then(universityRepository).should().findByName(testUniversity1.getName());
+        then(universityRepository).should().findById(testUniversity1.getId());
         then(majorRepository).should().findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest3.major());
         then(professorRepository).should().findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId());
         then(courseScheduleRepository).should().findByUniversityIdAndLocationExcludingCourse(
@@ -344,7 +352,8 @@ class CourseServiceTest {
     @DisplayName("강의실 스케줄이 중복되는 정보로 강의를 수정할때 예외를 던진다.")
     void givenCourseWithLocationConflict_whenUpdatingCourse_thenThrowException() {
         given(courseRepository.findById(testCourse1.getId())).willReturn(Optional.of(testCourse1));
-        given(universityRepository.findByName(testUniversity1.getName())).willReturn(Optional.of(testUniversity1));
+        given(professorRepository.findById(testProfessorProfile1.getId())).willReturn(Optional.of(testProfessorProfile1));
+        given(universityRepository.findById(testUniversity1.getId())).willReturn(Optional.of(testUniversity1));
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest1.major()))
                 .willReturn(Optional.of(testCourse2.getMajor()));
         given(courseScheduleRepository.findByUniversityIdAndLocationExcludingCourse(
@@ -353,13 +362,13 @@ class CourseServiceTest {
                 testCourse1.getId()))
                 .willReturn(testCourse1.getSchedules());
 
-        Throwable result = catchThrowable(() -> courseService.updateCourse(testCourse1.getId(), testCourseRequest1));
+        Throwable result = catchThrowable(() -> courseService.updateCourse(testCourse1.getId(), testCourseRequest1, testAuthUser1));
 
         assertThat(result)
                 .isInstanceOf(LocationScheduleConflictException.class)
                 .hasMessage("강의 장소가 이미 사용 중입니다.");
         then(courseRepository).should().findById(testCourse1.getId());
-        then(universityRepository).should().findByName(testUniversity1.getName());
+        then(universityRepository).should().findById(testUniversity1.getId());
         then(majorRepository).should().findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest1.major());
         then(courseScheduleRepository).should().findByUniversityIdAndLocationExcludingCourse(
                 testUniversity1.getId(),
@@ -371,7 +380,8 @@ class CourseServiceTest {
     @DisplayName("교수 스케줄이 중복되는 정보로 강의를 수정할때 예외를 던진다.")
     void givenCourseWithProfessorConflict_whenUpdatingCourse_thenThrowException() {
         given(courseRepository.findById(testCourse1.getId())).willReturn(Optional.of(testCourse1));
-        given(universityRepository.findByName(testUniversity1.getName())).willReturn(Optional.of(testUniversity1));
+        given(professorRepository.findById(testProfessorProfile1.getId())).willReturn(Optional.of(testProfessorProfile1));
+        given(universityRepository.findById(testUniversity1.getId())).willReturn(Optional.of(testUniversity1));
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest2.major()))
                 .willReturn(Optional.of(testCourse2.getMajor()));
         given(professorRepository.findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId()))
@@ -382,13 +392,13 @@ class CourseServiceTest {
                 testCourse1.getId()))
                 .willReturn(testCourse1.getSchedules());
 
-        Throwable result = catchThrowable(() -> courseService.updateCourse(testCourse1.getId(), testCourseRequest2));
+        Throwable result = catchThrowable(() -> courseService.updateCourse(testCourse1.getId(), testCourseRequest2, testAuthUser1));
 
         assertThat(result)
                 .isInstanceOf(ProfessorScheduleConflictException.class)
                 .hasMessage("강사/교수가 이미 수업 중입니다.");
         then(courseRepository).should().findById(testCourse1.getId());
-        then(universityRepository).should().findByName(testUniversity1.getName());
+        then(universityRepository).should().findById(testUniversity1.getId());
         then(majorRepository).should().findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest1.major());
         then(professorRepository).should().findByUniversityIdAndEmployeeId(testUniversity1.getId(), testProfessorProfile1.getEmployeeId());
         then(courseScheduleRepository).should().findByUniversityIdAndProfessorEmployeeIdExcludingCourse(
@@ -408,8 +418,6 @@ class CourseServiceTest {
                 pageable,
                 2
         );
-
-        SecurityUser authUser = new SecurityUser(testProfessorProfile1, List.of(new SimpleGrantedAuthority("ROLE_PROFESSOR")));
 
         Long majorId = 1L;
         Integer grade = 2;
@@ -437,7 +445,7 @@ class CourseServiceTest {
 
         // when
         Page<CourseWithFullScheduleResponse> result = courseService.findAllCoursesModeFull(
-                "검색제목", "교수이름", majorId, grade, semester, authUser, pageable
+                "검색제목", "교수이름", majorId, grade, semester, testAuthUser1, pageable
         );
 
         // then
@@ -529,6 +537,8 @@ class CourseServiceTest {
         origin.getSchedules().addAll(testCourse1.getSchedules()); // 스케줄은 충돌 없음
 
         given(courseRepository.findById(courseId)).willReturn(Optional.of(origin));
+        given(professorRepository.findById(testProfessorProfile1.getId())).willReturn(Optional.of(testProfessorProfile1));
+        given(universityRepository.findById(testUniversity1.getId())).willReturn(Optional.of(testUniversity1));
         given(s3Service.upload(any(MultipartFile.class))).willReturn(newUrl);
 
         // 충돌 검사: 모두 비어있어야 통과
@@ -544,8 +554,6 @@ class CourseServiceTest {
         ).willReturn(List.of());
 
         // 대학/전공/교수 조회
-        given(universityRepository.findByName(testUniversity1.getName()))
-                .willReturn(Optional.of(testUniversity1));
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testMajor1.getName()))
                 .willReturn(Optional.of(testMajor1));
         given(professorRepository.findByUniversityIdAndEmployeeId(
@@ -593,7 +601,7 @@ class CourseServiceTest {
         );
 
         // when
-        CourseWithFullScheduleResponse result = courseService.updateCourse(courseId, req, file);
+        CourseWithFullScheduleResponse result = courseService.updateCourse(courseId, req, file, testAuthUser1);
 
         // then
         assertThat(result).isNotNull();

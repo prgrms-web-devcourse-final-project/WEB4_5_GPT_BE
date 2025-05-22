@@ -156,7 +156,7 @@ class CourseControllerTest {
 //                    .content(objectMapper.writeValueAsString(CourseRequest.from(testCourse))));
 
         // 1) service stub: CourseRequest + no file
-        given(courseService.createCourse(any(CourseWithOutUrlRequest.class), isNull()))
+        given(courseService.createCourse(any(CourseWithOutUrlRequest.class), isNull(), isNull()))
                 .willReturn(CourseWithFullScheduleResponse.from(testCourse));
 
         // 2) JSON part 준비 (@RequestPart("data"))
@@ -184,7 +184,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.schedule", hasSize(2)))
                 .andExpect(jsonPath("$.data.schedule[0].day").value(testCourse.getSchedules().getFirst().getDay().toString()));
         then(courseService).should()
-                .createCourse(any(CourseWithOutUrlRequest.class), isNull());
+                .createCourse(any(CourseWithOutUrlRequest.class), isNull(), isNull());
     }
 
     @Test
@@ -208,7 +208,7 @@ class CourseControllerTest {
         courseWithAttachment.getSchedules().addAll(testCourse.getSchedules());
 
         // — 2) 서비스 스텁: 2-arg 버전에 스텁을 걸어줌
-        given(courseService.createCourse(any(CourseWithOutUrlRequest.class), any(MultipartFile.class)))
+        given(courseService.createCourse(any(CourseWithOutUrlRequest.class), any(MultipartFile.class), isNull()))
                 .willReturn(CourseWithFullScheduleResponse.from(courseWithAttachment));
 
         // — 3) JSON data 파트
@@ -249,6 +249,7 @@ class CourseControllerTest {
         given(courseService.updateCourse(
                 eq(courseId),
                 any(CourseWithOutUrlRequest.class),
+                isNull(),
                 isNull()
         )).willReturn(CourseWithFullScheduleResponse.from(testCourse));
 
@@ -281,6 +282,7 @@ class CourseControllerTest {
         verify(courseService).updateCourse(
                 idCaptor.capture(),
                 reqCaptor.capture(),
+                isNull(),
                 isNull()
         );
         assertThat(idCaptor.getValue()).isEqualTo(courseId);
@@ -312,7 +314,8 @@ class CourseControllerTest {
         given(courseService.updateCourse(
                 eq(courseId),
                 any(CourseWithOutUrlRequest.class),
-                any(MultipartFile.class))
+                any(MultipartFile.class),
+                isNull())
         ).willReturn(CourseWithFullScheduleResponse.from(courseWithNewAttachment));
 
         // 3) JSON part
@@ -338,7 +341,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.coursePlanAttachment").value(newUrl));
 
         then(courseService).should()
-                .updateCourse(eq(courseId), any(CourseWithOutUrlRequest.class), any(MultipartFile.class));
+                .updateCourse(eq(courseId), any(CourseWithOutUrlRequest.class), any(MultipartFile.class), isNull());
     }
 
     @Test
