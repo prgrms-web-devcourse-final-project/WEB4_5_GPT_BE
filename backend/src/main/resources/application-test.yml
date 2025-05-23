@@ -1,6 +1,9 @@
 spring:
   datasource:
     url: jdbc:h2:mem:unihub_test;MODE=MySQL
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
 
 management:
   endpoints:

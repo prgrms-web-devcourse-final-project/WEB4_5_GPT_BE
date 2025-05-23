@@ -4,6 +4,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -41,4 +42,26 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     );
 
     List<Course> findByProfessorId(Long professorId);
+
+    /**
+     * course.enrolled 컬럼을 1 증가시킵니다.
+     * (동시성 처리를 DB 레벨에서 atomic 하게 해 줍니다.)
+     *
+     * @param courseId 증가시킬 Course의 ID
+     */
+    @Modifying
+    @Query("UPDATE Course c SET c.enrolled = c.enrolled + 1 WHERE c.id = :courseId")
+    void incrementEnrolled(@Param("courseId") Long courseId);
+
+    /**
+     * course.enrolled 컬럼을 1 감소시킵니다.
+     * (동시성 처리를 DB 레벨에서 atomic 하게 해 줍니다.)
+     *
+     * @param courseId 감소시킬 Course의 ID
+     */
+    @Modifying
+    @Query("UPDATE Course c SET c.enrolled = c.enrolled - 1 WHERE c.id = :courseId")
+    void decrementEnrolled(@Param("courseId") Long courseId);
+
+
 }
