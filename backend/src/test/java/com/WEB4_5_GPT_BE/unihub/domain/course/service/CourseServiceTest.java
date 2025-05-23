@@ -138,6 +138,7 @@ class CourseServiceTest {
         testCourseRequest3 = new CourseRequest("testCourseRequest3", testMajor2.getName(), testUniversity1.getName(),
                 "nonexistentLocation", 40, 3, testProfessorProfile1.getEmployeeId(), 4, 2, null,
                 List.of(new CourseScheduleDto(DayOfWeek.TUE, "13:00", "14:00")));
+        testAuthUser1 = new SecurityUser(testProfessorProfile1, List.of(new SimpleGrantedAuthority("ROLE_PROFESSOR")));
     }
 
     @Test
