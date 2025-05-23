@@ -1,13 +1,15 @@
 package com.WEB4_5_GPT_BE.unihub.domain.enrollment.service;
 
+import java.time.Duration;
+import java.util.List;
+
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Service;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.QueueStatusDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.stereotype.Service;
-
-import java.time.Duration;
-import java.util.List;
 
 @Slf4j
 @Service
@@ -15,7 +17,6 @@ import java.util.List;
 public class EnrollmentQueueService {
 
     private static final String WAITING_QUEUE_KEY = "enrollment:waiting-queue";
-    private static final String ACTIVE_USERS_KEY = "enrollment:active-users";
     private static final String SESSION_PREFIX = "enrollment:session:";
     private static final int MAX_CONCURRENT_USERS = 3;
     private static final Duration SESSION_TIMEOUT = Duration.ofMinutes(10);
@@ -52,11 +53,10 @@ public class EnrollmentQueueService {
         }
 
         // 현재 활성 사용자 수 확인
-        Long activeUsers = redisTemplate.opsForValue().increment(ACTIVE_USERS_KEY, 0);
+        Long activeUsers = getActiveUserCount();
 
         // 여유 자리가 있으면 바로 접속 허용
         if (activeUsers < MAX_CONCURRENT_USERS) {
-            redisTemplate.opsForValue().increment(ACTIVE_USERS_KEY);
             redisTemplate.opsForValue().set(SESSION_PREFIX + memberId, "active", SESSION_TIMEOUT);
             log.info("사용자 {} 즉시 접속 허용", memberId);
 
@@ -104,7 +104,6 @@ public class EnrollmentQueueService {
         Boolean hasSession = redisTemplate.hasKey(SESSION_PREFIX + memberId);
         if (Boolean.TRUE.equals(hasSession)) {
             redisTemplate.delete(SESSION_PREFIX + memberId);
-            redisTemplate.opsForValue().decrement(ACTIVE_USERS_KEY);
             log.info("사용자 {} 세션 종료", memberId);
 
             // 세션 종료 후 대기열에서 다음 사용자 처리
@@ -118,7 +117,7 @@ public class EnrollmentQueueService {
      */
     public void processNextInQueue() {
         // 활성 사용자 수 확인
-        Long activeUsers = redisTemplate.opsForValue().increment(ACTIVE_USERS_KEY, 0);
+        Long activeUsers = getActiveUserCount();
 
         // 여유 자리가 있고 대기열에 사용자가 있는 경우
         if (activeUsers < MAX_CONCURRENT_USERS) {
@@ -126,7 +125,6 @@ public class EnrollmentQueueService {
             String nextMemberId = redisTemplate.opsForList().leftPop(WAITING_QUEUE_KEY);
 
             // 세션 활성화
-            redisTemplate.opsForValue().increment(ACTIVE_USERS_KEY);
             redisTemplate.opsForValue().set(SESSION_PREFIX + nextMemberId, "active", SESSION_TIMEOUT);
 
             // 사용자에게 접속 허용 알림 (SSE 이벤트 전송)
@@ -190,5 +188,22 @@ public class EnrollmentQueueService {
         }
 
         return 0; // 대기열에 없음
+    }
+
+    /**
+     * 현재 활성 사용자 수 계산 (Redis SCAN 명령어 사용)
+     */
+    protected Long getActiveUserCount() {
+        long count = 0;
+        ScanOptions options = ScanOptions.scanOptions().match(SESSION_PREFIX + "*").build();
+
+        try (Cursor<String> cursor = redisTemplate.scan(options)) {
+            while (cursor.hasNext()) {
+                cursor.next();
+                count++;
+            }
+        }
+
+        return count;
     }
 }

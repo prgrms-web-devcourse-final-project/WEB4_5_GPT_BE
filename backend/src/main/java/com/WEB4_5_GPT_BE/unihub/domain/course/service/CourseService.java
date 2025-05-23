@@ -58,6 +58,8 @@ public class CourseService {
 
     private final EnrollmentRepository enrollmentRepository;
 
+    private final CourseRedisCounterService courseRedisCounterService;
+
     /**
      * 주어진 ID에 해당하는 강의 정보를 반환한다.
      *
@@ -97,7 +99,12 @@ public class CourseService {
             throw new ProfessorScheduleConflictException();
         }
         Course res = courseRequest.toEntity(m, 0, p);
-        return CourseWithFullScheduleResponse.from(courseRepository.save(res));
+        Course saved = courseRepository.save(res);
+
+        // redis에서 관리되는 해당 강좌의 enrolled, capacity 값 등록
+        courseRedisCounterService.syncCourseCounters(saved);
+
+        return CourseWithFullScheduleResponse.from(saved);
     }
 
     public CourseWithFullScheduleResponse createCourse(CourseWithOutUrlRequest req, MultipartFile file) {
@@ -145,6 +152,9 @@ public class CourseService {
         }
         Course res = courseRequest.toEntity(m, orig.getEnrolled(), p);
         res.setId(orig.getId());
+
+        // redis에서 관리되는 해당 강좌의 enrolled, capacity 값 최신화
+        courseRedisCounterService.deleteCourseCounters(res);
 
         return CourseWithFullScheduleResponse.from(courseRepository.save(res));
     }
@@ -211,6 +221,9 @@ public class CourseService {
         deleteS3AttachmentIfExistsAndLog(course.getCoursePlanAttachment());
 
         courseRepository.delete(course);
+
+        // redis에서 관리되는 해당 강좌의 enrolled, capacity 값 삭제
+        courseRedisCounterService.deleteCourseCounters(course);
     }
 
     /**

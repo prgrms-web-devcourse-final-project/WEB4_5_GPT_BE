@@ -14,6 +14,7 @@ public record TimetableItemResponse(
         Long courseId,
         String location,
         String memo,
+        String color,
         List<TimetableItemScheduleResponse> schedule
 ) {
     public static TimetableItemResponse of(TimetableItem item) {
@@ -24,6 +25,7 @@ public record TimetableItemResponse(
                 item.getCourse() != null ? item.getCourse().getId() : null,
                 item.getLocation(),
                 item.getMemo(),
+                item.getColor(),
                 item.getSchedules().stream()
                         .map(TimetableItemScheduleResponse::of)
                         .collect(Collectors.toList())

@@ -14,6 +14,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.enrollment.springDoc.apiResponse.Enrollme
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.springDoc.apiResponse.GetMyEnrollmentListApiResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.springDoc.apiResponse.getMyEnrollmentPeriodApiResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
+import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.StudentProfileNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.global.response.Empty;
 import com.WEB4_5_GPT_BE.unihub.global.response.RsData;
 import com.WEB4_5_GPT_BE.unihub.global.security.SecurityUser;
@@ -59,8 +60,6 @@ public class EnrollmentController {
     @GetMyEnrollmentListApiResponse // api 요청에 대한 성공,예외 response 예시를 정의합니다.
     @GetMapping("/me")
     public RsData<List<MyEnrollmentResponse>> getMyEnrollmentList(@AuthenticationPrincipal SecurityUser user) {
-        // 세션 유효성 검증
-        validateEnrollmentSession(user);
 
         Student actor = Student.builder().id(user.getId()).build();
         List<MyEnrollmentResponse> response = enrollmentService.getMyEnrollmentList(actor); // 내 수강목록을 조회하여 반환
@@ -90,6 +89,8 @@ public class EnrollmentController {
      * @throws EnrollmentPeriodNotFoundException 수강신청 기간 정보가 없는 경우
      * @throws EnrollmentPeriodClosedException   수강신청 기간 외 요청인 경우
      * @throws EnrollmentNotFoundException       수강신청 내역이 없는 경우
+     * @throws CannotCancelException             수강취소 요청 시 현재 수강인원이 0보다 작아지는 경우
+     * @throws RequestAlreadyQueuedException     이미 취소 요청이 큐에 등록되어 있는 경우 (중복요청)
      */
     @Operation(
             summary = "수강 취소",
@@ -101,9 +102,7 @@ public class EnrollmentController {
         // 세션 유효성 검증
         validateEnrollmentSession(user);
 
-        Student actor = Student.builder().id(user.getId()).build();
-        enrollmentService.cancelMyEnrollment(actor, courseId); // 해당 강좌에 대한 수강 취소 요청
-
+        enrollmentService.cancelMyEnrollment(user.getId(), courseId); // 해당 강좌에 대한 수강 신청 요청
         return new RsData<>("200", "수강 취소가 완료되었습니다.");
     }
 
@@ -119,6 +118,8 @@ public class EnrollmentController {
      * @throws DuplicateEnrollmentException      동일 강좌 중복 신청 시
      * @throws CreditLimitExceededException      최대 학점 초과 시
      * @throws ScheduleConflictException         기존 신청한 강좌와 시간표가 겹치는 경우
+     * @throws StudentProfileNotFoundException   학생 프로필이 없는 경우
+     * @throws RequestAlreadyQueuedException     이미 수강신청 요청이 큐에 등록된 경우
      */
     @Operation(
             summary = "수강 신청",
@@ -130,9 +131,7 @@ public class EnrollmentController {
         // 세션 유효성 검증
         validateEnrollmentSession(user);
 
-        Student actor = Student.builder().id(user.getId()).build();
-        enrollmentService.enrollment(actor, request.courseId()); // 해당 강좌에 대한 수강 신청 요청
-
+        enrollmentService.enrollment(user.getId(), request.courseId()); // 해당 강좌에 대한 수강 신청 요청
         return new RsData<>("200", "수강 신청이 완료되었습니다.");
     }
 
@@ -152,8 +151,6 @@ public class EnrollmentController {
             @RequestParam(value = "semester", required = false) Integer semester,
             @AuthenticationPrincipal SecurityUser actor
     ) {
-        // 세션 유효성 검증
-        validateEnrollmentSession(actor);
         // 필수 파라미터 검증
         if (year == null) {
             throw new RequiredParameterMissingException("year");
