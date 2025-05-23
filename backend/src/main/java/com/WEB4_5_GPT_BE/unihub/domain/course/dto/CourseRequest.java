@@ -15,7 +15,7 @@ public record CourseRequest(
         @Schema(description = "강의 전공")
         @NotEmpty String major,
         @Schema(description = "소속 대학")
-        @NotEmpty String university,
+        String university,
         @Schema(description = "강의장")
         @NotEmpty String location,
         @Schema(description = "수강 정원")
