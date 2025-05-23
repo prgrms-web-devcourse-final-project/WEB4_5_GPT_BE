@@ -50,8 +50,9 @@ dependencies {
     implementation 'org.springframework.session:spring-session-data-redis'
     implementation 'org.springframework.session:spring-session-jdbc'
 
-    // Actuator
+    // 모니터링
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
 
     // Lombok
     compileOnly 'org.projectlombok:lombok'

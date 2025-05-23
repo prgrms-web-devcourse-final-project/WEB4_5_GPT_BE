@@ -9,6 +9,10 @@ spring:
     include: secret
     active: dev
 
+  datasource:
+    hikari:
+      pool-name: unihub-hikaricp-pool
+
   output:
     ansi:
       enabled: always
@@ -50,6 +54,9 @@ management:
   health:
     mail:
       enabled: false
+  metrics:
+    tags:
+      application: ${spring.application.name}
 
 logging:
   web:

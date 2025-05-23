@@ -31,6 +31,10 @@ logging:
     org.hibernate.orm.jdbc.extract: INFO
     org.springframework.transaction.interceptor: INFO
 
+management:
+  endpoints:
+    web.exposure.include: "actuator,health"
+
 custom:
   site: # un1hub.site 운영 서버 주소가 설정 됨
     domain: "${custom.prod.domain}"
