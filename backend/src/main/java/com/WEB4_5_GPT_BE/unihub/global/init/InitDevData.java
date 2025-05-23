@@ -117,6 +117,16 @@ public class InitDevData {
                 "thirdstudent@auni.ac.kr", "studentPw3", "정하늘", "20250003",
                 university.getId(), majorSW.getId(), 2, 1
         );
+
+        helper.createEnrollmentPeriod(
+                university,
+                LocalDate.now().getYear(), 4, 1,
+                LocalDate.of(2025, 5, 1),
+                LocalDate.of(2025, 5, 30)
+        );
+
+        // 11) 동시성 테스트용 데이터 생성 (4학년 학생 100명, 교수 1명, 강좌 1개)
+        createTestDataForConcurrency(university, majorSW);
     }
 
     /**
@@ -262,5 +272,29 @@ public class InitDevData {
                 "여름학기 수강신청이 시작됩니다.",
                 summerUrl
         );
+    }
+
+    private void createTestDataForConcurrency(University university, Major majorSW) {
+        for (int i = 1; i <= 100; i++) {
+            helper.createStudent(
+                    "concurrencyStudent" + i + "@auni.ac.kr", "studentPw", "동시성학생" + i, "2504%04d".formatted(i),
+                    university.getId(), majorSW.getId(), 4, 1
+            );
+        }
+
+        Professor professor = (Professor) helper.createProfessor(
+                "concurrencyProfessor@auni.ac.kr", "password", "동시성교수", "EMP250011",
+                university.getId(), majorSW.getId(), ApprovalStatus.APPROVED
+        );
+
+        // 자료구조
+        Course dataStructure = helper.createCourse(
+                "동시성과목", majorSW, "동시관 401호",
+                30, 0, 3,
+                professor,
+                4, 1, "/plans/data-structure.pdf"
+        );
+        helper.createCourseScheduleAndAssociateWithCourse(dataStructure, DayOfWeek.MON, "09:00:00", "10:30:00");
+
     }
 }

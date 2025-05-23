@@ -6,6 +6,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.request.EnrollmentRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.MemberLoginRequest;
 import com.WEB4_5_GPT_BE.unihub.global.config.RedisTestContainerConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -75,7 +77,6 @@ class EnrollmentControllerTest {
 
     @Test
     @DisplayName("수강 신청 - 성공")
-    @Transactional
     void enrollment_success() throws Exception {
         // given: 학생 로그인 후 accessToken을 발급받고, 기존 수강 신청 내역이 2개임을 확인
         String accessToken = loginAndGetAccessToken("teststudent@auni.ac.kr", "password");
@@ -100,6 +101,9 @@ class EnrollmentControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200"))
                 .andExpect(jsonPath("$.message").value("수강 신청이 완료되었습니다."));
+
+        // 수강신청된 강좌를 큐에서 꺼내서 DB에 저장할 시간
+        Thread.sleep(200);
 
         // then: 내 수강목록 조회 시 신청 내역이 3개로 증가해야 함
         // then: 신청 강좌의 신청 가능 인원이 1 감소해야 함
@@ -193,6 +197,7 @@ class EnrollmentControllerTest {
     }
 
     @Test
+    @Transactional
     @DisplayName("수강 신청 실패 – 최대 학점 초과 시")
     void enrollment_fail_creditLimit() throws Exception {
         // given: 로그인, '학점초과강좌' ID
@@ -214,6 +219,7 @@ class EnrollmentControllerTest {
     }
 
     @Test
+    @Transactional
     @DisplayName("수강 신청 실패 – 시간표 충돌 시")
     void enrollment_fail_scheduleConflict() throws Exception {
         // given: 로그인, '충돌강좌' ID
@@ -235,44 +241,65 @@ class EnrollmentControllerTest {
     }
 
     @Test
-    @DisplayName("수강 취소 - 성공")
-    @Transactional
+    @DisplayName("수강 신청 후 취소 - 성공")
     void cancelEnrollment_success() throws Exception {
-        // given: 학생 로그인 후 accessToken 발급 및 초기 수강신청 내역(2개) 확인
+        // 1) given: 로그인 및 초기 내 수강목록 개수 확인
         String accessToken = loginAndGetAccessToken("teststudent@auni.ac.kr", "password");
 
+        MvcResult initialListResult = mockMvc.perform(get("/api/enrollments/me")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // 초기 수강 신청 개수
+        int initialSize = JsonPath
+                .parse(initialListResult.getResponse().getContentAsString())
+                .read("$.data.length()", Integer.class);
+
+        // 2) when: 네트워크 강좌 수강신청
+        Course course = courseRepository.findAll().stream()
+                .filter(c -> "네트워크".equals(c.getTitle()))
+                .findFirst().get();
+        Long courseId = course.getId();
+
+        mockMvc.perform(post("/api/enrollments")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new EnrollmentRequest(courseId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200"))
+                .andExpect(jsonPath("$.message").value("수강 신청이 완료되었습니다."));
+
+        Thread.sleep(300);
+
+        // 3) then: 내 수강목록에 1건이 늘었는지 확인
         mockMvc.perform(get("/api/enrollments/me")
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(2));
+                .andExpect(jsonPath("$.data.length()").value(initialSize + 1));
 
-        // 취소할 강좌 ID 조회
-        Course course = courseRepository.findAll().stream()
-                .filter(c -> "자료구조".equals(c.getTitle()))
-                .findFirst()
-                .get();
-
-        Integer enrolled = course.getEnrolled();
-        Long courseId = course.getId();
-
-        // when: 해당 강좌 취소 요청
+        // 4) when: 방금 신청한 강좌 취소
         mockMvc.perform(delete("/api/enrollments/{courseId}", courseId)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200"))
                 .andExpect(jsonPath("$.message").value("수강 취소가 완료되었습니다."));
 
-        // then: 수강신청 목록이 1개로 감소했는지 검증
+        Thread.sleep(300);
+
+        // 5) then: 내 수강목록이 초기 상태로 돌아왔는지 확인
         mockMvc.perform(get("/api/enrollments/me")
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(1));
+                .andExpect(jsonPath("$.data.length()").value(initialSize));
 
-        // then: 취소 강좌의 현재 수강 인원이 1명 감소했는지 검증
+        // 6) then: 강좌의 enrolled 수도 원복되었는지 확인
+        //    (DB에서 직접 fresh하게 꺼내거나, 캐시 무시용 리포지토리 사용)
+        Course updated = courseRepository.findById(courseId).get();
         mockMvc.perform(get("/api/courses/{courseId}", courseId)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.enrolled").value(enrolled - 1));
+                .andExpect(jsonPath("$.data.enrolled").value(updated.getEnrolled()));
     }
 
     @Test

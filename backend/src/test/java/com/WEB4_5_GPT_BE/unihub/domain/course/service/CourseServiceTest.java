@@ -48,6 +48,7 @@ import static org.assertj.core.api.BDDAssertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.doNothing;
 
 @DisplayName("강의 도메인 서비스 레이어 테스트")
 @ExtendWith(MockitoExtension.class)
@@ -73,6 +74,9 @@ class CourseServiceTest {
 
     @Mock
     private EnrollmentRepository enrollmentRepository;
+
+    @Mock
+    private CourseRedisCounterService courseRedisCounterService;
 
     @InjectMocks
     private CourseService courseService;
@@ -165,6 +169,9 @@ class CourseServiceTest {
     @Test
     @DisplayName("스케줄이 없는 강의를 생성할때 정상 생성된다.")
     void givenCourseWithoutSchedule_whenCreatingCourse_thenSaveCourse() {
+
+        doNothing().when(courseRedisCounterService).syncCourseCounters(any(Course.class));
+
         CourseRequest testCourseRequest = new CourseRequest("testCourseRequest3", testMajor2.getName(), testUniversity1.getName(),
                 "nonexistentLocation", 40, 3, testProfessorProfile1.getEmployeeId(), 4, 2, null, List.of());
         given(universityRepository.findByName(testUniversity1.getName())).willReturn(Optional.of(testUniversity1));
@@ -186,6 +193,9 @@ class CourseServiceTest {
     @Test
     @DisplayName("스케줄이 중복되지 않는 강의를 생성할때 정상 생성된다.")
     void givenCourseWithNonconflictingSchedule_whenCreatingCourse_thenSaveCourse() {
+
+        doNothing().when(courseRedisCounterService).syncCourseCounters(any(Course.class));
+
         given(universityRepository.findByName(testUniversity1.getName())).willReturn(Optional.of(testUniversity1));
         given(majorRepository.findByUniversityIdAndName(testUniversity1.getId(), testCourseRequest3.major()))
                 .willReturn(Optional.of(testCourse2.getMajor()));
@@ -481,6 +491,8 @@ class CourseServiceTest {
         given(courseRepository.findById(courseId)).willReturn(Optional.of(course));
         // ↳ 수강신청이 하나도 없다고 강제
         given(enrollmentRepository.existsByCourseId(courseId)).willReturn(false);
+
+        doNothing().when(courseRedisCounterService).deleteCourseCounters(any(Course.class));
 
         // when
         courseService.deleteCourse(courseId);
