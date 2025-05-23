@@ -301,7 +301,7 @@ resource "aws_instance" "unihub_ec2_1" {
   # 사용할 AMI ID
   ami = data.aws_ami.latest_amazon_linux.id
   # EC2 인스턴스 유형
-  instance_type = "t3.micro"
+  instance_type = "t3.small"
   # 사용할 서브넷 ID
   subnet_id = aws_subnet.unihub_subnet_1.id
   # 적용할 보안 그룹 ID
