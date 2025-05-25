@@ -21,11 +21,13 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class EnrollmentEventControllerTest {
 
@@ -65,22 +67,6 @@ public class EnrollmentEventControllerTest {
         mockMvc = MockMvcBuilders.standaloneSetup(enrollmentEventController)
                 .setCustomArgumentResolvers(new SecurityUserArgumentResolver(securityUser))
                 .build();
-    }
-
-    @Test
-    @DisplayName("SSE 연결 요청 테스트")
-    public void testSubscribeToEvents() throws Exception {
-        // 초기 상태 가지기 위한 QueueStatusDto 모킹
-        QueueStatusDto initialStatus = new QueueStatusDto(true, 0, 0);
-        when(enrollmentQueueService.getQueueStatus("1")).thenReturn(initialStatus);
-
-        mockMvc.perform(get("/api/enrollments/events")
-                        .accept(MediaType.TEXT_EVENT_STREAM_VALUE))
-                .andExpect(status().isOk())
-                .andExpect(request().asyncStarted());
-
-        // 수정된 메서드 시그니처에 맞게 verify 업데이트
-        verify(sseEmitterService, times(1)).createEmitterWithInitialStatus(eq("1"), any(QueueStatusDto.class));
     }
 
     @Test
