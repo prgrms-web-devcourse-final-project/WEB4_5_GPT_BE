@@ -4,7 +4,6 @@ import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.QueueStatusDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -28,8 +27,7 @@ public class EnrollmentQueueServiceTest {
     private static final String TEST_MEMBER_ID = "1";
     @Mock
     private StringRedisTemplate redisTemplate;
-    @Mock
-    private SseEmitterService sseEmitterService;
+    // SSE 관련 Mock 제거
     @Mock
     private ValueOperations<String, String> valueOperations;
     @Mock
@@ -67,7 +65,6 @@ public class EnrollmentQueueServiceTest {
 
         // 세션 설정 확인
         verify(valueOperations).set(eq(SESSION_PREFIX + TEST_MEMBER_ID), eq("active"), any(Duration.class));
-        verify(sseEmitterService).sendQueueStatus(eq(TEST_MEMBER_ID), any(QueueStatusDto.class));
     }
 
     @Test
@@ -91,26 +88,16 @@ public class EnrollmentQueueServiceTest {
 
         // 대기열에 추가 확인
         verify(listOperations).rightPush(WAITING_QUEUE_KEY, TEST_MEMBER_ID);
-        verify(sseEmitterService).sendQueueStatus(eq(TEST_MEMBER_ID), any(QueueStatusDto.class));
     }
 
     @Test
     @DisplayName("최대 접속자 3명 제한 도달 시 새 사용자가 대기열로 이동하는 테스트")
     public void testMaxConcurrentUsers() {
         // 테스트용 객체 생성
-        EnrollmentQueueService testService = spy(new EnrollmentQueueService(redisTemplate, sseEmitterService) {
-            @Override
-            public int getPositionInQueue(String memberId) {
-                // 여기서는 직접 3번째 위치에 있다고 가정
-                return 3;
-            }
-
-            @Override
-            public boolean isUserInQueue(String memberId) {
-                // 처음에는 대기열에 없다고 가정
-                return false;
-            }
-        });
+        EnrollmentQueueService testService = spy(enrollmentQueueService);
+        // 테스트에 필요한 메서드만 오버라이드
+        doReturn(3).when(testService).getPositionInQueue(anyString());
+        doReturn(false).when(testService).isUserInQueue(anyString());
 
         // Given
         String newUserId = "999";
@@ -189,18 +176,12 @@ public class EnrollmentQueueServiceTest {
 
         // 다음 사용자 처리 확인
         verify(valueOperations).set(eq(SESSION_PREFIX + "2"), eq("active"), any(Duration.class));
-        verify(sseEmitterService).sendQueueStatus(eq("2"), argThat(QueueStatusDto::isAllowed));
     }
 
     @Test
-    @DisplayName("대기열 상태 메시지 전송 테스트")
-    public void testSendQueueStatusMessages() {
+    @DisplayName("대기열 처리 테스트")
+    public void testProcessNextInQueue() {
         // Given
-        when(listOperations.range(WAITING_QUEUE_KEY, 0, -1))
-                .thenReturn(Arrays.asList("2", "3", "4"));
-
-        // processNextInQueue를 통해 sendQueueStatusMessages 호출 트리거
-        // Mock getActiveUserCount to return a number below max concurrent users
         EnrollmentQueueService spyService = spy(enrollmentQueueService);
         doReturn(2L).when(spyService).getActiveUserCount();
         when(listOperations.leftPop(WAITING_QUEUE_KEY)).thenReturn("5");
@@ -209,12 +190,7 @@ public class EnrollmentQueueServiceTest {
         spyService.processNextInQueue();
 
         // Then
-        // 메시지 전송 확인 (배치 처리 로직에 따라 다를 수 있음)
-        // 실제 테스트는 내부 구현에 따라 달라질 수 있음
-        ArgumentCaptor<QueueStatusDto> statusCaptor = ArgumentCaptor.forClass(QueueStatusDto.class);
-        verify(sseEmitterService, atLeastOnce()).sendQueueStatus(eq("5"), statusCaptor.capture());
-
-        QueueStatusDto capturedStatus = statusCaptor.getValue();
-        assertTrue(capturedStatus.isAllowed());
+        // 세션 활성화 확인
+        verify(valueOperations).set(eq(SESSION_PREFIX + "5"), eq("active"), any(Duration.class));
     }
 }
