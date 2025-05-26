@@ -114,8 +114,14 @@ public class InitDevData {
 
         // 11) 2학년 학생 1명 더 생성
         helper.createStudent(
-                "thirdstudent@auni.ac.kr", "studentPw3", "정하늘", "20250003",
+                "thirdstudent@auni.ac.kr", "studentPw", "홍길동", "20250003",
                 university.getId(), majorSW.getId(), 2, 1
+        );
+        
+        // 12) 1학년 학생 1명 더 생성
+        helper.createStudent(
+                "fourthstudent@auni.ac.kr", "studentPw", "정학생", "20231423",
+                university.getId(), majorSW.getId(), 1, 1
         );
 
         helper.createEnrollmentPeriod(
@@ -125,7 +131,7 @@ public class InitDevData {
                 LocalDate.of(2025, 5, 30)
         );
 
-        // 11) 동시성 테스트용 데이터 생성 (4학년 학생 100명, 교수 1명, 강좌 1개)
+        // 13) 동시성 테스트용 데이터 생성 (4학년 학생 100명, 교수 1명, 강좌 1개)
         createTestDataForConcurrency(university, majorSW);
     }
 
