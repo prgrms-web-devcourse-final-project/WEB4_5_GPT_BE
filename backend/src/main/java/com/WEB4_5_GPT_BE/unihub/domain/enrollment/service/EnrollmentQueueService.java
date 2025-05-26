@@ -19,7 +19,7 @@ public class EnrollmentQueueService {
     private static final String WAITING_QUEUE_KEY = "enrollment:waiting-queue";
     private static final String SESSION_PREFIX = "enrollment:session:";
     private static final int MAX_CONCURRENT_USERS = 1;
-    private static final Duration SESSION_TIMEOUT = Duration.ofMinutes(10);
+    private static final Duration SESSION_TIMEOUT = Duration.ofMinutes(11);
     private final StringRedisTemplate redisTemplate;
 
     // 구현 제거: SSE 관련 필드 및 메시지 배치 전송 코드 제거
