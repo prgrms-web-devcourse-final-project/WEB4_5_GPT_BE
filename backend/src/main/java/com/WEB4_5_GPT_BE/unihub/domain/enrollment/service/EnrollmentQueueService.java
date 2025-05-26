@@ -1,15 +1,15 @@
 package com.WEB4_5_GPT_BE.unihub.domain.enrollment.service;
 
-import java.time.Duration;
-import java.util.List;
-
+import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.QueueStatusDto;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.QueueStatusDto;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+
+import java.time.Duration;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -18,7 +18,7 @@ public class EnrollmentQueueService {
 
     private static final String WAITING_QUEUE_KEY = "enrollment:waiting-queue";
     private static final String SESSION_PREFIX = "enrollment:session:";
-    private static final int MAX_CONCURRENT_USERS = 3;
+    private static final int MAX_CONCURRENT_USERS = 1;
     private static final Duration SESSION_TIMEOUT = Duration.ofMinutes(10);
     private final StringRedisTemplate redisTemplate;
 
