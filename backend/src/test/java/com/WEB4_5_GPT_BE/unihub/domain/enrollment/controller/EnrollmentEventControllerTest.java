@@ -2,7 +2,6 @@ package com.WEB4_5_GPT_BE.unihub.domain.enrollment.controller;
 
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.QueueStatusDto;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.EnrollmentQueueService;
-import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.SseEmitterService;
 import com.WEB4_5_GPT_BE.unihub.global.security.SecurityUser;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,9 +18,7 @@ import org.springframework.web.bind.support.WebDataBinderFactory;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -33,8 +30,6 @@ public class EnrollmentEventControllerTest {
 
     private MockMvc mockMvc;
 
-    @Mock
-    private SseEmitterService sseEmitterService;
 
     @Mock
     private EnrollmentQueueService enrollmentQueueService;
@@ -50,11 +45,6 @@ public class EnrollmentEventControllerTest {
         MockitoAnnotations.openMocks(this);
         // SecurityUser mock 설정
         when(securityUser.getId()).thenReturn(1L);
-
-        // SseEmitter 서비스 설정
-        SseEmitter mockEmitter = mock(SseEmitter.class);
-        // 수정된 메서드 시그니처에 맞게 모킹
-        when(sseEmitterService.createEmitterWithInitialStatus(anyString(), any(QueueStatusDto.class))).thenReturn(mockEmitter);
 
         // EnrollmentQueueService 설정
         QueueStatusDto mockStatus = new QueueStatusDto(true, 5, 10, "테스트 메시지");
