@@ -100,7 +100,7 @@ public class EnrollmentController {
     @DeleteMapping("/{courseId}")
     public RsData<Empty> enrollmentCancel(@PathVariable Long courseId, @AuthenticationPrincipal SecurityUser user) {
         // 세션 유효성 검증
-        validateEnrollmentSession(user);
+        //validateEnrollmentSession(user); TODO: 동시성 테스트 완료 후 주석 해제
 
         enrollmentService.cancelMyEnrollment(user.getId(), courseId); // 해당 강좌에 대한 수강 신청 요청
         return new RsData<>("200", "수강 취소가 완료되었습니다.");
@@ -129,7 +129,7 @@ public class EnrollmentController {
     @PostMapping
     public RsData<Empty> enrollment(@RequestBody EnrollmentRequest request, @AuthenticationPrincipal SecurityUser user) {
         // 세션 유효성 검증
-        validateEnrollmentSession(user);
+        //validateEnrollmentSession(user); TODO: 동시성 테스트 완료 후 주석 해제
 
         enrollmentService.enrollment(user.getId(), request.courseId()); // 해당 강좌에 대한 수강 신청 요청
         return new RsData<>("200", "수강 신청이 완료되었습니다.");
