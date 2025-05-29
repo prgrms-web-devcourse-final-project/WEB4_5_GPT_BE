@@ -13,9 +13,7 @@ import com.WEB4_5_GPT_BE.unihub.domain.enrollment.entity.Enrollment;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.*;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.repository.EnrollmentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.cancel.EnrollmentCancelCommand;
-import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.cancel.EnrollmentCancelDuplicateChecker;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.enroll.EnrollmentCommand;
-import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.enroll.EnrollmentDuplicateChecker;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Professor;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentRepository;
@@ -65,13 +63,7 @@ class EnrollmentServiceTest {
     private RBlockingQueue<EnrollmentCommand> enrollQueue;
 
     @Mock
-    private EnrollmentDuplicateChecker enrollmentDuplicateChecker;
-
-    @Mock
     private RBlockingQueue<EnrollmentCancelCommand> cancelQueue;
-
-    @Mock
-    private EnrollmentCancelDuplicateChecker enrollmentCancelDuplicateChecker;
 
     @InjectMocks
     private EnrollmentService enrollmentService;
@@ -252,10 +244,6 @@ class EnrollmentServiceTest {
                 .thenReturn(counter);
         when(counter.decrementAndGet()).thenReturn(9L);
 
-        // 1) 중복 취소 커맨드 방지 stub
-        doNothing().when(enrollmentCancelDuplicateChecker)
-                .markEnqueuedIfAbsent(anyLong(), anyLong());
-
         // 3) 수강신청 기간 stub
         EnrollmentPeriod period = createPeriod(1, 1);
         stubEnrollmentPeriod(period);
@@ -268,8 +256,6 @@ class EnrollmentServiceTest {
         enrollmentService.cancelMyEnrollment(profile.getId(), COURSE_ID);
 
         // --- 그리고 핵심 호출 검증 ---
-        verify(enrollmentCancelDuplicateChecker, times(1))
-                .markEnqueuedIfAbsent(anyLong(), anyLong());
         verify(counter, times(1)).decrementAndGet();
     }
 
@@ -362,8 +348,6 @@ class EnrollmentServiceTest {
         // --- 0) Redis AtomicLong Stub ---
         stubRedisCounters(10L, 5L);
 
-        doNothing().when(enrollmentDuplicateChecker).markEnqueuedIfAbsent(anyLong(), anyLong());
-
         RAtomicLong counter = mock(RAtomicLong.class);
         when(redisson.getAtomicLong("course:" + COURSE_ID + ":enrolled"))
                 .thenReturn(counter);
@@ -390,8 +374,6 @@ class EnrollmentServiceTest {
         verify(courseRepository, never()).save(any());
 
         // --- 그리고 핵심 호출 검증 ---
-        verify(enrollmentDuplicateChecker, times(1))
-                .markEnqueuedIfAbsent(profile.getId(), COURSE_ID);
         verify(counter, times(1)).incrementAndGet();
     }
 
@@ -469,8 +451,6 @@ class EnrollmentServiceTest {
         // --- 0) Redis AtomicLong Stub 준비 ---
         // capacity=10, enrolled=10(만원)
         stubRedisCounters(10L, 10L);
-
-        doNothing().when(enrollmentDuplicateChecker).markEnqueuedIfAbsent(anyLong(), anyLong());
 
         RBucket<Boolean> mockBucket = mock(RBucket.class);
         doReturn(mockBucket)
