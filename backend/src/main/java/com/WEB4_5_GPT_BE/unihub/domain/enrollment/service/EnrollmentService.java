@@ -13,14 +13,13 @@ import com.WEB4_5_GPT_BE.unihub.domain.enrollment.entity.Enrollment;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.exception.*;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.repository.EnrollmentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.cancel.EnrollmentCancelCommand;
-import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.cancel.EnrollmentCancelDuplicateChecker;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.enroll.EnrollmentCommand;
-import com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.enroll.EnrollmentDuplicateChecker;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Member;
 import com.WEB4_5_GPT_BE.unihub.domain.member.entity.Student;
 import com.WEB4_5_GPT_BE.unihub.domain.member.exception.mypage.StudentProfileNotFoundException;
 import com.WEB4_5_GPT_BE.unihub.domain.member.repository.StudentRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.university.entity.University;
+import com.WEB4_5_GPT_BE.unihub.global.concurrent.ConcurrencyGuard;
 import com.WEB4_5_GPT_BE.unihub.global.security.SecurityUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,13 +48,11 @@ public class EnrollmentService {
     private final CourseRepository courseRepository; // 강좌 Repository
 
     private final RedissonClient redisson; // 동시성 처리를 위한 RedissonClient
-    private final EnrollmentDuplicateChecker enrollmentCancelDuplicateCheckerDuplicateChecker; // 중복 큐 삽입 방지
 
     private final RBlockingQueue<EnrollmentCommand> enrollQueue; // 수강신청 요청을 저장하는 Queue
     private final RBlockingQueue<EnrollmentCancelCommand> cancelQueue; // 수강신청 취소 요청을 저장하는 Queue
 
     private final int MAXIMUM_CREDIT = 21; // 최대 학점 상수 (21학점)
-    private final EnrollmentCancelDuplicateChecker enrollmentCancelDuplicateChecker;
 
     /**
      * 학생의 수강신청 내역을 조회하는 메서드입니다.
@@ -103,6 +100,7 @@ public class EnrollmentService {
 
     /**
      * 수강 취소 요청을 처리하는 메서드입니다.
+     * @ConcurrencyGuard 학생id + 강의id 조합에 대한 분산락을 적용하여 중복 요청을 방지합니다.
      *
      * @param studentId  로그인 인증된 학생 정보
      * @param courseId 취소할 강좌의 ID
@@ -110,7 +108,7 @@ public class EnrollmentService {
      * @throws EnrollmentPeriodClosedException   수강신청 기간 외 요청인 경우
      * @throws EnrollmentNotFoundException       수강신청 내역이 없는 경우
      */
-    @Transactional(readOnly = true)
+    @ConcurrencyGuard(lockName = "student:cancel")
     public void cancelMyEnrollment(Long studentId, Long courseId) {
 
         // Member → StudentProfile 조회
@@ -124,9 +122,6 @@ public class EnrollmentService {
         if (!enrollmentRepository.existsByCourseIdAndStudentId(courseId, studentId)) {
             throw new EnrollmentNotFoundException();
         }
-
-        // 2) 중복 취소 커맨드 방지
-        enrollmentCancelDuplicateChecker.markEnqueuedIfAbsent(studentId, courseId);
 
         // 3) 실제 취소 자리 공석 + 큐에 커맨드 추가
         tryDecrementAndEnqueueCancel(studentId, courseId);
@@ -234,10 +229,11 @@ public class EnrollmentService {
      * 비동기 수강 신청을 처리하는 메서드입니다.
      *
      * 여러 예외 상황을 검증한 후 수강 신청을 진행합니다.
-     * redis의 AtomicLong을 사용하여 수강인원 카운트를 관리하며 원자성을 보장합니다.
+     * @ConcurrencyGuard 학생id + 강의id 조합에 대한 분산락을 적용하여 중복 요청을 방지합니다.
+     * 2. redis의 INCR 명령어를 통해 수강신청 인원 원자성을 보장하며 Redisson의 AtomicLong을 통해 INCR를 적용합니다.
      * 실제 DB 저장에 저장하는 로직은 redisson queue를 통해 순차적으로 처리합니다.
      * DB 저장은 별도의 트랜잭션으로 처리하고 사용자의 요청을 redis의 AtomicLong을 통해 바로바로 처리하기 때문에 빠른 응답을 보장합니다.
-     *
+     *`
      * @param studentId 로그인 인증된 학생 ID
      * @param courseId  신청할 강좌의 ID
      * @throws CourseNotFoundException           강좌 정보가 없는 경우
@@ -248,7 +244,7 @@ public class EnrollmentService {
      * @throws CreditLimitExceededException      최대 학점 초과 시
      * @throws ScheduleConflictException         기존 신청한 강좌와 시간표가 겹치는 경우
      */
-    @Transactional(readOnly = true)
+    @ConcurrencyGuard(lockName = "student:enroll")
     public void enrollment(Long studentId, Long courseId) {
 
         Course course = courseRepository.findById(courseId)
@@ -261,9 +257,6 @@ public class EnrollmentService {
                 .orElseThrow(StudentProfileNotFoundException::new);
 
         ensureEnrollmentAllowed(profile, course); // 수강 신청이 가능한지 여러 예외상황 검증
-
-        // 2) 동일학생+동일강좌 수강신청이 이미 큐에 들어가있는지 확인
-        enrollmentCancelDuplicateCheckerDuplicateChecker.markEnqueuedIfAbsent(studentId, courseId);
 
         // 3) 실제 자리 확보 + 큐 등록
         tryReserveSeatAndEnqueue(studentId, courseId);
