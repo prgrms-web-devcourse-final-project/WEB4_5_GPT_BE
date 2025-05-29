@@ -35,7 +35,7 @@ public class ConcurrencyGuardAspect {
 
         // 2) 메서드 인자를 가져온 뒤 해당 정보(ex: courseId)로 락 이름을 생성
         Object[] args = joinPoint.getArgs();
-        String lockName = getLockName(args, annotation);
+        String lockName = getLockNameById(args, annotation);
 
         // 해당 lockName으로 된 Redisson 분산 락 객체 생성
         RLock lock = redissonClient.getLock(lockName);
@@ -73,15 +73,15 @@ public class ConcurrencyGuardAspect {
     }
 
     /**
-     * 락 이름을 "lock:{lockName}:{key}" 형식으로 생성합니다.
-     * args[1]이 Long 타입의 courseId라고 가정하여 활용합니다. -> ex) lock:course:1
+     * 락 이름을 "lock:{lockName}:{studentId}:{courseId}" 형식으로 생성합니다.
      */
-    private String getLockName(Object[] args, ConcurrencyGuard annotation) {
-        String lockNameFormat = "lock:%s:%s";
+    private String getLockNameById(Object[] args, ConcurrencyGuard annotation) {
+        String lockNameFormat = "lock:%s:%s:%s";
         String lockName = annotation.lockName();
-        String relevantParameter = (args.length > 1 && args[1] != null)
-                ? args[1].toString()
-                : "default";
-        return lockNameFormat.formatted(lockName, relevantParameter);
+        String studentId = args[0].toString();
+        String courseId = args[1].toString();
+        String formatted = lockNameFormat.formatted(lockName, studentId, courseId);
+        System.out.println(formatted);
+        return formatted;
     }
 }
