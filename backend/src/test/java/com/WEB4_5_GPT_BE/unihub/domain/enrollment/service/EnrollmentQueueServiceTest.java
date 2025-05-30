@@ -50,7 +50,7 @@ public class EnrollmentQueueServiceTest {
         // Given
         // Mock getActiveUserCount to return a low number of active users
         EnrollmentQueueService spyService = spy(enrollmentQueueService);
-        doReturn(2L).when(spyService).getActiveUserCount();
+        doReturn(0L).when(spyService).getActiveUserCount();
 
         when(redisTemplate.hasKey(SESSION_PREFIX + TEST_MEMBER_ID)).thenReturn(false);
         when(listOperations.range(WAITING_QUEUE_KEY, 0, -1)).thenReturn(Collections.emptyList());
@@ -164,7 +164,7 @@ public class EnrollmentQueueServiceTest {
         when(redisTemplate.hasKey(SESSION_PREFIX + TEST_MEMBER_ID)).thenReturn(true);
         // Mock getActiveUserCount to return a number below max concurrent users
         EnrollmentQueueService spyService = spy(enrollmentQueueService);
-        doReturn(2L).when(spyService).getActiveUserCount();
+        doReturn(0L).when(spyService).getActiveUserCount();
         when(listOperations.leftPop(WAITING_QUEUE_KEY)).thenReturn("2"); // 다음 대기자
 
         // When
@@ -183,7 +183,11 @@ public class EnrollmentQueueServiceTest {
     public void testProcessNextInQueue() {
         // Given
         EnrollmentQueueService spyService = spy(enrollmentQueueService);
-        doReturn(2L).when(spyService).getActiveUserCount();
+
+        when(redisTemplate.opsForList()).thenReturn(listOperations);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+
+        doReturn(0L).when(spyService).getActiveUserCount();
         when(listOperations.leftPop(WAITING_QUEUE_KEY)).thenReturn("5");
 
         // When

@@ -169,7 +169,7 @@ public class EnrollmentValidator {
      * @return 학생 정보와 일치하는 수강 신청 기간 정보
      * @throws EnrollmentPeriodNotFoundException 기간 정보가 없는 경우
      */
-    private EnrollmentPeriod findEnrollmentPeriod(Student profile, LocalDate today) {
+    public EnrollmentPeriod findEnrollmentPeriod(Student profile, LocalDate today) {
         // (학교·연도·학년·학기)를 기준으로 수강신청 기간 조회
         return enrollmentPeriodRepository
                 .findByUniversityIdAndYearAndGradeAndSemester(
@@ -202,8 +202,6 @@ public class EnrollmentValidator {
      * @throws CourseNotFoundException         강좌가 존재하지 않는 경우
      */
     void ensureCapacityAvailable(Long courseId) {
-        // 강좌가 없으면 예외처리
-        courseRepository.findById(courseId).orElseThrow(CourseNotFoundException::new);
 
         long capacity = redisson.getAtomicLong("course:" + courseId + ":capacity").get();   // 전체 정원
         long enrolled = redisson.getAtomicLong("course:" + courseId + ":enrolled").get();   // 현재까지 예약된 수

@@ -1,26 +1,31 @@
 package com.WEB4_5_GPT_BE.unihub.domain.enrollment.controller;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.transaction.annotation.Transactional;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.Course;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.request.EnrollmentRequest;
 import com.WEB4_5_GPT_BE.unihub.domain.member.dto.request.MemberLoginRequest;
 import com.WEB4_5_GPT_BE.unihub.global.config.RedisTestContainerConfig;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Duration;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
 @SpringBootTest
@@ -36,6 +41,8 @@ class EnrollmentControllerTest {
     private ObjectMapper objectMapper;
     @Autowired
     private CourseRepository courseRepository;
+    @Autowired
+    private StringRedisTemplate redisTemplate;
 
     private String loginAndGetAccessToken(String email, String password) throws Exception {
         MemberLoginRequest request = new MemberLoginRequest(email, password);
@@ -47,6 +54,67 @@ class EnrollmentControllerTest {
                 .getContentAsString();
 
         return objectMapper.readTree(response).path("data").path("accessToken").asText();
+    }
+
+    private LoginResult loginAndGetAccessTokenAndMemberId(String email, String password) throws Exception {
+        MemberLoginRequest request = new MemberLoginRequest(email, password);
+
+        String response = mockMvc.perform(post("/api/members/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse()
+                .getContentAsString();
+
+        JsonNode data = objectMapper.readTree(response).path("data");
+        LoginResult result = new LoginResult();
+        result.accessToken = data.path("accessToken").asText();
+        result.memberId = data.path("id").asLong();
+        return result;
+    }
+
+    @Test
+    @DisplayName("수강 신청 - 성공")
+    void enrollment_success() throws Exception {
+        // given: 학생 로그인 후 accessToken 발급
+        LoginResult loginResult = loginAndGetAccessTokenAndMemberId("teststudent@auni.ac.kr", "password");
+
+        // 2) Redis 세션 키를 미리 심어준다 (세션이 없으면 403 에러)
+        String sessionKey = "enrollment:session:" + loginResult.memberId;
+        redisTemplate.opsForValue().set(sessionKey, "active", Duration.ofMinutes(11));
+
+        mockMvc.perform(get("/api/enrollments/me")
+                        .header("Authorization", "Bearer " + loginResult.accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(2));
+
+        // when: 네트워크 강좌를 수강 신청 요청
+        Course course = courseRepository.findAll().stream()
+                .filter(c -> "네트워크".equals(c.getTitle()))
+                .findFirst().get();
+
+        Integer availableSeats = course.getAvailableSeats();
+        Long courseId = course.getId();
+
+        mockMvc.perform(post("/api/enrollments")
+                        .header("Authorization", "Bearer " + loginResult.accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new EnrollmentRequest(courseId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200"))
+                .andExpect(jsonPath("$.message").value("수강 신청이 완료되었습니다."));
+
+        // 수강신청된 강좌를 큐에서 꺼내서 DB에 저장할 시간
+        Thread.sleep(500);
+
+        // then: 내 수강목록 조회 시 신청 내역이 3개로 증가해야 함
+        // then: 신청 강좌의 신청 가능 인원이 1 감소해야 함
+        mockMvc.perform(get("/api/enrollments/me")
+                        .header("Authorization", "Bearer " + loginResult.accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(3))
+                .andExpect(jsonPath("$.data[?(@.courseTitle=='네트워크')].availableSeats")
+                        .value(availableSeats - 1));
     }
 
     @Test
@@ -74,47 +142,71 @@ class EnrollmentControllerTest {
                 .andExpect(jsonPath("$.message").value("로그인이 필요합니다."));
     }
 
+    @Test
+    @DisplayName("수강 신청 후 취소 - 성공")
+    void cancelEnrollment_success() throws Exception {
+        // given: 학생 로그인 후 accessToken 발급
+        LoginResult loginResult = loginAndGetAccessTokenAndMemberId("teststudent@auni.ac.kr", "password");
 
-    // intelliJ test 를 돌리면 성공하는데 ./gradlew test 로 돌리면 실패함 원인을 모르겠음. 그리고 여기 관련 코드도 고친적 없음. 그래서 일단 임시 주석처리함.
-//    @Test
-//    @DisplayName("수강 신청 - 성공")
-//    void enrollment_success() throws Exception {
-//        // given: 학생 로그인 후 accessToken을 발급받고, 기존 수강 신청 내역이 2개임을 확인
-//        String accessToken = loginAndGetAccessToken("teststudent@auni.ac.kr", "password");
-//
-//        mockMvc.perform(get("/api/enrollments/me")
-//                        .header("Authorization", "Bearer " + accessToken))
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$.data.length()").value(2));
-//
-//        // when: 네트워크 강좌를 수강 신청 요청
-//        Course course = courseRepository.findAll().stream()
-//                .filter(c -> "네트워크".equals(c.getTitle()))
-//                .findFirst().get();
-//
-//        Integer availableSeats = course.getAvailableSeats();
-//        Long courseId = course.getId();
-//
-//        mockMvc.perform(post("/api/enrollments")
-//                        .header("Authorization", "Bearer " + accessToken)
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content(objectMapper.writeValueAsString(new EnrollmentRequest(courseId))))
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$.code").value("200"))
-//                .andExpect(jsonPath("$.message").value("수강 신청이 완료되었습니다."));
-//
-//        // 수강신청된 강좌를 큐에서 꺼내서 DB에 저장할 시간
-//        Thread.sleep(200);
-//
-//        // then: 내 수강목록 조회 시 신청 내역이 3개로 증가해야 함
-//        // then: 신청 강좌의 신청 가능 인원이 1 감소해야 함
-//        mockMvc.perform(get("/api/enrollments/me")
-//                        .header("Authorization", "Bearer " + accessToken))
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$.data.length()").value(3))
-//                .andExpect(jsonPath("$.data[?(@.courseTitle=='네트워크')].availableSeats")
-//                        .value(availableSeats - 1));
-//    }
+        // 2) Redis 세션 키를 미리 심어준다 (세션이 없으면 403 에러)
+        String sessionKey = "enrollment:session:" + loginResult.memberId;
+        redisTemplate.opsForValue().set(sessionKey, "active", Duration.ofMinutes(11));
+
+        MvcResult initialListResult = mockMvc.perform(get("/api/enrollments/me")
+                        .header("Authorization", "Bearer " + loginResult.accessToken))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // 초기 수강 신청 개수
+        int initialSize = JsonPath
+                .parse(initialListResult.getResponse().getContentAsString())
+                .read("$.data.length()", Integer.class);
+
+        // 2) when: 네트워크 강좌 수강신청
+        Course course = courseRepository.findAll().stream()
+                .filter(c -> "네트워크".equals(c.getTitle()))
+                .findFirst().get();
+        Long courseId = course.getId();
+
+        mockMvc.perform(post("/api/enrollments")
+                        .header("Authorization", "Bearer " + loginResult.accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new EnrollmentRequest(courseId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200"))
+                .andExpect(jsonPath("$.message").value("수강 신청이 완료되었습니다."));
+
+        Thread.sleep(300);
+
+        // 3) then: 내 수강목록에 1건이 늘었는지 확인
+        mockMvc.perform(get("/api/enrollments/me")
+                        .header("Authorization", "Bearer " + loginResult.accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(initialSize + 1));
+
+        // 4) when: 방금 신청한 강좌 취소
+        mockMvc.perform(delete("/api/enrollments/{courseId}", courseId)
+                        .header("Authorization", "Bearer " + loginResult.accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200"))
+                .andExpect(jsonPath("$.message").value("수강 취소가 완료되었습니다."));
+
+        Thread.sleep(300);
+
+        // 5) then: 내 수강목록이 초기 상태로 돌아왔는지 확인
+        mockMvc.perform(get("/api/enrollments/me")
+                        .header("Authorization", "Bearer " + loginResult.accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(initialSize));
+
+        // 6) then: 강좌의 enrolled 수도 원복되었는지 확인
+        //    (DB에서 직접 fresh하게 꺼내거나, 캐시 무시용 리포지토리 사용)
+        Course updated = courseRepository.findById(courseId).get();
+        mockMvc.perform(get("/api/courses/{courseId}", courseId)
+                        .header("Authorization", "Bearer " + loginResult.accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.enrolled").value(updated.getEnrolled()));
+    }
 
     @Test
     @DisplayName("수강 신청 실패 – 강좌 정보가 없는 경우")
@@ -242,65 +334,29 @@ class EnrollmentControllerTest {
     }
 
     @Test
-    @DisplayName("수강 신청 후 취소 - 성공")
-    void cancelEnrollment_success() throws Exception {
-        // 1) given: 로그인 및 초기 내 수강목록 개수 확인
-        String accessToken = loginAndGetAccessToken("teststudent@auni.ac.kr", "password");
+    @DisplayName("내 수강신청 기간 조회 - 정보 없음")
+    @Transactional
+    void getEnrollmentPeriod_noInfo() throws Exception {
 
-        MvcResult initialListResult = mockMvc.perform(get("/api/enrollments/me")
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk())
-                .andReturn();
+        // given: 학생 로그인 후 accessToken 발급
+        LoginResult loginResult = loginAndGetAccessTokenAndMemberId("teststudent3@auni.ac.kr", "password");
 
-        // 초기 수강 신청 개수
-        int initialSize = JsonPath
-                .parse(initialListResult.getResponse().getContentAsString())
-                .read("$.data.length()", Integer.class);
+        // 2) Redis 세션 키를 미리 심어준다 (세션이 없으면 403 에러)
+        String sessionKey = "enrollment:session:" + loginResult.memberId;
+        redisTemplate.opsForValue().set(sessionKey, "active", Duration.ofMinutes(11));
 
-        // 2) when: 네트워크 강좌 수강신청
-        Course course = courseRepository.findAll().stream()
-                .filter(c -> "네트워크".equals(c.getTitle()))
-                .findFirst().get();
-        Long courseId = course.getId();
-
-        mockMvc.perform(post("/api/enrollments")
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new EnrollmentRequest(courseId))))
+        // when / then
+        mockMvc.perform(get("/api/enrollments/periods/me")
+                        .header("Authorization", "Bearer " + loginResult.accessToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200"))
-                .andExpect(jsonPath("$.message").value("수강 신청이 완료되었습니다."));
-
-        Thread.sleep(300);
-
-        // 3) then: 내 수강목록에 1건이 늘었는지 확인
-        mockMvc.perform(get("/api/enrollments/me")
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(initialSize + 1));
-
-        // 4) when: 방금 신청한 강좌 취소
-        mockMvc.perform(delete("/api/enrollments/{courseId}", courseId)
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value("200"))
-                .andExpect(jsonPath("$.message").value("수강 취소가 완료되었습니다."));
-
-        Thread.sleep(300);
-
-        // 5) then: 내 수강목록이 초기 상태로 돌아왔는지 확인
-        mockMvc.perform(get("/api/enrollments/me")
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(initialSize));
-
-        // 6) then: 강좌의 enrolled 수도 원복되었는지 확인
-        //    (DB에서 직접 fresh하게 꺼내거나, 캐시 무시용 리포지토리 사용)
-        Course updated = courseRepository.findById(courseId).get();
-        mockMvc.perform(get("/api/courses/{courseId}", courseId)
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.enrolled").value(updated.getEnrolled()));
+                .andExpect(jsonPath("$.message").value("내 수강신청 기간 정보를 조회했습니다."))
+                // data 필드 존재 및 타입 검증
+                .andExpect(jsonPath("$.data.startDate").doesNotExist())
+                .andExpect(jsonPath("$.data.endDate").doesNotExist())
+                .andExpect(jsonPath("$.data.isEnrollmentOpen").value(false));
     }
 
     @Test
@@ -359,38 +415,20 @@ class EnrollmentControllerTest {
     }
 
     @Test
-    @DisplayName("내 수강신청 기간 조회 - 정보 없음")
-    @Transactional
-    void getEnrollmentPeriod_noInfo() throws Exception {
-
-        // given: 학생 로그인 후 accessToken 발급
-        String accessToken = loginAndGetAccessToken("teststudent3@auni.ac.kr", "password");
-
-        // when / then
-        mockMvc.perform(get("/api/enrollments/periods/me")
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value("200"))
-                .andExpect(jsonPath("$.message").value("내 수강신청 기간 정보를 조회했습니다."))
-                // data 필드 존재 및 타입 검증
-                .andExpect(jsonPath("$.data.startDate").doesNotExist())
-                .andExpect(jsonPath("$.data.endDate").doesNotExist())
-                .andExpect(jsonPath("$.data.isEnrollmentOpen").value(false));
-    }
-
-    @Test
     @DisplayName("내 수강신청 기간 조회 - 이미 지난 기간")
     @Transactional
     void getEnrollmentPeriod_expired() throws Exception {
 
         // given: 학생 로그인 후 accessToken 발급
-        String accessToken = loginAndGetAccessToken("test3rdstudent@auni.ac.kr", "password");
+        LoginResult loginResult = loginAndGetAccessTokenAndMemberId("test4thstudent@auni.ac.kr", "password");
+
+        // 2) Redis 세션 키를 미리 심어준다 (세션이 없으면 403 에러)
+        String sessionKey = "enrollment:session:" + loginResult.memberId;
+        redisTemplate.opsForValue().set(sessionKey, "active", Duration.ofMinutes(11));
 
         // when / then
         mockMvc.perform(get("/api/enrollments/periods/me")
-                        .header("Authorization", "Bearer " + accessToken)
+                        .header("Authorization", "Bearer " + loginResult.accessToken)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -408,11 +446,15 @@ class EnrollmentControllerTest {
     void getEnrollmentPeriod_notYet() throws Exception {
 
         // given: 학생 로그인 후 accessToken 발급
-        String accessToken = loginAndGetAccessToken("test3rdstudent@auni.ac.kr", "password");
+        LoginResult loginResult = loginAndGetAccessTokenAndMemberId("test3rdstudent@auni.ac.kr", "password");
+
+        // 2) Redis 세션 키를 미리 심어준다 (세션이 없으면 403 에러)
+        String sessionKey = "enrollment:session:" + loginResult.memberId;
+        redisTemplate.opsForValue().set(sessionKey, "active", Duration.ofMinutes(11));
 
         // when / then
         mockMvc.perform(get("/api/enrollments/periods/me")
-                        .header("Authorization", "Bearer " + accessToken)
+                        .header("Authorization", "Bearer " + loginResult.accessToken)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -422,6 +464,11 @@ class EnrollmentControllerTest {
                 .andExpect(jsonPath("$.data.startDate").exists())
                 .andExpect(jsonPath("$.data.endDate").exists())
                 .andExpect(jsonPath("$.data.isEnrollmentOpen").value(false));
+    }
+
+    private static class LoginResult {
+        String accessToken;
+        Long memberId;
     }
 
 }

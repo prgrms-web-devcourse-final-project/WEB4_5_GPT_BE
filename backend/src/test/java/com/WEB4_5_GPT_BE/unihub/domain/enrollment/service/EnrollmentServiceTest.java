@@ -33,7 +33,6 @@ import org.redisson.api.RedissonClient;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -64,6 +63,9 @@ class EnrollmentServiceTest {
 
     @Mock
     private RBlockingQueue<EnrollmentCancelCommand> cancelQueue;
+
+    @Mock
+    private EnrollmentValidator enrollmentValidator;
 
     @InjectMocks
     private EnrollmentService enrollmentService;
@@ -228,8 +230,7 @@ class EnrollmentServiceTest {
                 .semester(profile.getSemester())
                 .build();
 
-        when(courseRepository.findById(COURSE_ID))
-                .thenReturn(Optional.of(course));
+        when(courseRepository.findById(anyLong())).thenReturn(Optional.of(course));
 
         return course;
     }
@@ -263,35 +264,28 @@ class EnrollmentServiceTest {
     @Test
     @DisplayName("수강 취소 실패 - 수강신청 기간 정보 없음")
     void cancelMyEnrollment_throws1() {
-        LocalDate today = LocalDate.now();
 
-        // enrollmentPeriodRepository에서 빈 Optional 반환
-        when(enrollmentPeriodRepository
-                .findByUniversityIdAndYearAndGradeAndSemester(
-                        eq(profile.getUniversity().getId()),
-                        eq(today.getYear()),
-                        eq(profile.getGrade()),
-                        eq(profile.getSemester())
-                ))
-                .thenReturn(Optional.empty());
+        doThrow(new EnrollmentPeriodNotFoundException())
+                .when(enrollmentValidator)
+                .ensureEnrollmentPeriodActive(any(Student.class));
 
-        // 실행 및 예외 검증
+        // 2) 실행 및 예외 검증
         assertThatThrownBy(() ->
                 enrollmentService.cancelMyEnrollment(profile.getId(), COURSE_ID)
         ).isInstanceOf(EnrollmentPeriodNotFoundException.class);
 
-        // enrollmentRepository는 호출되지 않아야 함
-        verifyNoInteractions(enrollmentRepository);
+        // 3) 삭제(delete)는 절대 호출되면 안 됩니다
+        verify(enrollmentRepository, never()).delete(any());
     }
+
 
     @Test
     @DisplayName("수강 취소 실패 - 수강신청 기간 외 요청인 경우")
     void cancelMyEnrollment_throws2() {
-        // enrollmentPeriodRepository에서 today가 기간 밖인 EnrollmentPeriod 반환
-        EnrollmentPeriod period = createNotYetPeriod(1, 2);
 
-        // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
-        stubEnrollmentPeriod(period);
+        doThrow(new EnrollmentPeriodClosedException())
+                .when(enrollmentValidator)
+                .ensureEnrollmentPeriodActive(any(Student.class));
 
         // 실행 및 예외 검증
         assertThatThrownBy(() ->
@@ -359,10 +353,6 @@ class EnrollmentServiceTest {
 
         // --- 2) 기타 검증용 stub ---
         stubCourse(10, 5, 3);
-        when(enrollmentRepository.existsByCourseIdAndStudentId(COURSE_ID, profile.getId()))
-                .thenReturn(false);
-        when(enrollmentRepository.findAllByStudent(profile))
-                .thenReturn(Collections.emptyList());
 
         // --- 3) 실행 (예외 없이 정상) ---
         assertThatCode(() ->
@@ -400,19 +390,11 @@ class EnrollmentServiceTest {
 
         stubRedisCounters(10L, 5L);
 
-        LocalDate today = LocalDate.now();
+        stubCourse(10, 5, 3);
 
-        // enrollmentPeriodRepository에서 빈 Optional 반환
-        when(enrollmentPeriodRepository
-                .findByUniversityIdAndYearAndGradeAndSemester(
-                        eq(profile.getUniversity().getId()),
-                        eq(today.getYear()),
-                        eq(profile.getGrade()),
-                        eq(profile.getSemester())
-                ))
-                .thenReturn(Optional.empty());
-
-        Course course = stubCourse(10, 5, 3);
+        doThrow(new EnrollmentPeriodNotFoundException())
+                .when(enrollmentValidator)
+                .ensureEnrollmentAllowed(profile.getId(), COURSE_ID);
 
         // 실행 및 예외 검증
         assertThatThrownBy(() ->
@@ -426,21 +408,25 @@ class EnrollmentServiceTest {
     @Test
     @DisplayName("수강 신청 실패 – 수강신청 기간 외 요청인 경우")
     void enrollment_throws3() {
+        // 1) Redis 카운터, 코스 정보 stub
         stubRedisCounters(10L, 5L);
+        stubCourse(10, 5, 3);
 
-        // period closed stub
+        // 2) 수강신청 기간 조회는 닫힘(Closed) 상태 반환
         EnrollmentPeriod period = createNotYetPeriod(1, 2);
         stubEnrollmentPeriod(period);
 
-        // course 조회 stub (단, save는 호출되지 않을 것을 검증)
-        Course course = stubCourse(10, 5, 3);
+        // 3) 실제 검증 부분만 예외를 던지도록 설정
+        doThrow(new EnrollmentPeriodClosedException())
+                .when(enrollmentValidator)
+                .ensureEnrollmentAllowed(profile.getId(), COURSE_ID);
 
-        // 실행 및 예외 검증
+        // 4) 실행 및 예외 검증
         assertThatThrownBy(() ->
                 enrollmentService.enrollment(profile.getId(), COURSE_ID)
         ).isInstanceOf(EnrollmentPeriodClosedException.class);
 
-        // courseRepository.findById는 호출되지만, .save()는 절대 호출되면 안 됩니다
+        // 5) 아무 저장(save) 호출이 없어야 함
         verify(courseRepository, never()).save(any());
         verify(enrollmentRepository, never()).save(any());
     }
@@ -490,9 +476,9 @@ class EnrollmentServiceTest {
         // 2) 강좌 조회 stub (최대인원 10, 현재수강인원 5, 학점 3)
         stubCourse(10, 5, 3);
 
-        // 3) 이미 신청한 강좌로 stub
-        when(enrollmentRepository.existsByCourseIdAndStudentId(COURSE_ID, profile.getId()))
-                .thenReturn(true);
+        doThrow(new DuplicateEnrollmentException())
+                .when(enrollmentValidator)
+                .ensureEnrollmentAllowed(profile.getId(), COURSE_ID);
 
         // 실행 및 예외 검증
         assertThatThrownBy(() ->
@@ -506,113 +492,54 @@ class EnrollmentServiceTest {
     @Test
     @DisplayName("수강 신청 실패 – 최대 학점 초과 시")
     void enrollment_throws6() {
+        // 0) Redis 카운터 stub
         stubRedisCounters(10L, 5L);
 
-        // 1) 수강신청 기간 생성
+        // 1) 수강신청 기간 stub
         EnrollmentPeriod period = createPeriod(1, 1);
-
-        // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
         stubEnrollmentPeriod(period);
 
-        // 2) 강좌 조회 stub (최대인원 10, 현재수강인원 5, 학점 3)
+        // 2) 강좌 조회 stub (정원10, 현재수강5, 학점3)
         stubCourse(10, 5, 3);
 
-        // 3) 중복 신청 없음 stub
-        when(enrollmentRepository.existsByCourseIdAndStudentId(COURSE_ID, profile.getId()))
-                .thenReturn(false);
-
-        // 4) 기존 신청 학점이 19점인 강좌 1개 → 총 19 + 새 강좌 3 = 22 > 21
-        Course existingCourse = Course.builder()
-                .id(200L)
-                .credit(19)
-                .build();
-        Enrollment existingEnrollment = Enrollment.builder()
-                .id(2L)
-                .student(profile)
-                .course(existingCourse)
-                .build();
-        when(enrollmentRepository.findAllByStudent(profile))
-                .thenReturn(List.of(existingEnrollment));
+        doThrow(new CreditLimitExceededException())
+                .when(enrollmentValidator)
+                .ensureEnrollmentAllowed(profile.getId(), COURSE_ID);
 
         // 실행 및 예외 검증
         assertThatThrownBy(() ->
                 enrollmentService.enrollment(profile.getId(), COURSE_ID)
         ).isInstanceOf(CreditLimitExceededException.class);
 
-        // save 호출이 일어나지 않아야 함
+        // 저장(save)이 호출되지 않아야 함
         verify(enrollmentRepository, never()).save(any());
+        verify(courseRepository, never()).save(any());
     }
 
     @Test
     @DisplayName("수강 신청 실패 – 시간표 충돌 시")
     void enrollment_throws7() {
-
+        // 0) Redis 카운터 stub (capacity 검증 통과용)
         stubRedisCounters(10L, 5L);
 
-        // 1) 수강신청 기간 생성
-        EnrollmentPeriod period = createPeriod(1, 1);
+        // 1) 강좌 조회 stub (정원10, 현재수강5, 학점3)
+        stubCourse(10, 5, 3);
 
-        // 학생정보로 수강신청 기간 검색 시 만들어준 신청 기간이 반환되도록 stub
-        stubEnrollmentPeriod(period);
+        // 2) 스케줄 충돌 예외를 던지도록 validator stub
+        doThrow(new ScheduleConflictException())
+                .when(enrollmentValidator)
+                .ensureEnrollmentAllowed(profile.getId(), COURSE_ID);
 
-        // 2) 신규 강좌 stub (MON 10:00–11:00)
-        Major major = Major.builder().id(1L).name("전공").build();
-        Professor profProfile = Professor.builder()
-                .name("교수님")
-                .build();
-        Course newCourse = Course.builder()
-                .id(COURSE_ID)
-                .title("신규강좌")
-                .major(major)
-                .location("강의실")
-                .capacity(10)
-                .enrolled(5)
-                .credit(3)
-                .professor(profProfile)
-                .grade(profile.getGrade())
-                .semester(profile.getSemester())
-                .build();
-        CourseSchedule newSchedule = CourseSchedule.builder()
-                .day(DayOfWeek.MON)
-                .startTime(LocalTime.of(10, 0))
-                .endTime(LocalTime.of(11, 0))
-                .build();
-        newSchedule.setCourse(newCourse);
-        newCourse.getSchedules().add(newSchedule);
-        when(courseRepository.findById(COURSE_ID))
-                .thenReturn(Optional.of(newCourse));
-
-        // 3) 중복 신청 없음 stub
-        when(enrollmentRepository.existsByCourseIdAndStudentId(COURSE_ID, profile.getId()))
-                .thenReturn(false);
-
-        // 4) 기존 신청 내역에 시간표 충돌하는 강좌(MON 10:30–12:00) 추가
-        Course existingCourse = Course.builder()
-                .id(999L)
-                .credit(3)
-                .build();
-        CourseSchedule existSchedule = CourseSchedule.builder()
-                .day(DayOfWeek.MON)
-                .startTime(LocalTime.of(10, 30))
-                .endTime(LocalTime.of(12, 0))
-                .build();
-        existSchedule.setCourse(existingCourse);
-        existingCourse.getSchedules().add(existSchedule);
-        Enrollment existingEnrollment = Enrollment.builder()
-                .student(profile)
-                .course(existingCourse)
-                .build();
-        when(enrollmentRepository.findAllByStudent(profile))
-                .thenReturn(List.of(existingEnrollment));
-
-        // 실행 및 예외 검증
+        // 3) 실행 및 예외 검증
         assertThatThrownBy(() ->
                 enrollmentService.enrollment(profile.getId(), COURSE_ID)
         ).isInstanceOf(ScheduleConflictException.class);
 
-        // save 호출이 일어나지 않아야 함
+        // 4) save 호출이 일어나지 않아야 함
         verify(enrollmentRepository, never()).save(any());
+        verify(courseRepository, never()).save(any());
     }
+
 
     @Test
     @DisplayName("내 수강신청 기간 조회 - 성공")
@@ -620,9 +547,8 @@ class EnrollmentServiceTest {
 
         // given: today 기준으로 기간 안에 들어오는 start/end 날짜 설정
         EnrollmentPeriod period = createPeriod(1, 1);
-        // id가 null 이면 테스트에서 비교하기 불편하니 임의로 부여
         stubEnrollmentPeriod(period);
-
+        when(enrollmentValidator.isWithinPeriod(any(), any())).thenReturn(true);
         // when
         StudentEnrollmentPeriodResponse response = enrollmentService.getMyEnrollmentPeriod(profile);
 

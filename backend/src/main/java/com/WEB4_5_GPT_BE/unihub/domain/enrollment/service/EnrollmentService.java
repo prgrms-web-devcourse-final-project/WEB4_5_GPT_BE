@@ -3,6 +3,7 @@ package com.WEB4_5_GPT_BE.unihub.domain.enrollment.service;
 import com.WEB4_5_GPT_BE.unihub.domain.course.dto.TimetableCourseResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.course.entity.EnrollmentPeriod;
 import com.WEB4_5_GPT_BE.unihub.domain.course.exception.CourseNotFoundException;
+import com.WEB4_5_GPT_BE.unihub.domain.course.repository.CourseRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.course.repository.EnrollmentPeriodRepository;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response.MyEnrollmentResponse;
 import com.WEB4_5_GPT_BE.unihub.domain.enrollment.dto.response.StudentEnrollmentPeriodResponse;
@@ -38,17 +39,15 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class EnrollmentService {
 
+    private final CourseRepository courseRepository;
+    private final StudentRepository studentRepository;
     private final EnrollmentRepository enrollmentRepository; // 수강신청 Repository
     private final EnrollmentPeriodRepository enrollmentPeriodRepository; // 수강신청 기간 Repository
-    private final StudentRepository studentRepository;
     private final EnrollmentValidator enrollmentValidator;
 
     private final RedissonClient redisson; // 동시성 처리를 위한 RedissonClient
-
     private final RBlockingQueue<EnrollmentCommand> enrollQueue; // 수강신청 요청을 저장하는 Queue
     private final RBlockingQueue<EnrollmentCancelCommand> cancelQueue; // 수강신청 취소 요청을 저장하는 Queue
-
-
 
     /**
      * 학생의 수강신청 내역을 조회하는 메서드입니다.
@@ -185,6 +184,9 @@ public class EnrollmentService {
      */
     @ConcurrencyGuard(lockName = "student:enroll")
     public void enrollment(Long studentId, Long courseId) {
+        // 강좌가 없으면 예외처리
+        courseRepository.findById(courseId).orElseThrow(CourseNotFoundException::new);
+
         // 정원 초과 시 예외 처리
         enrollmentValidator.ensureCapacityAvailable(courseId);
 
