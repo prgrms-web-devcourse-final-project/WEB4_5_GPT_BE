@@ -182,7 +182,7 @@ public class InitTestData {
                 1,                 // 학년
                 1,                 // 학기
                 LocalDate.of(year, 5, 1),
-                LocalDate.of(year, 5, 31)
+                LocalDate.of(year, 6, 20)
         );
 
         // 수강신청 기간 설정 (2학년·1학기) 없음
@@ -193,7 +193,7 @@ public class InitTestData {
                 year,              // 연도
                 3,                 // 학년
                 1,                 // 학기
-                LocalDate.of(year, 6, 1),
+                LocalDate.of(year, 6, 20),
                 LocalDate.of(year, 6, 30)
         );
 
