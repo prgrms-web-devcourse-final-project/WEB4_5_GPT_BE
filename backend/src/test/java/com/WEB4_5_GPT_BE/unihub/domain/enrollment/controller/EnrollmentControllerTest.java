@@ -105,7 +105,7 @@ class EnrollmentControllerTest {
                 .andExpect(jsonPath("$.message").value("수강 신청이 완료되었습니다."));
 
         // 수강신청된 강좌를 큐에서 꺼내서 DB에 저장할 시간
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         // then: 내 수강목록 조회 시 신청 내역이 3개로 증가해야 함
         // then: 신청 강좌의 신청 가능 인원이 1 감소해야 함
