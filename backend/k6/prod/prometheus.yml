@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'unihub-springboot-https'
+    metrics_path: '/actuator/prometheus'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true   # 자체 서명(Self-Signed) 인증서 등이면 true로 두거나 CA를 신뢰하도록 설정
+    static_configs:
+      - targets:
+          - 'api.un1hub.site:443'
+        labels:
+          env: production
+
