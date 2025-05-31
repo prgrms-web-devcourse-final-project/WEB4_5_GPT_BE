@@ -90,6 +90,10 @@ dependencies {
 
     // Redisson (redis를 통한 분산락)
     implementation("org.redisson:redisson-spring-boot-starter:3.46.0")
+
+    // prometheus (모니터링툴)
+    runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
+
 }
 
 

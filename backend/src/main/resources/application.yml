@@ -50,6 +50,17 @@ management:
   health:
     mail:
       enabled: false
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus   # prometheus 엔드포인트 노출
+  metrics:
+    tags:
+      application: ${spring.application.name}  # 기본 태그로 application 이름 추가
+  prometheus:
+    metrics:
+      export:
+        enabled: true
 
 logging:
   web:
@@ -96,3 +107,5 @@ cors:
 sentry:
   dsn: ${custom.sentry.dsn}
   send-default-pii: ${custom.sentry.send-default-pii}
+
+
