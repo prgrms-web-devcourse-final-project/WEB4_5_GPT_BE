@@ -6,9 +6,7 @@ import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RedissonClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.test.context.ActiveProfiles;
 
-@ActiveProfiles("!test")
 @Configuration
 public class RedisQueueConfig {
     /**

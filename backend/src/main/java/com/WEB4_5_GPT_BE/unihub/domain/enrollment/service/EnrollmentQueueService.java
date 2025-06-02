@@ -18,7 +18,7 @@ public class EnrollmentQueueService {
 
     private static final String WAITING_QUEUE_KEY = "enrollment:waiting-queue";
     private static final String SESSION_PREFIX = "enrollment:session:";
-    private static final int MAX_CONCURRENT_USERS = 1;
+    private static final int MAX_CONCURRENT_USERS = 100;
     private static final Duration SESSION_TIMEOUT = Duration.ofMinutes(11);
     private final StringRedisTemplate redisTemplate;
 

@@ -301,7 +301,7 @@ resource "aws_instance" "unihub_ec2_1" {
   # 사용할 AMI ID
   ami = data.aws_ami.latest_amazon_linux.id
   # EC2 인스턴스 유형
-  instance_type = "t3.micro"
+  instance_type = "t3.small"
   # 사용할 서브넷 ID
   subnet_id = aws_subnet.unihub_subnet_1.id
   # 적용할 보안 그룹 ID
@@ -337,4 +337,68 @@ resource "aws_eip" "unihub_eip_1" {
   }
 }
 
+# EC2 모니터링 EC2 구축
 
+locals {
+  ec2_monitoring_base = <<-END_OF_FILE
+#!/bin/bash
+# 가상 메모리 4GB 설정
+sudo dd if=/dev/zero of=/swapfile bs=128M count=32
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+sudo sh -c 'echo "/swapfile swap swap defaults 0 0" >> /etc/fstab'
+
+# 도커 설치 및 실행/활성화
+yum install docker -y
+systemctl enable docker
+systemctl start docker
+
+# 도커 네트워크 생성
+docker network create common
+
+echo "${var.github_access_token_1}" | docker login ghcr.io -u ${var.github_access_token_1_owner} --password-stdin
+
+END_OF_FILE
+}
+
+# EC2 인스턴스 생성
+resource "aws_instance" "unihub_ec2_2" {
+  # 사용할 AMI ID
+  ami = data.aws_ami.latest_amazon_linux.id
+  # EC2 인스턴스 유형
+  instance_type = "t3.small"
+  # 사용할 서브넷 ID
+  subnet_id = aws_subnet.unihub_subnet_1.id
+  # 적용할 보안 그룹 ID
+  vpc_security_group_ids = [aws_security_group.unihub_sg_1.id]
+  # 퍼블릭 IP 연결 설정
+  associate_public_ip_address = true
+
+  # 인스턴스에 IAM 역할 연결
+  iam_instance_profile = aws_iam_instance_profile.unihub_instance_profile_1.name
+
+  # 인스턴스에 태그 설정
+  tags = {
+    Name = "${var.prefix}-ec2-monitor"
+  }
+
+  # 루트 볼륨 설정
+  root_block_device {
+    volume_type = "gp3"
+    volume_size = 25
+  }
+
+  user_data = <<-EOF
+${local.ec2_monitoring_base}
+EOF
+}
+
+# 2) 탄력적 IP 할당
+resource "aws_eip" "unihub_eip_2" {
+  domain   = "vpc"
+  instance = aws_instance.unihub_ec2_2.id
+  tags = {
+    Name = "${var.prefix}-eip-monitor"
+  }
+}
