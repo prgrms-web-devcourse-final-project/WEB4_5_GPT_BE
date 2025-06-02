@@ -14,37 +14,37 @@ scrape_configs:
     static_configs:
       - targets:
           - 'api.un1hub.site:443'
-  - job_name: "k6-enrollment-test"
-    metrics_path: "/metrics"
-    static_configs:
-      - targets:
-          - "localhost:6565"
+#  - job_name: "k6-enrollment-test"
+#    metrics_path: "/metrics"
+#    static_configs:
+#      - targets:
+#          - "localhost:6565"
 
 # sudo mkdir -p /home/ec2-user/monitoring/prometheus
 # cd /home/ec2-user/monitoring/prometheus 이동해서 파일 생성
-# sudo chmod -R 777 /home/ec2-user/monitoring/prometheus/data
+# sudo chmod -R 777 /home/ec2-user/monitoring/prometheus
 
-#  docker run -d \
-#  --name prometheus \
-#  --network host \
-#  -p 9090:9090 \
-#  -v /home/ec2-user/monitoring/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml \
-#  -v /home/ec2-user/monitoring/prometheus/data:/prometheus \
-#  prom/prometheus \
-#  --config.file=/etc/prometheus/prometheus.yaml \
-#  --storage.tsdb.path=/prometheus
+#docker run -d \
+#--name prometheus \
+#--network common \
+#-p 9090:9090 \
+#-v /home/ec2-user/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml \
+#prom/prometheus
 
 # http://3.36.209.8:9090/ 프로메테우스 접근 가능
 
-# sudo mkdir -p /home/ec2-user/monitoring/grafana/data
-# sudo mkdir -p /home/ec2-user/monitoring/grafana/log
-# sudo chmod -R 777 /home/ec2-user/monitoring/grafana
+########
+
+# sudo mkdir -p /home/ec2-user/monitoring/grafana/provisioning/datasources
+# sudo mkdir -p /home/ec2-user/monitoring/grafana/provisioning/dashboards
+# sudo chmod -R 777 /home/ec2-user/monitoring/grafana/provisioning
 
 # docker run -d \
 #  --name grafana \
+#  --network common \
 #  -p 3000:3000 \
-#  -v /home/ec2-user/monitoring/grafana/data:/var/lib/grafana \
-#  -v /home/ec2-user/monitoring/grafana/log:/var/log/grafana \
+#  -v /home/ec2-user/monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources \
+#  -v /home/ec2-user/monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards \
 #  grafana/grafana
 
 # http://3.36.209.8:3000 그라파나 접근 가능

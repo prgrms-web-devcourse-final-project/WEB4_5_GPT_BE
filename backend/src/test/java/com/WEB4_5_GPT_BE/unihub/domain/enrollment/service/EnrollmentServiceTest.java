@@ -439,10 +439,6 @@ class EnrollmentServiceTest {
         stubRedisCounters(10L, 10L);
 
         RBucket<Boolean> mockBucket = mock(RBucket.class);
-        doReturn(mockBucket)
-                .when(redisson)
-                .getBucket(anyString());
-        when(mockBucket.delete()).thenReturn(true);
 
         // --- 1) 수강신청 기간 생성 & stub ---
         EnrollmentPeriod period = createPeriod(1, 1);

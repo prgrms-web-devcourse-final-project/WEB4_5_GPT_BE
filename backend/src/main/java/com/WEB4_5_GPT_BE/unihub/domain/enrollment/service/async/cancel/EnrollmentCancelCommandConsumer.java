@@ -77,6 +77,5 @@ public class EnrollmentCancelCommandConsumer {
                 Thread.currentThread().interrupt();
             }
         }
-        log.info("EnrollmentCancelCommandConsumer 종료됨");
     }
 }

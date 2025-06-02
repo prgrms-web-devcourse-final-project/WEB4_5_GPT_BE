@@ -37,7 +37,6 @@ public class EnrollmentCancelCommandHandler {
     public void process(EnrollmentCancelCommand cmd) {
         Long studentId = cmd.studentId();
         Long courseId = cmd.courseId();
-        String flagKey = "cancel:queued:" + studentId + ":" + courseId;
 
         try {
             // 1) 수강신청 내역 조회. 없으면 EnrollmentNotFoundException 발생
@@ -56,9 +55,6 @@ public class EnrollmentCancelCommandHandler {
             redisson.getAtomicLong("course:" + courseId + ":enrolled")
                     .incrementAndGet();
             throw e;
-        } finally {
-            // 대기열 처리 완료 후 플래그(잠금) 해제
-            redisson.getBucket(flagKey).delete();
         }
     }
 }

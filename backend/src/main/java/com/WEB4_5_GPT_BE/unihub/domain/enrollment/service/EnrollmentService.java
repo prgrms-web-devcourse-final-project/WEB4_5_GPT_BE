@@ -136,35 +136,28 @@ public class EnrollmentService {
      * @throws CannotCancelException 취소 가능한 수강신청 내역이 없을 때 발생
      */
     private void tryDecrementAndEnqueueCancel(Long studentId, Long courseId) {
+
         // Redis 수강인원 카운터 키: course:{courseId}:enrolled
         String enrolledKey = "course:" + courseId + ":enrolled";
         RAtomicLong enrolled = redisson.getAtomicLong(enrolledKey);
 
-        // 중복 enqueue 방지 플래그 키: cancel:queued:{studentId}:{courseId}
-        String flagKey = "cancel:queued:" + studentId + ":" + courseId;
-
         // 1) 수강가능인원 반납 시도: enrolled 값을 1 감소
         long newCount = enrolled.decrementAndGet();
         if (newCount < 0) {
-            // 2) 감소된 값이 음수이면 반납 복구 및 플래그 롤백 후 예외 발생
-            enrolled.incrementAndGet();
-            redisson.getBucket(flagKey).delete();
+            enrolled.incrementAndGet(); // 2) 감소된 값이 음수이면 반납 복구 후 예외 발생
             throw new CannotCancelException();
         }
 
         try {
-            // 3) Redis 큐에 수강취소 명령 추가
-            cancelQueue.add(new EnrollmentCancelCommand(studentId, courseId));
+            cancelQueue.add(new EnrollmentCancelCommand(studentId, courseId)); // 3) Redis 큐에 수강취소 명령 추가
         } catch (Exception ex) {
-            // 4) enqueue 실패 시 자리 반납 롤백 및 플래그 롤백
-            enrolled.incrementAndGet();
-            redisson.getBucket(flagKey).delete();
+            enrolled.incrementAndGet(); // 4) enqueue 실패 시 자리 반납 롤백
             throw ex;
         }
     }
 
     /**
-     * 비동기 수강 신청을 처리하는 메서드입니다.
+     * 수강 신청을 처리하는 메서드
      *
      * 여러 예외 상황을 검증한 후 수강 신청을 진행합니다.
      * @ConcurrencyGuard 학생id + 강의id 조합에 대한 분산락을 적용하여 중복 요청을 방지합니다.
@@ -205,32 +198,27 @@ public class EnrollmentService {
      * @throws CourseCapacityExceededException 정원 초과 시 예외 발생
      */
     private void tryReserveSeatAndEnqueue(Long studentId, Long courseId) {
-        // Redis 키 생성
-        String enrolledKey = "course:" + courseId + ":enrolled";
-        String capacityKey = "course:" + courseId + ":capacity";
-        RAtomicLong enrolled = redisson.getAtomicLong(enrolledKey);
-        RAtomicLong capacity = redisson.getAtomicLong(capacityKey);
 
-        // 중복 enqueue 방지 플래그 키
-        String flagKey = "enroll:queued:" + studentId + ":" + courseId;
+        // Redis에서 capacity와 enrolled 값 가져오기
+        RAtomicLong enrolled = redisson.getAtomicLong("course:" + courseId + ":enrolled");
+        RAtomicLong capacity = redisson.getAtomicLong("course:" + courseId + ":capacity");
 
         // 1) 자리 확보: 현재 enrolled 값을 1 증가시키고
         long newCount = enrolled.incrementAndGet();
-        //    증가된 값이 capacity를 넘으면 복구 후 예외
+
+        //    증가된 값이 정원(capacity)을 넘으면 복구 후 예외
         if (newCount > capacity.get()) {
             enrolled.decrementAndGet();                  // 자리 반납
-            redisson.getBucket(flagKey).delete();        // enqueue 플래그 롤백
             throw new CourseCapacityExceededException(); // 정원 초과 예외
         }
 
         try {
-            // 2) Redis 큐에 수강신청 명령 추가
+            // 2) 실제 DB 접근 및 수강신청 처리는 큐를 통해서 순차 처리됨
             enrollQueue.add(new EnrollmentCommand(studentId, courseId));
         } catch (Exception e) {
             // 3) enqueue 중 에러 발생 시 복구
             enrolled.decrementAndGet();                  // 자리 반납
-            redisson.getBucket(flagKey).delete();        // enqueue 플래그 롤백
-            throw e;                                     // 예외 재던짐
+            throw e;
         }
     }
 

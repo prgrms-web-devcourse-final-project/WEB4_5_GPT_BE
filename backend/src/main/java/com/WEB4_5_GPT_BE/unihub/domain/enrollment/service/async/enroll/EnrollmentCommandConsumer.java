@@ -79,6 +79,5 @@ public class EnrollmentCommandConsumer {
                 Thread.currentThread().interrupt();
             }
         }
-        log.info("EnrollmentCommandConsumer 종료됨");
     }
 }
