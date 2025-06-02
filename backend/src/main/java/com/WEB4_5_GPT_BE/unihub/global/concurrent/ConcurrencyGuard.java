@@ -11,13 +11,13 @@ import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * ConcurrencyGuard 애노테이션은 메서드 실행 전 분산 락을 사용해
+ * ConcurrencyGuard 어노테이션은 메서드 실행 전 분산 락을 사용해
  * 동시 접근을 제어합니다.
  */
 @Documented
 @Profile("!test")
-@Target(METHOD)            // 해당 애노테이션을 메서드에만 적용할 수 있도록 지정
-@Retention(RUNTIME)        // 런타임 시점까지 애노테이션 정보를 유지하여 AOP 등에서 활용할 수 있게 함
+@Target(METHOD)
+@Retention(RUNTIME)
 public @interface ConcurrencyGuard {
     String lockName(); // 락을 식별할 이름(key)을 지정
 

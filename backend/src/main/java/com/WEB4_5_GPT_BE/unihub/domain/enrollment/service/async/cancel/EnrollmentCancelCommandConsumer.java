@@ -1,5 +1,6 @@
 package com.WEB4_5_GPT_BE.unihub.domain.enrollment.service.async.cancel;
 
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBlockingQueue;
@@ -25,14 +26,30 @@ public class EnrollmentCancelCommandConsumer {
     private final RBlockingQueue<EnrollmentCancelCommand> cancelQueue;
 
     /**
+     * 워커 스레드를 보관해두기 위한 필드
+     */
+    private Thread worker;
+
+    /**
      * 애플리케이션이 완전히 시작된 후 호출되어
      * 워커 스레드를 생성·시작합니다.
      */
     @EventListener(ApplicationReadyEvent.class)
     public void start() {
-        Thread worker = new Thread(this::runLoop, "cancel-worker");
+        worker = new Thread(this::runLoop, "cancel-worker");
         worker.setDaemon(true);
         worker.start();
+    }
+
+    /**
+     * 스프링 컨텍스트 종료 시 호출되어 워커를 안전히 중단합니다.
+     */
+    @PreDestroy
+    public void stop() {
+        if (worker != null && worker.isAlive()) {
+            log.info("EnrollmentCancelCommandConsumer 종료중...");
+            worker.interrupt();
+        }
     }
 
     /**

@@ -6,7 +6,7 @@ import {Counter} from "k6/metrics";
 // —— 테스트 파라미터 ——
 const VUS = 100;
 const COURSE_ID = 11;
-const BASE = "http://host.docker.internal:8080";
+const BASE = "https://api.un1hub.site";
 
 // students.json 로드 (100개 계정)
 const users = new SharedArray("students", () =>
@@ -69,9 +69,17 @@ export default function () {
     }
 }
 
-
-// 실행 방법
-// 1. Docker 환경에서 실행
-// 2. c: 경로에 js 파일과 students.json 파일을 저장
-// 3. 해당 경로로 이동하여 powershell에서 아래 명령어 실행
-// docker run --rm --name k6_1 --network common -v ${pwd}:/scripts -w /scripts grafana/k6:latest run enroll-cap30-vus100.js
+// cd /home/ec2-user/scripts
+/**
+ docker run --rm \
+ --name k6_prometheus \
+ -v "$(pwd)":/scripts \
+ -w /scripts \
+ -p 6565:6565 \
+ -e K6_PROMETHEUS_HOST=0.0.0.0 \
+ -e K6_PROMETHEUS_PORT=6565 \
+ grafana/k6:latest run \
+ --duration 1m \
+ --out experimental-prometheus-rw=0.0.0.0:6565 \
+ enroll-cap30-vus100.js
+ */

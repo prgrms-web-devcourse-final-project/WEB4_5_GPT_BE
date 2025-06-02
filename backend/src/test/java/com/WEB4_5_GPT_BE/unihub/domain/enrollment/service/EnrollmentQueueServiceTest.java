@@ -50,7 +50,7 @@ public class EnrollmentQueueServiceTest {
         // Given
         // Mock getActiveUserCount to return a low number of active users
         EnrollmentQueueService spyService = spy(enrollmentQueueService);
-        doReturn(2L).when(spyService).getActiveUserCount();
+        doReturn(0L).when(spyService).getActiveUserCount();
 
         when(redisTemplate.hasKey(SESSION_PREFIX + TEST_MEMBER_ID)).thenReturn(false);
         when(listOperations.range(WAITING_QUEUE_KEY, 0, -1)).thenReturn(Collections.emptyList());
@@ -91,32 +91,40 @@ public class EnrollmentQueueServiceTest {
     }
 
     @Test
-    @DisplayName("최대 접속자 3명 제한 도달 시 새 사용자가 대기열로 이동하는 테스트")
-    public void testMaxConcurrentUsers() {
-        // 테스트용 객체 생성
+    @DisplayName("최대 접속자 100명 제한 도달 시 새 사용자가 대기열로 이동하는 테스트")
+    public void testMaxConcurrentUsersHundred() {
+        // 실제 EnrollmentQueueService 대신 spy 객체를 만들어 일부 메서드만 오버라이드합니다.
         EnrollmentQueueService testService = spy(enrollmentQueueService);
-        // 테스트에 필요한 메서드만 오버라이드
-        doReturn(3).when(testService).getPositionInQueue(anyString());
+
+        // ── position 조회 시 “100번째”라고 나오도록 미리 stub
+        doReturn(100).when(testService).getPositionInQueue(anyString());
+        // ── 해당 사용자가 이미 대기열에 있는지 확인할 때는 false라고 응답하도록 stub
         doReturn(false).when(testService).isUserInQueue(anyString());
 
         // Given
         String newUserId = "999";
-        // 활성 사용자가 3명으로 제한에 도달
-        doReturn(3L).when(testService).getActiveUserCount();
+        // “활성 사용자 수”를 100명으로 만들어서 제한에 도달한 상태를 시뮬레이션
+        doReturn(100L).when(testService).getActiveUserCount();
+        // 해당 사용자가 아직 세션(= active 키)을 갖고 있지 않다고 가정
         when(redisTemplate.hasKey(SESSION_PREFIX + newUserId)).thenReturn(false);
 
         // When
         QueueStatusDto result = testService.addToQueue(newUserId);
 
         // Then
-        // 결과 확인
-        assertFalse(result.isAllowed(), "접속이 허용되지 않아야 합니다.");
-        assertEquals(3, result.getPosition(), "대기열 순서가 3번째여야 합니다.");
+        // 1) 접속이 허용되지 않아야 함
+        assertFalse(result.isAllowed(), "활성 사용자가 100명으로 제한 도달했으므로 허용되지 않아야 합니다.");
+
+        // 2) 대기열 순서가 100번째여야 함
+        assertEquals(100, result.getPosition(), "대기열 순서는 100번째여야 합니다.");
+
+        // 3) 예상 대기시간은 0보다 커야 함 (position 100이므로)
         assertTrue(result.getEstimatedWaitTime() > 0, "대기 시간이 0보다 커야 합니다.");
 
-        // 리스트에 추가되었는지 확인
+        // 4) 대기열에 오른 것이 맞는지 Redis 리스트에 rightPush를 호출했는지 검증
         verify(listOperations).rightPush(WAITING_QUEUE_KEY, newUserId);
     }
+
 
     @Test
     @DisplayName("이미 활성 세션이 있는 사용자 테스트")
@@ -164,7 +172,7 @@ public class EnrollmentQueueServiceTest {
         when(redisTemplate.hasKey(SESSION_PREFIX + TEST_MEMBER_ID)).thenReturn(true);
         // Mock getActiveUserCount to return a number below max concurrent users
         EnrollmentQueueService spyService = spy(enrollmentQueueService);
-        doReturn(2L).when(spyService).getActiveUserCount();
+        doReturn(0L).when(spyService).getActiveUserCount();
         when(listOperations.leftPop(WAITING_QUEUE_KEY)).thenReturn("2"); // 다음 대기자
 
         // When
@@ -183,7 +191,11 @@ public class EnrollmentQueueServiceTest {
     public void testProcessNextInQueue() {
         // Given
         EnrollmentQueueService spyService = spy(enrollmentQueueService);
-        doReturn(2L).when(spyService).getActiveUserCount();
+
+        when(redisTemplate.opsForList()).thenReturn(listOperations);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+
+        doReturn(0L).when(spyService).getActiveUserCount();
         when(listOperations.leftPop(WAITING_QUEUE_KEY)).thenReturn("5");
 
         // When

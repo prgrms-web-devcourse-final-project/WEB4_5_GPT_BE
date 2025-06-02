@@ -128,7 +128,7 @@ public class InitDevData {
                 university,
                 LocalDate.now().getYear(), 4, 1,
                 LocalDate.of(2025, 5, 1),
-                LocalDate.of(2025, 5, 30)
+                LocalDate.of(2025, 6, 21)
         );
 
         // 13) 동시성 테스트용 데이터 생성 (4학년 학생 100명, 교수 1명, 강좌 1개)

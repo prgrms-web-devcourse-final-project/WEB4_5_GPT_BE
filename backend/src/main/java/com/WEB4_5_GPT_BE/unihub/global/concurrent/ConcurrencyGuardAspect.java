@@ -30,12 +30,10 @@ public class ConcurrencyGuardAspect {
     @Around("@annotation(ConcurrencyGuard) && (args(..))")
     public Object handleConcurrency(ProceedingJoinPoint joinPoint) throws Throwable {
 
-        // 1) 어노테이션 설정 정보 가져오기
-        ConcurrencyGuard annotation = getAnnotation(joinPoint);
+        ConcurrencyGuard annotation = getAnnotation(joinPoint); // 1) 어노테이션 설정 정보 가져오기
 
-        // 2) 메서드 인자를 가져온 뒤 해당 정보(ex: courseId)로 락 이름을 생성
-        Object[] args = joinPoint.getArgs();
-        String lockName = getLockName(args, annotation);
+        // 2) 메서드 인자를 가져온 뒤 해당 정보로 락 이름을 생성
+        String lockName = getLockNameById(joinPoint.getArgs(), annotation);
 
         // 해당 lockName으로 된 Redisson 분산 락 객체 생성
         RLock lock = redissonClient.getLock(lockName);
@@ -44,18 +42,14 @@ public class ConcurrencyGuardAspect {
             // 3) 락 획득 시도 (대기시간 waitTime, 유지시간 leaseTime)
             boolean available = lock.tryLock(annotation.waitTime(), annotation.leaseTime(), annotation.timeUnit());
             if (!available) {
-                // 락을 얻지 못하면 예외 발생
-                throw new ConcurrencyLockException();
+                throw new ConcurrencyLockException(); // 락을 얻지 못하면 예외 발생
             }
-            /*
-             * 락을 획득하게 되면 해당 비즈니스 로직이 새로운 트랜잭션에서 실행될 수 있도록
-             * transactionAspect에 넘겨줌
-             */
+            // 락을 획득하게 되면 해당 비즈니스 로직이 새로운 트랜잭션에서 실행될 수 있도록
+            // transactionAspect에 넘겨줌
             return transactionAspect.proceed(joinPoint);
         } finally {
-            // 5) 락 해제
             try {
-                lock.unlock();
+                lock.unlock(); // 5) 락 해제
             } catch (IllegalMonitorStateException e) {
                 log.warn("Redisson 락이 이미 해제되었습니다 lockName: " + lockName); // 이미 해제된 경우 경고 로그
             }
@@ -73,15 +67,15 @@ public class ConcurrencyGuardAspect {
     }
 
     /**
-     * 락 이름을 "lock:{lockName}:{key}" 형식으로 생성합니다.
-     * args[1]이 Long 타입의 courseId라고 가정하여 활용합니다. -> ex) lock:course:1
+     * 락 이름을 "lock:{lockName}:{studentId}:{courseId}" 형식으로 생성합니다.
      */
-    private String getLockName(Object[] args, ConcurrencyGuard annotation) {
-        String lockNameFormat = "lock:%s:%s";
+    private String getLockNameById(Object[] args, ConcurrencyGuard annotation) {
+        String lockNameFormat = "lock:%s:%s:%s";
         String lockName = annotation.lockName();
-        String relevantParameter = (args.length > 1 && args[1] != null)
-                ? args[1].toString()
-                : "default";
-        return lockNameFormat.formatted(lockName, relevantParameter);
+        String studentId = args[0].toString();
+        String courseId = args[1].toString();
+        String formatted = lockNameFormat.formatted(lockName, studentId, courseId);
+        System.out.println(formatted);
+        return formatted;
     }
 }
