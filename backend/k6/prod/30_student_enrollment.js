@@ -21,12 +21,12 @@ export let enrollSuccess = new Counter("enroll_success");
 export let enrollFail = new Counter("enroll_fail");
 
 export let options = {
+    duration: `180s`,
     scenarios: {
         enrollmentTest: {
             executor: "per-vu-iterations",
             vus: VUS,
             iterations: 1,
-            maxDuration: "30s",
         },
     },
     thresholds: {
@@ -72,4 +72,15 @@ export default function () {
     }
 }
 // cd /home/ec2-user/scripts
-// docker run --rm -v "$(pwd)":/scripts grafana/k6:latest run /scripts/30_student_enrollment.js
+/**
+ docker run --rm \
+ --name k6_prometheus \
+ -v "$(pwd)":/scripts \
+ -w /scripts \
+ -p 6565:6565 \
+ -e K6_PROMETHEUS_HOST=0.0.0.0 \
+ -e K6_PROMETHEUS_PORT=6565 \
+ grafana/k6:latest run \
+ --out experimental-prometheus-rw=0.0.0.0:6565 \
+ 30_student_enrollment.js
+ */

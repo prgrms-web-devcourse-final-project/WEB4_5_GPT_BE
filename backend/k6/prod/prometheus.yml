@@ -1,16 +1,50 @@
 global:
   scrape_interval: 15s
-  evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: 'unihub-springboot-https'
-    metrics_path: '/actuator/prometheus'
+  - job_name: "prometheus"
+    static_configs:
+      - targets:
+          - "localhost:9090"
+  - job_name: "springboot"
+    metrics_path: "/actuator/prometheus"
     scheme: https
     tls_config:
-      insecure_skip_verify: true   # 자체 서명(Self-Signed) 인증서 등이면 true로 두거나 CA를 신뢰하도록 설정
+      insecure_skip_verify: true
     static_configs:
       - targets:
           - 'api.un1hub.site:443'
-        labels:
-          env: production
+  - job_name: "k6-enrollment-test"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets:
+          - "localhost:6565"
 
+# sudo mkdir -p /home/ec2-user/monitoring/prometheus
+# cd /home/ec2-user/monitoring/prometheus 이동해서 파일 생성
+# sudo chmod -R 777 /home/ec2-user/monitoring/prometheus/data
+
+#  docker run -d \
+#  --name prometheus \
+#  --network host \
+#  -p 9090:9090 \
+#  -v /home/ec2-user/monitoring/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml \
+#  -v /home/ec2-user/monitoring/prometheus/data:/prometheus \
+#  prom/prometheus \
+#  --config.file=/etc/prometheus/prometheus.yaml \
+#  --storage.tsdb.path=/prometheus
+
+# http://3.36.209.8:9090/ 프로메테우스 접근 가능
+
+# sudo mkdir -p /home/ec2-user/monitoring/grafana/data
+# sudo mkdir -p /home/ec2-user/monitoring/grafana/log
+# sudo chmod -R 777 /home/ec2-user/monitoring/grafana
+
+# docker run -d \
+#  --name grafana \
+#  -p 3000:3000 \
+#  -v /home/ec2-user/monitoring/grafana/data:/var/lib/grafana \
+#  -v /home/ec2-user/monitoring/grafana/log:/var/log/grafana \
+#  grafana/grafana
+
+# http://3.36.209.8:3000 그라파나 접근 가능

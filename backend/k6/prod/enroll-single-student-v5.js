@@ -68,4 +68,15 @@ export default function () {
 }
 
 // cd /home/ec2-user/scripts
-// docker run --rm -v "$(pwd)":/scripts grafana/k6:latest run /scripts/enroll-single-student-v5.js
+/**
+ docker run --rm \
+ --name k6_prometheus \
+ -v "$(pwd)":/scripts \
+ -w /scripts \
+ -p 6565:6565 \
+ -e K6_PROMETHEUS_HOST=0.0.0.0 \
+ -e K6_PROMETHEUS_PORT=6565 \
+ grafana/k6:latest run \
+ --out experimental-prometheus-rw=0.0.0.0:6565 \
+ enroll-single-student-v5.js
+ */
