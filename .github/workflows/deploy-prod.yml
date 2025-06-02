@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - 옥정현/feat-181
 
     paths:
       - '.github/workflows/**'
